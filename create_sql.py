@@ -1,6 +1,19 @@
-import datetime
+import datetime as date
 
-def generate_command(start, end, data_type, platform_type):
+#Generates an SQL command based on the passed parameters or the defaults
+#
+#ARGS:
+#
+#   start               The start date for the heatmap
+#   end                 The end date for the heatmap
+#   platform_type       The platform to generate a heatmap for, ie SA or SB
+#   data_type           The type of data to generate a heatmap for, ie. GRD or SLC
+#
+
+def generate_command(start=date.datetime(2021,1,1), 
+                     end=date.datetime(2021,2,1), 
+                     platform_type="'SA', 'SB'", 
+                     data_type="GRD"):
     
     cmd = """SELECT g.granule_name, ST_AsText(ST_Centroid(shape)), g.*
         
