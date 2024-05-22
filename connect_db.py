@@ -1,6 +1,15 @@
 import psycopg2
 from os import getenv
 
+
+#Returns a connection to the PostgreSQL DB specified in the envioronment variables below:
+#
+#   Vars                    Purpose
+#  DB_HOST            Stores the address of the DB host
+#  DB_NAME            Stores the name of the DB
+#  DB_USERNAME        Stores Username for logging into DB
+#  DB_PASSWORD        Stores Password for the Username above
+#
 def connect_to_db():
     
     #Get the env variables representing the user credentials and database

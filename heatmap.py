@@ -5,7 +5,13 @@ import matplotlib.pyplot as plt
 from numpy import random
 
 
+#Generates heatmap.png based on the data pulled in the contained SQL command
+#
 def generate_heatmap():
+    
+    ####################
+    # Get Data From DB #
+    ####################
     
     # Get a connection to the database
     conn = connect_to_db()
@@ -34,34 +40,19 @@ def generate_heatmap():
         curs.execute(SQL)
         data = curs.fetchall()
         
+    ########################
+    # Generate heatmap.png #
+    ########################
+        
         #Seperate gathered data into geographic categories
         cent = parse_center(data)
-        f = open("parsed_output.txt","w")
-        f.write(str(cent))
-        f.close()
-        
         location = break_data_on_geo(cent)
-        f = open("loc_ouput.txt","w")
-        f.write(str(location))
-        f.close()
-        
-        
-        ###########
-        #  DEBUG  #
-        ###########
-        
-        f = open("output.txt", "w")
-        for lat in location.keys():
-            for lon in location[lat].keys():
-                f.write("Lat: " + str(lat) + "  Lon: " + str(lon) + "    Value: " + str(location[lat][lon]) + "\n")
-        f.close()
-        
-        #Plot the resulting data pairs
+
+        #Sort the contents of location into x, y positions and corresponding weights
         x = []
         y = []
         w = []
         
-        #Sort the contents of location into x, y positions and corresponding weights
         for lat in location.keys():
             for lon in location[lat].keys():
                 x.append(lon)
@@ -69,15 +60,23 @@ def generate_heatmap():
                 w.append(location[lat][lon])
         
         #Create a 2D Histogram of the data and export it as png
-        plt.hist2d(x,y,[180,360],weights=w)
+        plt.hist2d(x,y,[360,180],weights=w)
         plt.axis('off')
         plt.savefig("heatmap.png",bbox_inches='tight', pad_inches=0)        
+        
         return
-            
-#Create a 2-dimensional dictionary, outer dict is latitude, inner dict is longitude,
-#value is the number of samples data contains within the latitude and longitude pair
+ 
+#Categorizes data into distinct geographic regions           
 #
-#Takes a list of tuples with latitude, longitude pairs       
+#ARGS:
+#
+#   data            list of tuples containng (longitude, latitude)
+#     
+#RETURNS:
+#
+#   A 2D dictionary, outer dict is latitude, inner dict is longitude,
+#       value is the number of samples at the corresponding coordinates
+#
 def break_data_on_geo(data):
 
     loc = { i : {j : 0 for j in range(-180,181)} for i in range(-90,91) }
@@ -88,9 +87,8 @@ def break_data_on_geo(data):
         #Convert current elements lat,lon cords to floats
         curr_lat = float(ele[1])
         curr_lon = float(ele[0])
-        #print("Lat: " + str(curr_lat) + "Long: " + str(curr_lon))
         
-          #Finds closest latitude
+        #Finds closest latitude
         for latitude in loc.keys():
             if abs(latitude - curr_lat) < abs(close_latitude - curr_lat):
                 close_latitude = latitude
@@ -100,28 +98,29 @@ def break_data_on_geo(data):
             if abs(longitude - curr_lon) < abs(close_longitude - curr_lon):
                 close_longitude = longitude
         
-       
+        #Increment the value at the correct lat,lon pair
         loc[close_latitude][close_longitude] += 1
 
     return loc
 
-#Parses the center lat,lon of the passed data, returns a list of tuples
-#Returns a list of long,lat pairs
+#Parses the center lat,lon of the passed data
+#
+#ARGS:
+#
+#   data            A list of lists, the inner lists second entry must be the center lat,long
+#
+#RETURNS:
+#
+#   A 2D list, the inner list is composed of strings corresponding to coordinates
+#
 def parse_center(data):
+    
     center = []
     
     for ele in data:
         
         location = re.findall("-?\d+\.\d+", ele[1])
-        
         center.append(location)
-    
-    f = open("loc_output.txt","w")
-    for pair in center:
-        f.write(str(pair) + "\n")
-        if abs(float(pair[1])) > 90:
-            print(str(pair))
-    f.close()
     
     return center
 
