@@ -9,7 +9,7 @@ from numpy import random
 
 #Generates heatmap.png based on the data pulled in the contained SQL command
 #
-def generate_heatmap(start, end, data_type, platform_type):
+def generate_heatmap():
     
     ####################
     # Get Data From DB #
@@ -22,7 +22,7 @@ def generate_heatmap(start, end, data_type, platform_type):
     with conn.cursor() as curs:
 
         #SQL command to execute, currently hardcoded, should make this a passed parameter in later builds     
-        SQL = generate_command(start, end, data_type, platform_type)
+        SQL = generate_command()
 
         
         #Execute SQL and store the results into data
@@ -68,7 +68,7 @@ def generate_heatmap(start, end, data_type, platform_type):
 #
 def break_data_on_geo(data):
 
-    loc = { i : {j : 0 for j in range(-180,181)} for i in range(-90,91) }
+    loc = { i : {j            : 0 for j in range(-180,181)} for i in range(-90,91) }
     close_latitude = 0
     close_longitude = 0
     
@@ -98,12 +98,12 @@ def break_data_on_geo(data):
 #
 #   data            A list of lists, the inner lists second entry must be the center lat,long
 #
-#RETURNS:
+#RETURNS:start, end, data_type, platform_type
 #
 #   A 2D list, the inner list is composed of strings corresponding to coordinates
 #
 def parse_center(data):
-    
+               
     center = []
     
     for ele in data:
@@ -113,9 +113,4 @@ def parse_center(data):
     
     return center
 
-
-start = date.datetime(2021,1,1)
-end = date.datetime(2021,2,1)
-data_type = "GRD"
-platform_type = "'SA', 'SB'"
-generate_heatmap(start, end, data_type, platform_type)
+generate_heatmap()
