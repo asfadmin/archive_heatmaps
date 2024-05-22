@@ -9,7 +9,7 @@ from numpy import random
 
 #Generates heatmap.png based on the data pulled in the contained SQL command
 #
-def generate_heatmap(start, end):
+def generate_heatmap(start, end, data_type, platform_type):
     
     ####################
     # Get Data From DB #
@@ -22,7 +22,7 @@ def generate_heatmap(start, end):
     with conn.cursor() as curs:
 
         #SQL command to execute, currently hardcoded, should make this a passed parameter in later builds     
-        SQL = generate_command(start, end)
+        SQL = generate_command(start, end, data_type, platform_type)
 
         
         #Execute SQL and store the results into data
@@ -113,4 +113,9 @@ def parse_center(data):
     
     return center
 
-generate_heatmap()
+
+start = date.datetime(2021,1,1)
+end = date.datetime(2021,2,1)
+data_type = "GRD"
+platform_type = "'SA', 'SB'"
+generate_heatmap(start, end, data_type, platform_type)
