@@ -1,9 +1,17 @@
 import psycopg2
+import re
 from connect_db import connect_to_db
 import matplotlib.pyplot as plt
 from numpy import random
 
+
+#Generates heatmap.png based on the data pulled in the contained SQL command
+#
 def generate_heatmap():
+    
+    ####################
+    # Get Data From DB #
+    ####################
     
     # Get a connection to the database
     conn = connect_to_db()
@@ -11,8 +19,9 @@ def generate_heatmap():
     #Create a cursor to execute an SQL command
     with conn.cursor() as curs:
         
-        #SQL command to execute, currently hardcoded, should make this a passed parameter in later builds
-        SQL = """SELECT g.granule_name, ST_AsText(shape), g.*
+        #SQL command to execute, currently hardcoded, should make this a passed parameter in later builds        
+        SQL = """
+                SELECT g.granule_name, ST_AsText(ST_Centroid(shape)), g.*
         
                 FROM granule g 
                 
@@ -31,50 +40,88 @@ def generate_heatmap():
         curs.execute(SQL)
         data = curs.fetchall()
         
+    ########################
+    # Generate heatmap.png #
+    ########################
         
         #Seperate gathered data into geographic categories
-        location = break_data_on_geo(data)
-        
-        #Plot the resulting data pairs
+        cent = parse_center(data)
+        location = break_data_on_geo(cent)
+
+        #Sort the contents of location into x, y positions and corresponding weights
         x = []
         y = []
         w = []
         
-        #Sort the contents of location into x, y positions and corresponding weights
-        for lon in location.keys():
-            for lat in location[lon].keys():
+        for lat in location.keys():
+            for lon in location[lat].keys():
                 x.append(lon)
                 y.append(lat)
-                w.append(location[lon][lat])
+                w.append(location[lat][lon])
         
         #Create a 2D Histogram of the data and export it as png
         plt.hist2d(x,y,[360,180],weights=w)
         plt.axis('off')
-        plt.savefig("heatmap.png",bbox_inches='tight', pad_inches=0)
+        plt.savefig("heatmap.png",bbox_inches='tight', pad_inches=0)        
         
         return
-            
-#Create a 2-dimensional dictionary, outer dict is longitude, inner dict is latitude,
-#value is the number of samples data contains within the longitude and latitude pair       
+ 
+#Categorizes data into distinct geographic regions           
+#
+#ARGS:
+#
+#   data            list of tuples containng (longitude, latitude)
+#     
+#RETURNS:
+#
+#   A 2D dictionary, outer dict is latitude, inner dict is longitude,
+#       value is the number of samples at the corresponding coordinates
+#
 def break_data_on_geo(data):
 
-    loc = { i : {j : 0 for j in range(-90,91)} for i in range(-180,181) }
-    close_longitude = 0
+    loc = { i : {j : 0 for j in range(-180,181)} for i in range(-90,91) }
     close_latitude = 0
+    close_longitude = 0
     
     for ele in data:
-        #Finds closest longitude
-        for longitude in loc:
-            if abs(longitude - ele[12]) < abs(close_longitude - ele[12]):
-                close_longitude = longitude
-                
+        #Convert current elements lat,lon cords to floats
+        curr_lat = float(ele[1])
+        curr_lon = float(ele[0])
+        
         #Finds closest latitude
-        for latitude in loc[close_longitude]:
-            if abs(latitude - ele[11]) < abs(close_latitude - ele[11]):
+        for latitude in loc.keys():
+            if abs(latitude - curr_lat) < abs(close_latitude - curr_lat):
                 close_latitude = latitude
                 
-        loc[close_longitude][close_latitude] += 1
+        #Finds closest longitude
+        for longitude in loc[close_latitude].keys():
+            if abs(longitude - curr_lon) < abs(close_longitude - curr_lon):
+                close_longitude = longitude
+        
+        #Increment the value at the correct lat,lon pair
+        loc[close_latitude][close_longitude] += 1
 
     return loc
+
+#Parses the center lat,lon of the passed data
+#
+#ARGS:
+#
+#   data            A list of lists, the inner lists second entry must be the center lat,long
+#
+#RETURNS:
+#
+#   A 2D list, the inner list is composed of strings corresponding to coordinates
+#
+def parse_center(data):
+    
+    center = []
+    
+    for ele in data:
+        
+        location = re.findall("-?\d+\.\d+", ele[1])
+        center.append(location)
+    
+    return center
 
 generate_heatmap()
