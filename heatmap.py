@@ -1,13 +1,15 @@
 import psycopg2
 import re
 from connect_db import connect_to_db
+from create_sql import generate_command
 import matplotlib.pyplot as plt
+import datetime as date
 from numpy import random
 
 
 #Generates heatmap.png based on the data pulled in the contained SQL command
 #
-def generate_heatmap():
+def generate_heatmap(start, end):
     
     ####################
     # Get Data From DB #
@@ -18,23 +20,10 @@ def generate_heatmap():
    
     #Create a cursor to execute an SQL command
     with conn.cursor() as curs:
-        
-        #SQL command to execute, currently hardcoded, should make this a passed parameter in later builds        
-        SQL = """
-                SELECT g.granule_name, ST_AsText(ST_Centroid(shape)), g.*
-        
-                FROM granule g 
-                
-                where g.platform_type in ('SA', 'SB') and
-                g.data_granule_type in ('SENTINEL_1A_FRAME', 'SENTINEL_1B_FRAME'  ) and
-\
-                substr(granule_name, 8, 3) = 'GRD' and
-\
-                shape is not null and
-\
-                start_time between '2021-01-01' and '2021-02-01'    
-            
-                order   by start_time asc;"""
+
+        #SQL command to execute, currently hardcoded, should make this a passed parameter in later builds     
+        SQL = generate_command(start, end)
+
         
         #Execute SQL and store the results into data
         curs.execute(SQL)
