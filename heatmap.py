@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import datetime as date
 from numpy import random, arange
 import shapefile
+import os
 
 
 #Generates heatmap.png based on the data pulled in the contained SQL command
@@ -24,6 +25,13 @@ def generate_heatmap():
 
         #SQL command to execute, currently hardcoded, should make this a passed parameter in later builds     
         SQL = generate_command(data_type="'GRD', 'SLC'")
+        db_host = os.getenv("DB_HOST")
+        db_name = os.getenv("DB_NAME")
+        db_username = os.getenv("DB_USERNAME")
+        db_password = os.getenv("DB_PASSWORD")
+    
+        cmd = "pgsql2shp -f shape_dump/sat_data -h " + db_host + " -u " + db_username + " -P " + db_password + " " + db_name + ' "' + SQL + '"'
+        os.system(cmd)
 
         #Execute SQL and store the results into data
         curs.execute(SQL)
@@ -131,4 +139,12 @@ def parse_center(data):
     
     return center
 
-generate_heatmap()
+
+
+
+SQL = generate_command(data_type="'GRD', 'SLC'")
+db_host = os.getenv("DB_HOST")
+db_name = os.getenv("DB_NAME")
+db_username = os.getenv("DB_USERNAME")
+db_password = os.getenv("DB_PASSWORD")
+

@@ -15,7 +15,7 @@ def generate_command(start=date.datetime(2021,1,1),
                      platform_type="'SA', 'SB'", 
                      data_type="'GRD'"):
     
-    cmd = """SELECT g.granule_name, ST_AsText(ST_Centroid(shape)), g.*
+    cmd = """SELECT ST_AsText(ST_Centroid(shape)), g.*
         
                 FROM granule g 
                 
