@@ -1,10 +1,6 @@
-import psycopg2
-import re
-from connect_db import connect_to_db
 from create_sql import generate_command
 import matplotlib.pyplot as plt
 import datetime as date
-from numpy import random, arange
 import shapefile
 import os
 
