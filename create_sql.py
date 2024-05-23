@@ -13,16 +13,16 @@ import datetime as date
 def generate_command(start=date.datetime(2021,1,1), 
                      end=date.datetime(2021,2,1), 
                      platform_type="'SA', 'SB'", 
-                     data_type="GRD"):
+                     data_type="'GRD'"):
     
-    cmd = """SELECT g.granule_name, ST_AsText(ST_Centroid(shape)), g.*
+    cmd = """SELECT ST_AsText(ST_Centroid(shape)), g.*
         
                 FROM granule g 
                 
                 where g.platform_type in (""" + platform_type + """) and
                 g.data_granule_type in ('SENTINEL_1A_FRAME', 'SENTINEL_1B_FRAME'  ) and
 
-                substr(granule_name, 8, 3) = '""" + data_type + """' and
+                substr(granule_name, 8, 3) in (""" + data_type + """) and
 
                 shape is not null and
 
