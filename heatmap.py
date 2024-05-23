@@ -43,7 +43,7 @@ def generate_heatmap():
             x = [i[0] for i in shape.shape.points[i_start:i_end]]
             y = [i[1] for i in shape.shape.points[i_start:i_end]]
             
-            plt.plot(x,y,color="green")
+            plt.plot(x,y,color="green", lw='0.2')
             
     #Plot the world map into the image  
     world_sf = shapefile.Reader("./Resources/world-boundaries.shp")
@@ -60,12 +60,12 @@ def generate_heatmap():
             x = [i[0] for i in shape.shape.points[i_start:i_end]]
             y = [i[1] for i in shape.shape.points[i_start:i_end]]
             
-            plt.plot(x,y,color="black")
+            plt.plot(x,y,color="black", lw='0.2')
     
     
     #Save the current plot to a .png file
     plt.axis('off')
-    plt.savefig("heatmap.png",bbox_inches='tight', pad_inches=0)     
+    plt.savefig("heatmap.png",bbox_inches='tight', pad_inches=0, dpi=1200)     
     
     #Clean up the resources folder
     os.system("rm -f Resources/sat_data.*")   
