@@ -4,7 +4,8 @@ from connect_db import connect_to_db
 from create_sql import generate_command
 import matplotlib.pyplot as plt
 import datetime as date
-from numpy import random
+from numpy import random, arange
+import shapefile
 
 
 #Generates heatmap.png based on the data pulled in the contained SQL command
@@ -22,9 +23,8 @@ def generate_heatmap():
     with conn.cursor() as curs:
 
         #SQL command to execute, currently hardcoded, should make this a passed parameter in later builds     
-        SQL = generate_command()
+        SQL = generate_command(data_type="'GRD', 'SLC'")
 
-        
         #Execute SQL and store the results into data
         curs.execute(SQL)
         data = curs.fetchall()
@@ -47,9 +47,27 @@ def generate_heatmap():
                 x.append(lon)
                 y.append(lat)
                 w.append(location[lat][lon])
+                
+        plt.hist2d(x,y,[360,360],weights=w)
+                
+        sf = shapefile.Reader("./Resources/world-administrative-boundaries.shp")
+
+        for shape in sf.shapeRecords():
+            for i in range(len(shape.shape.parts)):
+                i_start = shape.shape.parts[i]
+                
+                if i==len(shape.shape.parts)-1:
+                    i_end = len(shape.shape.points)
+                else:
+                    i_end = shape.shape.parts[i+1]
+                    
+                x = [i[0] for i in shape.shape.points[i_start:i_end]]
+                y = [i[1] for i in shape.shape.points[i_start:i_end]]
+                
+                plt.plot(x,y,color="black")
         
         #Create a 2D Histogram of the data and export it as png
-        plt.hist2d(x,y,[360,180],weights=w)
+        
         plt.axis('off')
         plt.savefig("heatmap.png",bbox_inches='tight', pad_inches=0)        
         
@@ -68,7 +86,7 @@ def generate_heatmap():
 #
 def break_data_on_geo(data):
 
-    loc = { i : {j            : 0 for j in range(-180,181)} for i in range(-90,91) }
+    loc = { i : {j : 0 for j in range(-180, 181)} for i in arange(-90, 90, 0.5) }
     close_latitude = 0
     close_longitude = 0
     
@@ -98,12 +116,12 @@ def break_data_on_geo(data):
 #
 #   data            A list of lists, the inner lists second entry must be the center lat,long
 #
-#RETURNS:start, end, data_type, platform_type
+#RETURNS:
 #
 #   A 2D list, the inner list is composed of strings corresponding to coordinates
 #
 def parse_center(data):
-               
+
     center = []
     
     for ele in data:
