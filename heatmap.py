@@ -31,9 +31,6 @@ def generate_heatmap():
     
     #Plot the data from the satellite into the image
     data_sf = shapefile.Reader("./Resources/sat_data.shp")        
-            
-    f = open("output.txt", "w")
-
     
     for shape in data_sf.shapeRecords():
          for i in range(len(shape.shape.parts)):
@@ -45,12 +42,12 @@ def generate_heatmap():
                 i_end = shape.shape.parts[i+1]
             
             if antimeridian.check_antimeridian(shape.shape.points[i_start:i_end]):
-                f.write("Flag Raised for: " + str(shape.shape.points[i_start:i_end]) + "\n")
-                
-            x = [i[0] for i in shape.shape.points[i_start:i_end]]
-            y = [i[1] for i in shape.shape.points[i_start:i_end]]
+                antimeridian.split_polygon(shape.shape.points[i_start:i_end])
+            else: 
+                x = [i[0] for i in shape.shape.points[i_start:i_end]]
+                y = [i[1] for i in shape.shape.points[i_start:i_end]]
             
-            plt.plot(x,y,color="green", lw='0.2')
+                plt.plot(x,y,color="green", lw='0.2')
             
     #Plot the world map into the image  
     world_sf = shapefile.Reader("./Resources/world-boundaries.shp")
@@ -71,7 +68,7 @@ def generate_heatmap():
             
             plt.plot(x,y,color="black", lw='0.2')
             
-    f.close()
+    plt.show()
     
     
     #Save the current plot to a .png file
@@ -83,6 +80,4 @@ def generate_heatmap():
     
     return
 
-
 generate_heatmap()
-
