@@ -1,5 +1,3 @@
-import matplotlib.pyplot as plt
-
 
 #Loops over a polygon and checks if it crosses the antimeridian
 def check_antimeridian(poly: list):
@@ -12,6 +10,18 @@ def check_antimeridian(poly: list):
             
             if abs(curr_vertex[0] - check_vertex[0]) >= 300:
                 return True
+    
+    return False
+
+#Checks if a line between two points would cross the antimeridian
+def edge_crosses_antimeridian(vertex1, vertex2):
+    
+    p1 = abs(vertex1[0])
+    p2 = abs(vertex2[0])
+    
+    #If the two points are not on the same said of the antimeridian return true
+    if not (((p1 > 180) and (p2 > 180)) or ((p1 < 180) and (p2 < 180))):
+        return True
     
     return False
 
@@ -30,24 +40,29 @@ def split_polygon(poly: list):
         if vertex[0] > 0:
             east_poly.append(vertex)
             
-            #Place vertex in corresponding position on the other side of the prime meridian in the west polygon
+            #Place vertex on the other side of the western antimeridian
             reflected = [vertex[0] - 360, vertex[1]]
             west_poly.append(reflected)
             
         else:
             west_poly.append(vertex)
             
-            #Place 
+            #Place vertex on the other side of the eastern antimeridian 
             reflected = [vertex[0] + 360, vertex[1]]
             east_poly.append(reflected)      
     
+    #A list of all the generated polygons
     all_poly = [west_poly, east_poly]
     
-    ###########################################
-    # Create new vertexes on the antimeridian #
-    ###########################################
+    ##########################################################
+    # Trim the polygons to be within one period of longitude #
+    ##########################################################
     
     for dir_poly in all_poly:
+        
+        ##############################################
+        # Create new vertexes along the antimeridian #
+        ##############################################
         
         i = 0
         while i < len(dir_poly) - 1:
@@ -73,7 +88,7 @@ def split_polygon(poly: list):
                 else:
                     new_vertex = [-180, dir_poly[i][1] + shift]
                 
-                dir_poly.insert(i+1, new_vertex)#DEBUG
+                dir_poly.insert(i+1, new_vertex)
                 
                 #Skip the entry we just inserted
                 i += 2
@@ -85,37 +100,21 @@ def split_polygon(poly: list):
         # Remove all vertexes past the antimeridian #
         #############################################
 
-        pop_dir = []
+        pop_index = []
         
         #Find indexes of all entries to remove
         for i in range(len(dir_poly)):
             if abs(dir_poly[i][0]) > 180:
-                pop_dir.append(i)
+                pop_index.append(i)
         
         #Remove entries in reverse order
-        pop_dir.sort(reverse=True)
-        for i in pop_dir:
+        pop_index.sort(reverse=True)
+        for i in pop_index:
             dir_poly.pop(i)
         
         #Ensure that the polygon is still closed
         if dir_poly[0] != dir_poly[-1]:
             dir_poly.append(dir_poly[0])
-            
-    for dir_poly in all_poly:
-        x = [ i[0] for i in dir_poly]
-        y = [ i[1] for i in dir_poly]
-        plt.plot(x,y)
     
-    return
+    return all_poly
 
-#Checks if a line between two points would cross the antimeridian
-def edge_crosses_antimeridian(vertex1, vertex2):
-    
-    p1 = abs(vertex1[0])
-    p2 = abs(vertex2[0])
-    
-    #If the two points are not on the same said of the antimeridian return true
-    if not (((p1 > 180) and (p2 > 180)) or ((p1 < 180) and (p2 < 180))):
-        return True
-    
-    return False
