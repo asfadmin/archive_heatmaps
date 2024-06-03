@@ -6,6 +6,7 @@ import pandas
 import shapely
 import os
 import antimeridian
+import quad_poly
 
 
 
@@ -18,7 +19,7 @@ def generate_heatmap():
     ####################
     
     #Gather variables needed to generate command to dump the requested shapefile  
-    SQL = generate_command(data_type="'GRD'")
+    SQL = generate_command(data_type="'OCN'")
     db_host = os.getenv("DB_HOST")
     db_name = os.getenv("DB_NAME")
     db_username = os.getenv("DB_USERNAME")
@@ -31,6 +32,15 @@ def generate_heatmap():
     ##############################################
     # Plot the shapefiles in Resources directory #
     ##############################################
+        
+        ##############
+        # World Data #
+        ##############
+    
+    #Read the data from the shapefile into a GeoDataFrame  
+    world_gdf = gps.read_file("./Resources/world-boundaries.shp")
+    
+    ax = world_gdf.plot(alpha=0.4,color="black")
     
         ############
         # Sat Data #
@@ -48,10 +58,9 @@ def generate_heatmap():
             old_poly = data_gdf.iloc[i] ##FIX THIS, ILOC IS DEPRACATED
             split_polys = antimeridian.split_polygon(list(data_gdf["geometry"][i].exterior.coords))
            
-            #Remove the old polygon from the data frame
+            #Remove the old polygon from the data frame, this increments our position in the dataframe
             data_gdf.drop(i,axis=0,inplace=True)
             
-           
             #Add two new rows to the end of the data frame using the split polygons
             temp = old_poly.to_dict()
             
@@ -63,17 +72,15 @@ def generate_heatmap():
             
         else:
             i += 1
+            
+    tree = quad_poly.QuadTree([-180,90],360,180,data_gdf["geometry"])
+    tree.split()
     
-    ax = data_gdf.plot(alpha=0.4,color="green")
+    for poly in data_gdf["geometry"]:
+        x,y = poly.exterior.xy
+        ax.plot(x,y,color="green",alpha=0.4)
     
-        ##############
-        # World Data #
-        ##############
-    
-    #Read the data from the shapefile into a GeoDataFrame  
-    world_gdf = gps.read_file("./Resources/world-boundaries.shp")
-    
-    world_gdf.plot(ax=ax,alpha=0.4,color="black")
+    tree.plot(ax=ax)
     
     #Show the resulting plot    
     plt.show()
