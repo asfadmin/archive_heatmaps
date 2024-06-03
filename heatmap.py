@@ -19,7 +19,7 @@ def generate_heatmap():
     ####################
     
     #Gather variables needed to generate command to dump the requested shapefile  
-    SQL = generate_command(data_type="'OCN'")
+    SQL = generate_command(data_type="'GRD'")
     db_host = os.getenv("DB_HOST")
     db_name = os.getenv("DB_NAME")
     db_username = os.getenv("DB_USERNAME")
@@ -73,13 +73,16 @@ def generate_heatmap():
         else:
             i += 1
             
+    #Create a quad tree with all of the satellite data and group similar satellite images       
     tree = quad_poly.QuadTree([-180,90],360,180,data_gdf["geometry"])
     tree.split()
     
+    #Graph the satellite images along with their centeroid
     for poly in data_gdf["geometry"]:
         x,y = poly.exterior.xy
         ax.plot(x,y,color="green",alpha=0.4)
     
+    #Plot the quad tree
     tree.plot(ax=ax)
     
     #Show the resulting plot    
