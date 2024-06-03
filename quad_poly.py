@@ -42,7 +42,7 @@ class QuadTree:
     
     #Recursivley split the current quad until the minimum size is reached or each quad contains only 1 child    
     def split(self):
-         # Stops recurssion                    print("\n" + str(type(self.children[0])))
+         # Stops recurssion
         if self.ysize > 0.1 and self.xsize > 0.1 and len(self.children) > 1:
             quads = self.quarter()
             
