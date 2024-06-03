@@ -97,28 +97,3 @@ class QuadTree:
                 child.print()
         else:
             print("Coords: (" + str(self.topLeft[0]) + ", " + str(self.topLeft[1]) + ")\tX Size: " + str(self.xsize) + "\tChildren: " + str(len(self.children)) + "\n")
-  
-
-
-
-
-
-        
-data = gpd.read_file("./Resources/sat_data.shp")
-
-polys = data["geometry"]
-
-tree = QuadTree([-180,90], 360, 180, polys)
-print("Splitting...")
-tree.split()
-
-for poly in polys:
-    x,y = poly.exterior.xy
-    plt.plot(x,y,alpha=0.1)
-
-print("Plotting...")    
-tree.plot()
-tree.print()
-
-
-plt.show()
