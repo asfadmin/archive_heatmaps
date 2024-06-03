@@ -62,7 +62,7 @@ class QuadTree:
         return self
       
     #Graph the parent quad and all of its children 
-    #NEEDS HANDELING FOR IF ax IS NOT A REAL AXES   
+
     def plot(self,ax = None):
         if any(isinstance(child, QuadTree) for child in self.children):
             for child in self.children:
