@@ -61,12 +61,13 @@ class QuadTree:
         
         return self
       
-    #Graph the parent quad and all of its children    
-    def plot(self) -> plt.Axes:
+    #Graph the parent quad and all of its children 
+    #NEEDS HANDELING FOR IF ax IS NOT A REAL AXES   
+    def plot(self,ax = None):
         if any(isinstance(child, QuadTree) for child in self.children):
             for child in self.children:
                 try:
-                    child.plot()
+                    child.plot(ax=ax)
                 except:
                     traceback.print_exception()
         else:
@@ -85,10 +86,11 @@ class QuadTree:
             x.append(x[0])
             y.append(y[0])
             
+            if isinstance(ax, plt.Axes):
+                ax.plot(x,y,color = "black")
+            else:
+                plt.plot(x,y,color = "black")
             
-            ax = plt.plot(x,y,color = "black")
-            
-            return ax
     
     #Debug Function; Print the parent quad and all of its children        
     def print(self):
