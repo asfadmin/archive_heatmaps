@@ -1,5 +1,5 @@
 # Archive Heatmap
-The goal of this project is to rewrite and consolidate the existing codebases for creating heatmaps of satellite data
+The goal of this project is to rewrite and consolidate the existing codebases for creating heatmaps of satellite data to create an interactive heatmap
 
 ## Compiling Locally
 1. Create a `cred.env` file in the same directory as heatmap.py
@@ -14,8 +14,12 @@ The goal of this project is to rewrite and consolidate the existing codebases fo
 4. Now you can run `python3 heatmap.py` to create a heatmap
 
 ## Dependancies
-- PyShp
+- postgis
+- shapely
+- pandas
+- geopandas
 - matplotlib
 
 ## Contributing
 Elliott Lewandowski
+Lily Larson
