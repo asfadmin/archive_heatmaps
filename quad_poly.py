@@ -1,9 +1,6 @@
 import matplotlib.pyplot as plt
 import shapely.geometry
-import geopandas as gpd
-import numpy as np
 import traceback
-import math
 
 #Each child has a polygon and a count for how many images it represents
 class ChildNode:
@@ -15,9 +12,13 @@ class ChildNode:
         out = str(self.poly) + "\t" + str(self.count)
         return out
     
-    def plot(self):
+    def plot(self, ax):
         x,y = self.poly.exterior.xy
-        plt.plot(x,y)
+        
+        if isinstance(ax, plt.Axes):
+            ax.plot(x,y)
+        else:
+            plt.plot(x,y)
    
 #Quad Tree data strucutre that handles shapely polygons
 class QuadTree:
@@ -121,7 +122,7 @@ class QuadTree:
         return self           
       
     #Graph the parent quad and all of its children    
-    def plot(self):
+    def plot(self,ax):
         if any(isinstance(child, QuadTree) for child in self.children):
             for child in self.children:
                 try:
@@ -145,12 +146,14 @@ class QuadTree:
             x.append(x[0])
             y.append(y[0])
             
-            
-            plt.plot(x,y,color = "black")
+            if isinstance(ax, plt.Axes):
+                ax.plot(x,y,color="black")
+            else:
+                plt.plot(x,y,color = "black")
             
             #Graph the children of the QuadTree
             for child in self.children:
-                child.plot()
+                child.plot(ax=ax)
     
     #Debug Function; Print the parent quad and all of its children        
     def print(self):
