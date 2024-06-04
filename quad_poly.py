@@ -126,7 +126,7 @@ class QuadTree:
         if any(isinstance(child, QuadTree) for child in self.children):
             for child in self.children:
                 try:
-                    child.plot()
+                    child.plot(ax=ax)
                 except:
                     traceback.print_exception()
         else:
