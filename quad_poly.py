@@ -54,7 +54,7 @@ class QuadTree:
         return [topLeft, topMid, center, leftMid]
     
     #Recursivley split the current quad until the minimum size is reached or each quad contains only 1 child    
-    def split(self):
+    def split(self, tolerance):
         # Recursivley split data until each quadrant contains one child or has reached minimum size
         if self.ysize > 0.1 and self.xsize > 0.1 and len(self.children) > 1:
             quads = self.quarter()
@@ -70,21 +70,27 @@ class QuadTree:
             
             # Split each child quadrant
             for child in self.children:
-                    child.split()
+                    child.split(1)
                     
         #If we reach minimum size and have more than one child check those children for merging            
         elif len(self.children) > 1:
             #Copy children so we can modify the data structure without effecting the QuadTree Node
             children_copy = self.children.copy()
+            new_children = []
             
             while 0 < len(children_copy):
+                
+                merged = False
                 
                 #Remove a child from the list and create a new child node
                 merge_child = ChildNode(children_copy.pop(0).poly.normalize(), 1)
                 
                 for other in children_copy:
                     #Check if the two polygons are equal within a tolerance
-                    if merge_child.poly.equals_exact(other.poly.normalize(),1):
+                    if merge_child.poly.equals_exact(other.poly.normalize(),tolerance=tolerance):
+                        
+                        #Set flag
+                        merged = True
                         
                         #Remove the other node that we are merging with out first
                         children_copy.remove(other)
@@ -106,7 +112,9 @@ class QuadTree:
                         merge_child.poly = shapely.geometry.Polygon(merge_coords)
                         merge_child.count += 1
                         
-                        print(merge_child.print())
+                new_children.append(merge_child)
+                
+            self.children = new_children
                         
         
         return self           
@@ -185,7 +193,7 @@ children = [ChildNode(shapely.geometry.Polygon([[1,1],[1,4],[4,4],[4,1],[1,1]]))
 tree = QuadTree([0,5.5], 5.5, 5.5, children=children)
 #tree = QuadTree([-180,90], 360, 180, polys)
 print("Splitting...")
-tree.split()
+tree.split(1)
 
 
 print("Plotting...")
@@ -198,5 +206,7 @@ for child in children:
 
 print("Plotting...")    
 tree.plot()
+
+tree.print()
 
 plt.show()
