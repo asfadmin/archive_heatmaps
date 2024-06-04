@@ -15,7 +15,11 @@ class ChildNode:
         out = str(self.poly) + "\t" + str(self.count)
         return out
     
-
+    def plot(self):
+        x,y = self.poly.exterior.xy
+        plt.plot(x,y)
+   
+#Quad Tree data strucutre that handles shapely polygons
 class QuadTree:
     def __init__(self, topL: list, xsize, ysize, children: list):
         self.topLeft = topL
@@ -72,27 +76,23 @@ class QuadTree:
             for child in self.children:
                     child.split(1)
                     
-        #If we reach minimum size and have more than one child check those children for merging            
+        #Handle merging polygons if necessary          
         elif len(self.children) > 1:
+            
             #Copy children so we can modify the data structure without effecting the QuadTree Node
             children_copy = self.children.copy()
             new_children = []
             
             while 0 < len(children_copy):
                 
-                merged = False
-                
                 #Remove a child from the list and create a new child node
-                merge_child = ChildNode(children_copy.pop(0).poly.normalize(), 1)
+                merge_child = ChildNode(children_copy.pop(0).poly.normalize())
                 
                 for other in children_copy:
                     #Check if the two polygons are equal within a tolerance
                     if merge_child.poly.equals_exact(other.poly.normalize(),tolerance=tolerance):
                         
-                        #Set flag
-                        merged = True
-                        
-                        #Remove the other node that we are merging with out first
+                        #Remove the other node that we are merging with our first
                         children_copy.remove(other)
                         
                         #Get x, y coordinates for all the vertices of both polygons
@@ -113,7 +113,8 @@ class QuadTree:
                         merge_child.count += 1
                         
                 new_children.append(merge_child)
-                
+            
+            #Update the Quadrants children    
             self.children = new_children
                         
         
@@ -128,6 +129,7 @@ class QuadTree:
                 except:
                     traceback.print_exception()
         else:
+            #Graph the boundarys of the QuadTree
             x = [self.topLeft[0]]
             y = [self.topLeft[1]]
             
@@ -145,6 +147,10 @@ class QuadTree:
             
             
             plt.plot(x,y,color = "black")
+            
+            #Graph the children of the QuadTree
+            for child in self.children:
+                child.plot()
     
     #Debug Function; Print the parent quad and all of its children        
     def print(self):
@@ -170,43 +176,3 @@ class QuadTree:
             sum = len(self.children)
         
         return sum
-    
-            
-
-
-
-
-
-        
-#data = gpd.read_file("./Resources/sat_data.shp")
-
-rng = np.random.default_rng()
-children = [ChildNode(shapely.geometry.Polygon([[1,1],[1,4],[4,4],[4,1],[1,1]])),ChildNode(shapely.geometry.Polygon([[1.2,1.2], [3.8,1.2], [3.8,3.8], [1.2,3.8], [1.2,1.2]])),ChildNode(shapely.geometry.box(0,0,1,1))]
-
-#polys = data["geometry"]
-
-#for i in range(101):
-#    x = rng.random()
-#    y = rng.random()
-#    polys.append(shapely.geometry.box(x,y,x+0.1,y+0.1))
-
-tree = QuadTree([0,5.5], 5.5, 5.5, children=children)
-#tree = QuadTree([-180,90], 360, 180, polys)
-print("Splitting...")
-tree.split(1)
-
-
-print("Plotting...")
-for child in children:   
-    x,y = child.poly.exterior.xy
-    plt.plot(x,y,alpha=0.6)
-    
-    x,y = child.poly.centroid.xy
-    plt.scatter(x,y)
-
-print("Plotting...")    
-tree.plot()
-
-tree.print()
-
-plt.show()
