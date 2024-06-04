@@ -3,7 +3,7 @@ import shapely.geometry
 import geopandas as gpd
 import numpy as np
 import traceback
-from math import dist
+import math
 
 #Each child has a polygon and a count for how many images it represents
 class ChildNode:
@@ -79,13 +79,34 @@ class QuadTree:
             
             while 0 < len(children_copy):
                 
-                #Remove one child from the copied list and normalize it
-                child = children_copy.pop(0).poly.normalize()
-
+                #Remove a child from the list and create a new child node
+                merge_child = ChildNode(children_copy.pop(0).poly.normalize(), 1)
+                
                 for other in children_copy:
                     #Check if the two polygons are equal within a tolerance
-                    if child.equals_exact(other.poly.normalize(),1):
-                        pass
+                    if merge_child.poly.equals_exact(other.poly.normalize(),1):
+                        
+                        #Remove the other node that we are merging with out first
+                        children_copy.remove(other)
+                        
+                        #Get x, y coordinates for all the vertices of both polygons
+                        x_other, y_other = other.poly.normalize().exterior.xy
+                        x_child, y_child = merge_child.poly.exterior.xy
+                        
+                        #Average the vertexes of the contained polygons
+                        i = 0
+                        merge_coords = []
+                        while i < len(x_child):
+                            x_merge = ((x_child[i] + x_other[i]) / 2)
+                            y_merge = ((y_child[i] + y_other[i]) / 2)
+                            merge_coords.append([x_merge, y_merge])
+                            i += 1
+                        
+                        #Update the merged child based on the new vertexes and increment count
+                        merge_child.poly = shapely.geometry.Polygon(merge_coords)
+                        merge_child.count += 1
+                        
+                        print(merge_child.print())
                         
         
         return self           
@@ -177,8 +198,5 @@ for child in children:
 
 print("Plotting...")    
 tree.plot()
-
-tree.print()
-
 
 plt.show()
