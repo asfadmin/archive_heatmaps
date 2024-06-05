@@ -19,7 +19,7 @@ def generate_command(
 ):
 
     cmd = (
-        """SELECT ST_AsText(ST_Centroid(shape)), g.*
+        """SELECT shape, g.granule_name, g.platform_type, g.data_sensor_type, g.start_time, g.end_time
 
                 FROM granule g
 
