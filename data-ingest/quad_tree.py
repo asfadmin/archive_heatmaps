@@ -2,25 +2,15 @@ import matplotlib.pyplot as plt
 import shapely.geometry
 import traceback
 
-class AncestorNode:
-    
-    def __init__(self,ancestors: list):
-        self.ancestors = ancestors
-        self.count = len(ancestors)
-    
-    def to_string(self):
-        out = "Ancestors: " + str(self.ancestors)
-        return out
-
 #Each child has a polygon and a count for how many images it represents
 class ChildNode:
     
-    def __init__(self,poly: shapely.geometry.Polygon, ancestors: AncestorNode):
+    def __init__(self,poly: shapely.geometry.Polygon, ancestors: list):
         self.poly = poly
         self.ancestors = ancestors
         
     def print(self) -> str:
-        out = "Self: " + str(self.poly) + "\tChildren: " + str(self.ancestors.count) + "\n" + self.ancestors.to_string()
+        out = "Child: " + str(self.poly) + "\tAncestors: " + str(len(self.ancestors)) + "\n" + str(self.ancestors)
         return out
     
     def plot(self, ax = None):
@@ -72,13 +62,7 @@ class QuadTree:
         return [topLeft, topMid, center, leftMid]
     
     #Recursivley split the current quad until the minimum size is reached or each quad contains only 1 child    
-    def split(self, tolerance):
-        
-        
-#        print("New Quad Before: ")
-#        for child in self.children:
-#           print("\tChild: " + hex(id(child)) + "\n\tAncestors: " + str(child.ancestors))
-            
+    def split(self, tolerance): 
             
         # Recursivley split data until each quadrant contains one child or has reached minimum size
         if self.ysize > 0.1 and self.xsize > 0.1 and len(self.children) > 1:
@@ -107,17 +91,17 @@ class QuadTree:
             while 0 < len(children_copy):
                 
                 #Remove a child from the list and create a new child node
-                merge_child = ChildNode(children_copy.pop(0).poly.normalize(), AncestorNode([]))
+                merge_child = ChildNode(children_copy.pop(0).poly.normalize(), [])
                 
                 for other in children_copy:
-                    #Check if the two polygons are equal within a tolerance
+                    #Check if the two polygons are equal within tolerance
                     if merge_child.poly.equals_exact(other.poly.normalize(),tolerance=tolerance):                       
                         
                         #Add combined polygons to the new polygons ancestory
-                        merge_child.ancestors.ancestors.append(merge_child.poly.normalize())
-                        merge_child.ancestors.ancestors.append(other.poly.normalize())
+                        merge_child.ancestors.append(merge_child.poly.normalize())
+                        merge_child.ancestors.append(other.poly.normalize())
                         
-                        #Remove the other node that we are merging with our first
+                        #Remove the other node that we are merging
                         children_copy.remove(other)
                         
                         #Get x, y coordinates for all the vertices of both polygons
@@ -139,13 +123,7 @@ class QuadTree:
                 new_children.append(merge_child)
             
             #Update the Quadrants children    
-            self.children = new_children  
-            
-#            print("New Quad After: ")
-#            for child in self.children:
-#                print("\tChild: " + hex(id(child)) + "\n\tAncestors: " + str(child.ancestors))  
-                
-     
+            self.children = new_children     
       
     #Graph the parent quad and all of its children    
     def plot(self,ax = None):
@@ -205,22 +183,3 @@ class QuadTree:
             sum = len(self.children)
         
         return sum
-
-
-
-children = [ChildNode(shapely.geometry.Polygon([[1,1],[1,4],[4,4],[4,1],[1,1]]), AncestorNode([])),
-            ChildNode(shapely.geometry.Polygon([[0.9,0],[0.9,0.9],[0,0.9],[0,0],[0.9,0]]), AncestorNode([])),
-            ChildNode(shapely.geometry.Polygon([[1.2,1.2], [3.8,1.2], [3.8,3.8], [1.2,3.8], [1.2,1.2]]), AncestorNode([])),
-            ChildNode(shapely.geometry.box(0,0,1,1), AncestorNode([]))]
-
-tree = QuadTree([0,5.5], 5.5, 5.5, children=children)
-print("Splitting...")
-tree.split(1)
-
-print("Plotting...")    
-tree.plot()
-
-tree.print()
-
-
-plt.show()
