@@ -6,7 +6,7 @@ import pandas
 import shapely
 import os
 import antimeridian
-import quad_poly
+import quad_tree
 
 
 
@@ -75,10 +75,10 @@ def generate_heatmap():
             
     children = []
     for poly in data_gdf["geometry"]:
-                children.append(quad_poly.ChildNode(poly))
+                children.append(quad_tree.ChildNode(poly))
             
     #Create a quad tree with all of the satellite data and group similar satellite images       
-    tree = quad_poly.QuadTree([-180,90],360,180,children)
+    tree = quad_tree.QuadTree([-180,90],360,180,children)
     print("Original Children: " + str(len(tree.children)))
     tree.split(1)
     print("Split Children: " + str(tree.count_children()))
