@@ -71,7 +71,7 @@ class QuadTree:
             [
                 self.topLeft[0] + (self.xsize / 2),
                 self.topLeft[1] - (self.ysize / 2),
-            ],  # noqa: 501
+            ],
             self.xsize / 2,
             self.ysize / 2,
             [],

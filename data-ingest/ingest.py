@@ -68,7 +68,7 @@ def generate_heatmap():
 
             # Store a reference to the original polygon and
             #   split on the antimeridian
-            old_poly = data_gdf.iloc[i]  # FIX THIS, ILOC IS DEPRACATED
+            old_poly = data_gdf.iloc[i]
             split_polys = antimeridian.split_polygon(
                 list(data_gdf["geometry"][i].exterior.coords)
             )
