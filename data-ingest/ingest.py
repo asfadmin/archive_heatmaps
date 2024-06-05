@@ -75,7 +75,7 @@ def generate_heatmap():
             
     children = []
     for poly in data_gdf["geometry"]:
-                children.append(quad_tree.ChildNode(poly))
+                children.append(quad_tree.ChildNode(poly, []))
             
     #Create a quad tree with all of the satellite data and group similar satellite images       
     tree = quad_tree.QuadTree([-180,90],360,180,children)
@@ -85,6 +85,8 @@ def generate_heatmap():
     
     #Plot the quad tree which contains the satellit data
     tree.plot(ax=ax)
+    
+    tree.print()
     
     #Show the resulting plot    
     plt.show()
