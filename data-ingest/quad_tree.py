@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import shapely.geometry as geom
+import geopandas as gpd
+import pandas as pd
 import traceback
 from copy import deepcopy
 
@@ -11,6 +13,20 @@ class ChildNode:
 
     def __str__(self):
         return str(self.data)
+
+    def standardize(self):
+
+        child = deepcopy(self)
+        new_child = ChildNode({})
+
+        # Store geometry in new child and remove it from self
+        new_child.data["geometry"] = deepcopy(child.data["geometry"])
+        child.data.pop("geometry", None)
+
+        # Make child an ancestor of new child
+        new_child.data["ancestors"] = [child]
+
+        return new_child
 
     def print(self) -> str:
         out = "Child: " + str(hex(id(self))) + " " + str(self)
@@ -144,21 +160,56 @@ class QuadTree:
                             merge_coords.append([x_merge, y_merge])
                             i += 1
 
-                        # Add combined polygons to the new polygons ancestory
-                        merge_child.data["ancestors"].append(deepcopy(merge_child))
+                        # Create a copy of the original node
+                        original = deepcopy(merge_child)
+
+                        # Remove geometry from ancestor nodes
+                        original.data.pop("geometry", None)
+                        other.data.pop("geometry", None)
+
+                        # Add ancestors to new node
+                        merge_child.data["ancestors"].append(original)
                         merge_child.data["ancestors"].append(other)
 
+                        # Store every key other than ancestors
+                        rem = []
                         for key in merge_child.data:
-                            if key != "ancestors":
-                                merge_child.data[key] = None
+                            if key != "ancestors" and key != "geometry":
+                                rem.append(key)
 
-                        # Update the merged child based on the new vertexes
+                        # Remove all stored keys
+                        for key in rem:
+                            merge_child.data.pop(key)
+
+                        # Create the geometry key
                         merge_child.data["geometry"] = geom.Polygon(merge_coords)
+
+                if merge_child.data["ancestors"] == []:
+                    merge_child = merge_child.standardize()
 
                 new_children.append(merge_child)
 
             # Update the Quadrants children
             self.children = new_children
+
+        # Standardize children of nodes with only 1 child
+        elif len(self.children) == 1:
+            new_child = self.children[0].standardize()
+            self.children = [new_child]
+
+    def to_gdf(self, crs) -> gpd.GeoDataFrame:
+        gdf = gpd.GeoDataFrame(columns=["geometry", "ancestors"], crs=crs)
+        if any(isinstance(child, QuadTree) for child in self.children):
+            for child in self.children:
+                gdf = pd.concat([gdf, child.to_gdf(crs)], ignore_index=True)
+        else:
+            for child in self.children:
+                gdf.loc[len(gdf.index)] = [
+                    child.data["geometry"],
+                    child.data["ancestors"],
+                ]
+
+        return gdf
 
     # Graph the parent quad and all of its children
     def plot(self, ax=None):
@@ -167,7 +218,7 @@ class QuadTree:
                 try:
                     child.plot(ax=ax)
                 except Exception:
-                    traceback.print_exception()
+                    print(traceback.format_exc())
         else:
             # Graph the boundarys of the QuadTree
             x = [self.topLeft[0]]
@@ -202,20 +253,22 @@ class QuadTree:
         else:
             child_string = ""
             for youngster in self.children:
-                child_string += youngster.print() + "\n"
+                if len(youngster.data["ancestors"]) > 2:
+                    child_string += youngster.print() + "\n"
             if child_string == "":
                 child_string = "None"
-            print(
-                "Coords: ("
-                + str(self.topLeft[0])
-                + ", "
-                + str(self.topLeft[1])
-                + ")\tX Size: "
-                + str(self.xsize)
-                + "\tChildren: "
-                + child_string
-                + "\n"
-            )
+            else:
+                print(
+                    "Coords: ("
+                    + str(self.topLeft[0])
+                    + ", "
+                    + str(self.topLeft[1])
+                    + ")\tX Size: "
+                    + str(self.xsize)
+                    + "\tChildren: "
+                    + child_string
+                    + "\n"
+                )
 
     # Debug Function; Count total number of children a QuadTree contains
     def count_children(self):
