@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import shapely.geometry as geom
 import traceback
+from copy import deepcopy
 
 
 # Each child has a polygon and a count for how many images it represents
@@ -8,14 +9,12 @@ class ChildNode:
     def __init__(self, data: dict):
         self.data = data
 
+    def __str__(self):
+        return str(self.data)
+
     def print(self) -> str:
-        out = (
-            "Child: "
-            + str(hex(id(self)))
-            + str(self.data)
-            + "\tAncestors: "
-            + str(len(self.data["ancestors"]))
-        )
+        out = "Child: " + str(hex(id(self))) + " " + str(self)
+
         return out
 
     def plot(self, ax=None):
@@ -146,7 +145,7 @@ class QuadTree:
                             i += 1
 
                         # Add combined polygons to the new polygons ancestory
-                        merge_child.data["ancestors"].append(merge_child)
+                        merge_child.data["ancestors"].append(deepcopy(merge_child))
                         merge_child.data["ancestors"].append(other)
 
                         for key in merge_child.data:
