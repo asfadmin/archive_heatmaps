@@ -5,23 +5,21 @@ import traceback
 
 # Each child has a polygon and a count for how many images it represents
 class ChildNode:
-    def __init__(self, poly: geom.Polygon, ancestors: list):
-        self.poly = poly
-        self.ancestors = ancestors
+    def __init__(self, data: dict):
+        self.data = data
 
     def print(self) -> str:
         out = (
             "Child: "
-            + str(self.poly)
+            + str(hex(id(self)))
+            + str(self.data)
             + "\tAncestors: "
-            + str(len(self.ancestors))
-            + "\n"
-            + str(self.ancestors)
+            + str(len(self.data["ancestors"]))
         )
         return out
 
     def plot(self, ax=None):
-        x, y = self.poly.exterior.xy
+        x, y = self.data["geometry"].exterior.xy
 
         if isinstance(ax, plt.Axes):
             ax.plot(x, y)
@@ -37,12 +35,12 @@ class QuadTree:
         self.ysize = ysize
         self.children = children
 
-    def add_child(self, child: geom.Polygon):
+    def add_child(self, child: dict):
         self.children.append(child)
 
     # Check if the center point of a polygon is within the current quad
-    def contains(self, poly: geom.Polygon):
-        center = poly.centroid
+    def contains(self, node: dict):
+        center = node.data["geometry"].centroid
 
         # Checks if the polygon is outside of the current quadrant
         if (
@@ -68,10 +66,7 @@ class QuadTree:
         )
 
         center = QuadTree(
-            [
-                self.topLeft[0] + (self.xsize / 2),
-                self.topLeft[1] - (self.ysize / 2),
-            ],
+            [self.topLeft[0] + (self.xsize / 2), self.topLeft[1] - (self.ysize / 2)],
             self.xsize / 2,
             self.ysize / 2,
             [],
@@ -99,7 +94,7 @@ class QuadTree:
             # Categorize current children
             for child in self.children:
                 for quad in quads:
-                    if quad.contains(child.poly):
+                    if quad.contains(child):
                         quad.add_child(child)
 
             # Store a reference to the contained quads
@@ -119,25 +114,27 @@ class QuadTree:
 
             while 0 < len(children):
 
-                # Remove a child from the list and create a new child node
-                merge_child = ChildNode(children.pop(0).poly.normalize(), [])
+                # Remove a child from the list
+                merge_child = children.pop(0)
+
+                # Normalize the new childs geometry
+                merge_child.data["geometry"].normalize()
 
                 for other in children:
-                    # Check if the two polygons are equal within tolerance
-                    if merge_child.poly.equals_exact(
-                        other.poly.normalize(), tolerance=tolerance
-                    ):
+                    # Normalize the other childs geometry
+                    other.data["geometry"].normalize()
 
-                        # Add combined polygons to the new polygons ancestory
-                        merge_child.ancestors.append(merge_child.poly)
-                        merge_child.ancestors.append(other.poly)
+                    # Check if the two polygons are equal within tolerance
+                    if merge_child.data["geometry"].equals_exact(
+                        other.data["geometry"], tolerance=tolerance
+                    ):
 
                         # Remove the other node that we are merging
                         children.remove(other)
 
                         # Get x, y coords for the vertices of both polygons
-                        x_other, y_other = other.poly.normalize().exterior.xy
-                        x_child, y_child = merge_child.poly.exterior.xy
+                        x_other, y_other = other.data["geometry"].exterior.xy
+                        x_child, y_child = merge_child.data["geometry"].exterior.xy
 
                         # Average the vertexes of the contained polygons
                         i = 0
@@ -148,8 +145,16 @@ class QuadTree:
                             merge_coords.append([x_merge, y_merge])
                             i += 1
 
+                        # Add combined polygons to the new polygons ancestory
+                        merge_child.data["ancestors"].append(merge_child)
+                        merge_child.data["ancestors"].append(other)
+
+                        for key in merge_child.data:
+                            if key != "ancestors":
+                                merge_child.data[key] = None
+
                         # Update the merged child based on the new vertexes
-                        merge_child.poly = geom.Polygon(merge_coords)
+                        merge_child.data["geometry"] = geom.Polygon(merge_coords)
 
                 new_children.append(merge_child)
 
@@ -198,7 +203,7 @@ class QuadTree:
         else:
             child_string = ""
             for youngster in self.children:
-                child_string += youngster.print() + "\t"
+                child_string += youngster.print() + "\n"
             if child_string == "":
                 child_string = "None"
             print(

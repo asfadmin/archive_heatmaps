@@ -90,8 +90,10 @@ def generate_heatmap():
             i += 1
 
     children = []
-    for poly in data_gdf["geometry"]:
-        children.append(quad_tree.ChildNode(poly, []))
+    for row in data_gdf.iterrows():
+        curr = row[1].to_dict()
+        curr["ancestors"] = []
+        children.append(quad_tree.ChildNode(curr))
 
     # Create a quad tree with all of the satellite data
     #   and group similar satellite images
