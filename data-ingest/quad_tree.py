@@ -6,7 +6,7 @@ import traceback
 from copy import deepcopy
 
 
-# Each child has a polygon and a count for how many images it represents
+# Each child has a dict containing its corresponding data
 class ChildNode:
     def __init__(self, data: dict):
         self.data = data
@@ -14,6 +14,8 @@ class ChildNode:
     def __str__(self):
         return str(self.data)
 
+    # Return a standardized version of the current node
+    #   The new version has two keys, 'geometry' and 'ancestors'
     def standardize(self):
 
         child = deepcopy(self)
@@ -24,15 +26,17 @@ class ChildNode:
         child.data.pop("geometry", None)
 
         # Make child an ancestor of new child
-        new_child.data["ancestors"] = [child]
+        new_child.data["ancestors"] = [child.data]
 
         return new_child
 
+    # Debug Function; Return a string of the current Node
     def print(self) -> str:
         out = "Child: " + str(hex(id(self))) + " " + str(self)
 
         return out
 
+    # Debug Function; Plots the contents of the geometry key
     def plot(self, ax=None):
         x, y = self.data["geometry"].exterior.xy
 
@@ -168,8 +172,8 @@ class QuadTree:
                         other.data.pop("geometry", None)
 
                         # Add ancestors to new node
-                        merge_child.data["ancestors"].append(original)
-                        merge_child.data["ancestors"].append(other)
+                        merge_child.data["ancestors"].append(original.data)
+                        merge_child.data["ancestors"].append(other.data)
 
                         # Store every key other than ancestors
                         rem = []
@@ -184,6 +188,7 @@ class QuadTree:
                         # Create the geometry key
                         merge_child.data["geometry"] = geom.Polygon(merge_coords)
 
+                # Standardize children who do not merge
                 if merge_child.data["ancestors"] == []:
                     merge_child = merge_child.standardize()
 
@@ -197,6 +202,7 @@ class QuadTree:
             new_child = self.children[0].standardize()
             self.children = [new_child]
 
+    # Export the results of the quad tree to a GeoDataFrame
     def to_gdf(self, crs) -> gpd.GeoDataFrame:
         gdf = gpd.GeoDataFrame(columns=["geometry", "ancestors"], crs=crs)
         if any(isinstance(child, QuadTree) for child in self.children):
@@ -211,7 +217,7 @@ class QuadTree:
 
         return gdf
 
-    # Graph the parent quad and all of its children
+    # Debug Function; Graph the parent quad and all of its children
     def plot(self, ax=None):
         if any(isinstance(child, QuadTree) for child in self.children):
             for child in self.children:

@@ -1,5 +1,4 @@
 from create_sql import generate_command
-import matplotlib.pyplot as plt
 import geopandas as gps
 import shapely
 import os
@@ -9,7 +8,7 @@ import quad_tree
 
 # Generates heatmap.png based on the data
 #   pulled in the generated SQL command
-def generate_heatmap():
+def ingest_data():
 
     ####################
     # Get Data From DB #
@@ -17,7 +16,7 @@ def generate_heatmap():
 
     # Gather variables needed to generate command
     #   to dump the requested shapefile
-    SQL = generate_command(data_type="'OCN'")
+    SQL = generate_command(data_type="'GRD'")
     db_host = os.getenv("DB_HOST")
     db_name = os.getenv("DB_NAME")
     db_username = os.getenv("DB_USERNAME")
@@ -39,26 +38,14 @@ def generate_heatmap():
     )
     os.system(cmd)
 
-    ##############################################
-    # Plot the shapefiles in Resources directory #
-    ##############################################
-
-    ##############
-    # World Data #
-    ##############
-
-    # Read the data from the shapefile into a GeoDataFrame
-    world_gdf = gps.read_file("./Resources/world-boundaries.shp")
-
-    ax = world_gdf.plot(alpha=0.4, color="black")
-
-    ############
-    # Sat Data #
-    ############
+    #####################################################
+    # Read the dumped shapefile and format its contents #
+    #####################################################
 
     # Read the data from the shapefile into a GeoDataFrame
     data_gdf = gps.read_file("./Resources/sat_data.shp")
 
+    # Break polygons that cross the antimeridian
     i = 0
     while i < len(data_gdf["geometry"]):
 
@@ -89,6 +76,10 @@ def generate_heatmap():
         else:
             i += 1
 
+    ###########################################
+    # Merge similar records using a quad tree #
+    ###########################################
+
     children = []
     for row in data_gdf.iterrows():
         curr = row[1].to_dict()
@@ -99,16 +90,22 @@ def generate_heatmap():
     #   and group similar satellite images
     tree = quad_tree.QuadTree([-180, 90], 360, 180, children)
     print("Original Children: " + str(len(tree.children)))
+
     tree.split(1)
     print("Split Children: " + str(tree.count_children()))
 
-    # Plot the quad tree which contains the satellit data
-    tree.plot(ax=ax)
+    #########################################################
+    # Export the results of the quad tree to a geojson file #
+    #########################################################
 
-    tree.print()
+    # Convert quad tree data to a geojson string
+    out_gdf = tree.to_gdf(data_gdf.crs)
+    output = out_gdf.to_json()
 
-    # Show the resulting plot
-    plt.show()
+    # Write the geojson string to a file
+    file = open("sat_data.geojson", "w")
+    file.write(output)
+    file.close()
 
     # Clean up the resources folder
     os.system("rm -f Resources/sat_data.*")
@@ -116,4 +113,4 @@ def generate_heatmap():
     return
 
 
-generate_heatmap()
+ingest_data()
