@@ -210,6 +210,8 @@ class QuadTree:
                 gdf = pd.concat([gdf, child.to_gdf(crs)], ignore_index=True)
         else:
             for child in self.children:
+                for ancestor in child.data["ancestors"]:
+                    ancestor.pop("ancestors", None)
                 gdf.loc[len(gdf.index)] = [
                     child.data["geometry"],
                     child.data["ancestors"],
