@@ -1,7 +1,5 @@
 import matplotlib.pyplot as plt
 import shapely.geometry as geom
-import geopandas as gpd
-import pandas as pd
 import traceback
 from copy import deepcopy
 
@@ -202,22 +200,32 @@ class QuadTree:
             new_child = self.children[0].standardize()
             self.children = [new_child]
 
-    # Export the results of the quad tree to a GeoDataFrame
-    def to_gdf(self, crs) -> gpd.GeoDataFrame:
-        gdf = gpd.GeoDataFrame(columns=["geometry", "ancestors"], crs=crs)
+    # Export the results of the quad tree to a dictionary
+    def to_dict(self) -> dict:
+
+        dictionary = {"geometry": [], "ancestors": []}
+
+        # Recurse through children
         if any(isinstance(child, QuadTree) for child in self.children):
             for child in self.children:
-                gdf = pd.concat([gdf, child.to_gdf(crs)], ignore_index=True)
+                child_dict = child.to_dict()
+
+                # Add child dictionarys to current dict
+                for key in dictionary:
+                    for ent in child_dict[key]:
+                        dictionary[key].append(ent)
+
         else:
             for child in self.children:
+                # Remove unnecessary field from ancestors
                 for ancestor in child.data["ancestors"]:
                     ancestor.pop("ancestors", None)
-                gdf.loc[len(gdf.index)] = [
-                    child.data["geometry"],
-                    child.data["ancestors"],
-                ]
 
-        return gdf
+                # Add child data to the dictionary
+                dictionary["geometry"].append(child.data["geometry"])
+                dictionary["ancestors"].append(child.data["ancestors"])
+
+        return dictionary
 
     # Debug Function; Graph the parent quad and all of its children
     def plot(self, ax=None):
