@@ -1,6 +1,6 @@
 from create_sql import generate_command
-import matplotlib.pyplot as plt
-import geopandas as gps
+import geopandas as gpd
+import pandas as pd
 import shapely
 import os
 import antimeridian
@@ -9,7 +9,7 @@ import quad_tree
 
 # Generates heatmap.png based on the data
 #   pulled in the generated SQL command
-def generate_heatmap():
+def ingest_data():
 
     ####################
     # Get Data From DB #
@@ -39,74 +39,93 @@ def generate_heatmap():
     )
     os.system(cmd)
 
-    ##############################################
-    # Plot the shapefiles in Resources directory #
-    ##############################################
-
-    ##############
-    # World Data #
-    ##############
+    #####################################################
+    # Read the dumped shapefile and format its contents #
+    #####################################################
 
     # Read the data from the shapefile into a GeoDataFrame
-    world_gdf = gps.read_file("./Resources/world-boundaries.shp")
+    data_gdf = gpd.read_file("./Resources/sat_data.shp")
 
-    ax = world_gdf.plot(alpha=0.4, color="black")
+    # Make a dict to store split polygons data
+    split_dict = {}
+    for key in data_gdf.columns:
+        split_dict[key] = []
 
-    ############
-    # Sat Data #
-    ############
-
-    # Read the data from the shapefile into a GeoDataFrame
-    data_gdf = gps.read_file("./Resources/sat_data.shp")
-
+    # Break polygons that cross the antimeridian
     i = 0
     while i < len(data_gdf["geometry"]):
 
         if antimeridian.check_antimeridian(
-            list(data_gdf["geometry"][i].exterior.coords)
+            list(data_gdf.iloc[i]["geometry"].exterior.coords)
         ):
 
             # Store a reference to the original polygon and
             #   split on the antimeridian
-            old_poly = data_gdf.iloc[i]  # FIX THIS, ILOC IS DEPRACATED
+            old_poly = data_gdf.iloc[i]
+
             split_polys = antimeridian.split_polygon(
-                list(data_gdf["geometry"][i].exterior.coords)
+                list(data_gdf.iloc[i]["geometry"].exterior.coords)
             )
 
             # Remove the old polygon from the data frame,
             #   this increments our position in the dataframe
             data_gdf.drop(i, axis=0, inplace=True)
 
-            # Add two new rows to the data frame using the split polygons
-            temp = old_poly.to_dict()
+            # Reset index of the data frame
+            data_gdf.reset_index(inplace=True, drop=True)
 
-            temp["geometry"] = shapely.Polygon(split_polys[0])
-            data_gdf = data_gdf._append(temp, ignore_index=True)
+            # Copy the original polys data into two dicts
+            west = old_poly.to_dict()
+            east = old_poly.to_dict()
 
-            temp["geometry"] = shapely.Polygon(split_polys[1])
-            data_gdf = data_gdf._append(temp, ignore_index=True)
+            # Update the dicts geometrys based on split polygons
+            west["geometry"] = shapely.Polygon(split_polys[0])
+            east["geometry"] = shapely.Polygon(split_polys[1])
+
+            # Add data from two prior dicts to split_dict
+            for key in split_dict.keys():
+                split_dict[key].append(west[key])
+                split_dict[key].append(east[key])
 
         else:
             i += 1
 
+    # Form a GeoDataFrame from the split polygons
+    split_gdf = gpd.GeoDataFrame(split_dict, crs=data_gdf.crs)
+
+    # Concatonate the two GeoDataFrames
+    data_gdf = pd.concat([data_gdf, split_gdf])
+    data_gdf.reset_index(inplace=True, drop=True)
+
+    ###########################################
+    # Merge similar records using a quad tree #
+    ###########################################
+
     children = []
-    for poly in data_gdf["geometry"]:
-        children.append(quad_tree.ChildNode(poly, []))
+    for row in data_gdf.iterrows():
+        curr = row[1].to_dict()
+        curr["ancestors"] = []
+        children.append(quad_tree.ChildNode(curr))
 
     # Create a quad tree with all of the satellite data
     #   and group similar satellite images
     tree = quad_tree.QuadTree([-180, 90], 360, 180, children)
-    print("Original Children: " + str(len(tree.children)))
+
     tree.split(1)
-    print("Split Children: " + str(tree.count_children()))
 
-    # Plot the quad tree which contains the satellit data
-    tree.plot(ax=ax)
+    #########################################################
+    # Export the results of the quad tree to a geojson file #
+    #########################################################
 
-    tree.print()
+    # Convert quad tree data to a geojson string
+    out_dict = tree.to_dict()
+    out_gdf = gpd.GeoDataFrame(out_dict, crs=data_gdf.crs)
+    output = out_gdf.to_json()
 
-    # Show the resulting plot
-    plt.show()
+    # Write the geojson string to a file
+    file = open("sat_data.geojson", "w")
+    file.write(output)
+    file.close()
 
     # Clean up the resources folder
     os.system("rm -f Resources/sat_data.*")
@@ -114,4 +133,4 @@ def generate_heatmap():
     return
 
 
-generate_heatmap()
+ingest_data()
