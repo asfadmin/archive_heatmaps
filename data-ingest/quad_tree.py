@@ -169,25 +169,32 @@ class QuadTree:
                         original.data.pop("geometry", None)
                         other.data.pop("geometry", None)
 
-                        # Add ancestors to new node
-                        merge_child.data["ancestors"].append(original.data)
-                        merge_child.data["ancestors"].append(other.data)
+                        # Reduces work if the current merge node has not been merged before
+                        if "ancestors" not in merge_child.data.keys():
+                            merge_child.data = {
+                                "ancestors": [original.data, other.data]
+                            }
 
-                        # Store every key other than ancestors
-                        rem = []
-                        for key in merge_child.data:
-                            if key != "ancestors" and key != "geometry":
-                                rem.append(key)
+                        else:
+                            # Add ancestors to new node
+                            merge_child.data["ancestors"].append(original.data)
+                            merge_child.data["ancestors"].append(other.data)
 
-                        # Remove all stored keys
-                        for key in rem:
-                            merge_child.data.pop(key)
+                            # Store every key other than ancestors
+                            rem = []
+                            for key in merge_child.data:
+                                if key != "ancestors" and key != "geometry":
+                                    rem.append(key)
+
+                            # Remove all stored keys
+                            for key in rem:
+                                merge_child.data.pop(key)
 
                         # Create the geometry key
                         merge_child.data["geometry"] = geom.Polygon(merge_coords)
 
                 # Standardize children who do not merge
-                if merge_child.data["ancestors"] == []:
+                if "ancestors" not in merge_child.data.keys():
                     merge_child = merge_child.standardize()
 
                 new_children.append(merge_child)
@@ -217,10 +224,6 @@ class QuadTree:
 
         else:
             for child in self.children:
-                # Remove unnecessary field from ancestors
-                for ancestor in child.data["ancestors"]:
-                    ancestor.pop("ancestors", None)
-
                 # Add child data to the dictionary
                 dictionary["geometry"].append(child.data["geometry"])
                 dictionary["ancestors"].append(child.data["ancestors"])
