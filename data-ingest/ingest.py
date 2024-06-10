@@ -129,8 +129,7 @@ def ingest_data():
     # Create a quad tree with all of the satellite data
     #   and group similar satellite images
     tree = quad_tree.QuadTree(data_gdf)
-
-    tree.merge(1)
+    tree.merge(0.1)
 
     t5 = time.time()
     print("Split Quad Tree: " + str(t5 - t4))

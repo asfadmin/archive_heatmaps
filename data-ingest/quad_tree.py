@@ -1,6 +1,5 @@
-import matplotlib.pyplot as plt
+import shapely.geometry as geom
 import geopandas as gpd
-import traceback
 from copy import deepcopy
 
 
@@ -8,9 +7,6 @@ from copy import deepcopy
 class ChildNode:
     def __init__(self, data: dict):
         self.data = data
-
-    def __str__(self):
-        return str(self.data)
 
     # Return a standardized version of the current node
     #   The new version has two keys, 'geometry' and 'ancestors'
@@ -28,134 +24,84 @@ class ChildNode:
 
         return new_child
 
-    # Debug Function; Return a string of the current Node
-    def print(self) -> str:
-        out = "Child: " + str(hex(id(self))) + " " + str(self)
-
-        return out
-
-    # Debug Function; Plots the contents of the geometry key
-    def plot(self, ax=None):
-        x, y = self.data["geometry"].exterior.xy
-
-        if isinstance(ax, plt.Axes):
-            ax.plot(x, y)
-        else:
-            plt.plot(x, y)
-
 
 # Quad Tree data strucutre that handles shapely polygons
 class QuadTree:
     def __init__(self, children: gpd.GeoDataFrame):
-        self.children = children
+        self.children = []
+
+        for row in children.iterrows():
+            curr = row[1].to_dict()
+            self.children.append(ChildNode(curr))
 
     def merge(self, tolerance):
-        count = 0
         i = 0
-        while i < self.children.shape[0] - 1:
+        while i < len(self.children) - 1:
             if (
-                self.children["geometry"]
-                .iloc[i]
+                self.children[i]
+                .data["geometry"]
+                .normalize()
                 .equals_exact(
-                    self.children["geometry"].iloc[i + 1], tolerance=tolerance
+                    self.children[i + 1].data["geometry"].normalize(),
+                    tolerance=tolerance,
                 )
             ):
-                print("merging")
-                count += 1
-            i += 1
 
-        print("Total Merged: " + str(count))
+                # Get store nodes we are merging and remove them from children
+                first = self.children.pop(i)
+                second = self.children.pop(i)
+
+                # Store x,y locations of both nodes geometrys vertexes
+                x1, y1 = first.data["geometry"].exterior.xy
+                x2, y2 = second.data["geometry"].exterior.xy
+
+                # Remove geometry from merging nodes
+                first.data.pop("geometry", None)
+                second.data.pop("geometry", None)
+
+                # Average vertex coordinates
+                merge_coords = []
+                j = 0
+                while j < len(x1):
+                    x_merge = (x1[j] + x2[j]) / 2
+                    y_merge = (y1[j] + y2[j]) / 2
+                    merge_coords.append([x_merge, y_merge])
+                    j += 1
+
+                # If this is the first merge and the child is not yet standerdized
+                if "ancestors" not in first.data.keys():
+                    ancestors = [first.data, second.data]
+
+                # If this is the second merge handle pre-existing ancestors
+                else:
+                    ancestors = []
+                    for anc in first.data["ancestors"]:
+                        ancestors.append(anc)
+
+                merge_dict = {}
+                merge_dict["geometry"] = geom.Polygon(merge_coords)
+                merge_dict["ancestors"] = ancestors
+
+                merge_child = ChildNode(merge_dict)
+
+                self.children.insert(i, merge_child)
+
+            else:
+                self.children[i] = self.children[i].standardize()
+                i += 1
+
+        if "ancestors" not in self.children[-1].data.keys():
+            self.children[-1] = self.children[-1].standardize()
 
     # Export the results of the quad tree to a dictionary
     def to_dict(self) -> dict:
 
         dictionary = {"geometry": [], "ancestors": []}
 
-        # Recurse through children
-        if any(isinstance(child, QuadTree) for child in self.children):
-            for child in self.children:
-                child_dict = child.to_dict()
-
-                # Add child dictionarys to current dict
-                for key in dictionary:
-                    for ent in child_dict[key]:
-                        dictionary[key].append(ent)
-
-        else:
-            for child in self.children:
-                # Add child data to the dictionary
-                dictionary["geometry"].append(child.data["geometry"])
-                dictionary["ancestors"].append(child.data["ancestors"])
+        for child in self.children:
+            print(child)
+            print(child.data)
+            dictionary["geometry"].append(child.data["geometry"])
+            dictionary["ancestors"].append(child.data["ancestors"])
 
         return dictionary
-
-    # Debug Function; Graph the parent quad and all of its children
-    def plot(self, ax=None):
-        if any(isinstance(child, QuadTree) for child in self.children):
-            for child in self.children:
-                try:
-                    child.plot(ax=ax)
-                except Exception:
-                    print(traceback.format_exc())
-        else:
-            # Graph the boundarys of the QuadTree
-            x = [self.topLeft[0]]
-            y = [self.topLeft[1]]
-
-            x.append(self.topLeft[0] + self.xsize)
-            y.append(self.topLeft[1])
-
-            x.append(self.topLeft[0] + self.xsize)
-            y.append(self.topLeft[1] - self.ysize)
-
-            x.append(self.topLeft[0])
-            y.append(self.topLeft[1] - self.ysize)
-
-            x.append(x[0])
-            y.append(y[0])
-
-            if isinstance(ax, plt.Axes):
-                ax.plot(x, y, color="black")
-            else:
-                plt.plot(x, y, color="black")
-
-            # Graph the children of the QuadTree
-            for child in self.children:
-                child.plot(ax=ax)
-
-    # Debug Function; Print the parent quad and all of its children
-    def print(self):
-        if any(isinstance(child, QuadTree) for child in self.children):
-            for child in self.children:
-                child.print()
-        else:
-            child_string = ""
-            for youngster in self.children:
-                if len(youngster.data["ancestors"]) > 2:
-                    child_string += youngster.print() + "\n"
-            if child_string == "":
-                child_string = "None"
-            else:
-                print(
-                    "Coords: ("
-                    + str(self.topLeft[0])
-                    + ", "
-                    + str(self.topLeft[1])
-                    + ")\tX Size: "
-                    + str(self.xsize)
-                    + "\tChildren: "
-                    + child_string
-                    + "\n"
-                )
-
-    # Debug Function; Count total number of children a QuadTree contains
-    def count_children(self):
-        sum = 0
-
-        if any(isinstance(child, QuadTree) for child in self.children):
-            for child in self.children:
-                sum += child.count_children()
-        else:
-            sum = len(self.children)
-
-        return sum
