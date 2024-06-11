@@ -75,8 +75,11 @@ class QuadTree:
                 # If this is the second merge handle pre-existing ancestors
                 else:
                     ancestors = []
+
                     for anc in first.data["ancestors"]:
                         ancestors.append(anc)
+
+                    ancestors.append(second.data)
 
                 merge_dict = {}
                 merge_dict["geometry"] = geom.Polygon(merge_coords)
@@ -86,8 +89,10 @@ class QuadTree:
 
                 self.children.insert(i, merge_child)
 
-            else:
+            elif "ancestors" not in self.children[i].data.keys():
                 self.children[i] = self.children[i].standardize()
+                i += 1
+            else:
                 i += 1
 
         if "ancestors" not in self.children[-1].data.keys():
@@ -99,8 +104,6 @@ class QuadTree:
         dictionary = {"geometry": [], "ancestors": []}
 
         for child in self.children:
-            print(child)
-            print(child.data)
             dictionary["geometry"].append(child.data["geometry"])
             dictionary["ancestors"].append(child.data["ancestors"])
 
