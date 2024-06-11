@@ -26,7 +26,7 @@ class ChildNode:
 
 
 # Quad Tree data strucutre that handles shapely polygons
-class QuadTree:
+class DataMerger:
     def __init__(self, children: gpd.GeoDataFrame):
         self.children = []
 
