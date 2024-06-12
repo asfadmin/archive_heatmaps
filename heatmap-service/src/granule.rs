@@ -15,6 +15,19 @@ impl TryFrom<&Feature> for Granule {
     type Error = Box<dyn std::error::Error>;
 
     fn try_from(feature: &Feature) -> Result<Granule, Self::Error> {
+        let ancestors: Vec<serde_json::Map<String, serde_json::Value>> = feature
+            .properties
+            .clone()
+            .ok_or("feature has no properties associated with it")?
+            .get("ancestors")
+            .unwrap()
+            .clone()
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|feature| feature.as_object().unwrap().clone())
+            .collect();
+
         Ok(Granule {
             polygon: feature
                 .geometry
@@ -23,16 +36,10 @@ impl TryFrom<&Feature> for Granule {
                 .value
                 .try_into()
                 .unwrap(),
-            ancestors: FeatureCollection::from_json_object(
-                feature
-                    .properties
-                    .clone()
-                    .ok_or("feature has no properties associated with it")?,
-            )?
-            .features
-            .iter()
-            .map(|feature| feature.try_into().unwrap())
-            .collect(),
+            ancestors: ancestors
+                .iter()
+                .map(|feature| feature.try_into().unwrap())
+                .collect(),
         })
     }
 }
@@ -46,14 +53,12 @@ pub struct Ancestor {
     end_time: NaiveDateTime,
 }
 
-impl TryFrom<&Feature> for Ancestor {
+impl TryFrom<&serde_json::Map<String, serde_json::Value>> for Ancestor {
     type Error = Box<dyn std::error::Error>;
 
-    fn try_from(feature: &Feature) -> Result<Ancestor, Self::Error> {
-        let properties = feature
-            .properties
-            .clone()
-            .ok_or("no properties on ancestor")?;
+    fn try_from(
+        properties: &serde_json::Map<String, serde_json::Value>,
+    ) -> Result<Ancestor, Self::Error> {
         Ok(Ancestor {
             granule_name: properties
                 .get("GRANULE_NA")

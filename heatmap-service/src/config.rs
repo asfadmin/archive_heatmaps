@@ -5,5 +5,5 @@ pub struct Config {
     pub server_address: String,
     pub cache_ttl: usize,
     pub geo_json_path: crate::geo_json_path::GeoJsonPath,
-    pub redis: deadpool_redis::Config,
+    pub redis: Option<deadpool_redis::Config>,
 }

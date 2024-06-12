@@ -29,17 +29,20 @@ async fn main() -> std::io::Result<()> {
     std::env::set_var("RUST_LOG", "actix_web=info");
     env_logger::init();
 
-    let config: Config = ::config::Config::builder()
+    let mut config: Config = ::config::Config::builder()
         .add_source(::config::Environment::default())
         .build()
         .expect("config loading failed")
         .try_deserialize()
         .expect("invalid configuration");
 
-    let redis_pool = config
-        .redis
-        .create_pool(None)
-        .expect("redis connection failed");
+    let redis_pool = config.redis.map(|redis_unwrapped| {
+        redis_unwrapped
+            .create_pool(None)
+            .expect("redis connection failed")
+    });
+
+    config.redis = None;
 
     let feature_collection: FeatureCollection = config
         .geo_json_path
@@ -50,15 +53,19 @@ async fn main() -> std::io::Result<()> {
     let bind_address = config.server_address.clone();
 
     HttpServer::new(move || {
-        App::new()
+        let mut app = App::new()
             .wrap(Logger::default())
             .wrap(Compress::default())
             .wrap(RedisCacheSet::default())
             .wrap(RedisCacheGet::default())
-            .app_data(Data::new(redis_pool.clone()))
-            .app_data(Data::new(config.clone()))
+            .service(heatmap_query);
+
+        if let Some(redis_pool_unwrapped) = redis_pool.clone() {
+            app = app.app_data(Data::new(redis_pool_unwrapped.clone()));
+        }
+
+        app.app_data(Data::new(config.clone()))
             .app_data(Data::new(feature_collection.clone()))
-            .service(heatmap_query)
     })
     .bind(bind_address)?
     .run()

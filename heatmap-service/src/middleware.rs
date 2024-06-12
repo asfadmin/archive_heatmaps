@@ -111,9 +111,7 @@ where
                 body.extend_from_slice(&chunk?);
             }
 
-            let redis_pool = req
-                .app_data::<Data<deadpool_redis::Pool>>()
-                .actix_expect("no redis pool in app data")?;
+            let redis_pool_wrapped = req.app_data::<Data<deadpool_redis::Pool>>();
 
             let config = req
                 .app_data::<Data<Config>>()
@@ -124,34 +122,36 @@ where
                     config.cache_ttl,
                 ));
 
-            if let Some(accept_encoding) = req.get_header::<AcceptEncoding>() {
-                for preference in accept_encoding.ranked() {
-                    let encoding = match preference {
-                        Preference::Specific(encoding) => match encoding {
-                            Encoding::Known(encoding) => encoding,
-                            Encoding::Unknown(_) => continue,
-                        },
-                        Preference::Any => continue,
-                    };
+            if let Some(redis_pool) = redis_pool_wrapped {
+                if let Some(accept_encoding) = req.get_header::<AcceptEncoding>() {
+                    for preference in accept_encoding.ranked() {
+                        let encoding = match preference {
+                            Preference::Specific(encoding) => match encoding {
+                                Encoding::Known(encoding) => encoding,
+                                Encoding::Unknown(_) => continue,
+                            },
+                            Preference::Any => continue,
+                        };
 
-                    if let Some(response) = cache_get(
-                        serde_json::to_string(&CachingKey {
-                            payload: String::from_utf8_lossy(&body).to_string(),
-                            content_encoding: Encoding::Known(encoding),
-                        })
-                        .actix_map_result()?,
-                        redis_pool,
-                    )
-                    .await?
-                    {
-                        let (request, _pl) = req.into_parts();
-                        let response = HttpResponse::Ok()
-                            .content_type("application/json")
-                            .append_header(encoding)
-                            .body(base64::decode(response).actix_map_result()?)
-                            .map_into_right_body();
+                        if let Some(response) = cache_get(
+                            serde_json::to_string(&CachingKey {
+                                payload: String::from_utf8_lossy(&body).to_string(),
+                                content_encoding: Encoding::Known(encoding),
+                            })
+                            .actix_map_result()?,
+                            redis_pool,
+                        )
+                        .await?
+                        {
+                            let (request, _pl) = req.into_parts();
+                            let response = HttpResponse::Ok()
+                                .content_type("application/json")
+                                .append_header(encoding)
+                                .body(base64::decode(response).actix_map_result()?)
+                                .map_into_right_body();
 
-                        return Ok(ServiceResponse::new(request, response));
+                            return Ok(ServiceResponse::new(request, response));
+                        }
                     }
                 }
             }
@@ -202,10 +202,7 @@ where
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
         let caching_information = req.extensions().get::<CachingInformation>().cloned();
-        let redis_pool = req
-            .app_data::<Data<deadpool_redis::Pool>>()
-            .expect("redis pool not found (did redis pool get added to app data?)")
-            .clone();
+        let redis_pool = req.app_data::<Data<deadpool_redis::Pool>>().cloned();
 
         WrapperStream {
             fut: self.service.call(req),
@@ -226,7 +223,7 @@ where
     fut: S::Future,
     _t: PhantomData<(B,)>,
     caching_information: Option<CachingInformation>,
-    redis_pool: Data<deadpool_redis::Pool>,
+    redis_pool: Option<Data<deadpool_redis::Pool>>,
 }
 
 impl<S, B> Future for WrapperStream<S, B>
@@ -276,29 +273,31 @@ pub struct BodyCacher<B> {
     body: B,
     body_accum: BytesMut,
     caching_information: Option<CachingInformation>,
-    redis_pool: Data<deadpool_redis::Pool>,
+    redis_pool: Option<Data<deadpool_redis::Pool>>,
 }
 
 #[pin_project::pinned_drop]
 impl<B> PinnedDrop for BodyCacher<B> {
     fn drop(self: Pin<&mut Self>) {
         if let Some(caching_information) = self.caching_information.clone() {
-            let redis_pool = self.redis_pool.clone();
+            let redis_pool_wrapped = self.redis_pool.clone();
             let body = base64::encode(&self.body_accum);
 
             rt::spawn(async move {
                 // there isnt much we can do for proper error handling here :/
-                let mut connection = redis_pool.get().await.expect("redis connection failed");
+                if let Some(redis_pool) = redis_pool_wrapped {
+                    let mut connection = redis_pool.get().await.expect("redis connection failed");
 
-                connection
-                    .set_ex::<_, _, ()>(
-                        serde_json::to_string(&caching_information.key)
-                            .expect("serde json serialization failed"),
-                        body,
-                        caching_information.cache_ttl,
-                    )
-                    .await
-                    .expect("setting redis cache failed");
+                    connection
+                        .set_ex::<_, _, ()>(
+                            serde_json::to_string(&caching_information.key)
+                                .expect("serde json serialization failed"),
+                            body,
+                            caching_information.cache_ttl,
+                        )
+                        .await
+                        .expect("setting redis cache failed");
+                }
             });
         }
     }
