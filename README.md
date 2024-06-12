@@ -26,4 +26,5 @@ The goal of this project is to rewrite and consolidate the existing codebases fo
 
 ## Contributing
 Elliott Lewandowski
+
 Lily Larson
