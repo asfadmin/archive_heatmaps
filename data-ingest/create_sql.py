@@ -41,7 +41,7 @@ def generate_command(
         + end.strftime("%x")
         + """'
 
-                order   by start_time asc;"""
+                order   by shape asc;"""
     )
 
     return cmd

@@ -1,13 +1,15 @@
 from create_sql import generate_command
+from dotenv import load_dotenv
 import geopandas as gpd
 import pandas as pd
+import antimeridian
+import data_merger
+import datetime
 import shapely
 import os
-import antimeridian
-import quad_tree
 
 
-# Generates heatmap.png based on the data
+# Generates sat_data.geojson based on the data
 #   pulled in the generated SQL command
 def ingest_data():
 
@@ -15,9 +17,11 @@ def ingest_data():
     # Get Data From DB #
     ####################
 
-    # Gather variables needed to generate command
-    #   to dump the requested shapefile
-    SQL = generate_command(data_type="'OCN'")
+    # Generate SQL command to filter data in PostgreSQL DB
+    SQL = generate_command(data_type="'OCN'", end=datetime.datetime(2021, 2, 1))
+
+    # Load credentials to connect to DB
+    load_dotenv()
     db_host = os.getenv("DB_HOST")
     db_name = os.getenv("DB_NAME")
     db_username = os.getenv("DB_USERNAME")
@@ -37,6 +41,7 @@ def ingest_data():
         + SQL
         + '"'
     )
+    os.system("mkdir Resources")
     os.system(cmd)
 
     #####################################################
@@ -48,35 +53,29 @@ def ingest_data():
 
     # Make a dict to store split polygons data
     split_dict = {}
+    same_dict = {}
     for key in data_gdf.columns:
         split_dict[key] = []
+        same_dict[key] = []
 
     # Break polygons that cross the antimeridian
     i = 0
-    while i < len(data_gdf["geometry"]):
+    for row in data_gdf.iterrows():
 
-        if antimeridian.check_antimeridian(
-            list(data_gdf.iloc[i]["geometry"].exterior.coords)
-        ):
+        # Store the data of the current row
+        row_data = row[1]
 
-            # Store a reference to the original polygon and
-            #   split on the antimeridian
-            old_poly = data_gdf.iloc[i]
+        # Check if the polygon crosses the antimeridian
+        if antimeridian.check_antimeridian(list(row_data["geometry"].exterior.coords)):
 
+            # Split the polygon into two new polygons
             split_polys = antimeridian.split_polygon(
-                list(data_gdf.iloc[i]["geometry"].exterior.coords)
+                list(row_data["geometry"].exterior.coords)
             )
 
-            # Remove the old polygon from the data frame,
-            #   this increments our position in the dataframe
-            data_gdf.drop(i, axis=0, inplace=True)
-
-            # Reset index of the data frame
-            data_gdf.reset_index(inplace=True, drop=True)
-
             # Copy the original polys data into two dicts
-            west = old_poly.to_dict()
-            east = old_poly.to_dict()
+            west = row_data.to_dict()
+            east = row_data.to_dict()
 
             # Update the dicts geometrys based on split polygons
             west["geometry"] = shapely.Polygon(split_polys[0])
@@ -87,38 +86,36 @@ def ingest_data():
                 split_dict[key].append(west[key])
                 split_dict[key].append(east[key])
 
+        # Add the data as it was to the same_dict
         else:
-            i += 1
+            for key in same_dict.keys():
+                same_dict[key].append(row_data[key])
 
-    # Form a GeoDataFrame from the split polygons
+        i += 1
+
+    # Form a GeoDataFrame from the two dicts
     split_gdf = gpd.GeoDataFrame(split_dict, crs=data_gdf.crs)
+    same_gdf = gpd.GeoDataFrame(same_dict, crs=data_gdf.crs)
 
     # Concatonate the two GeoDataFrames
-    data_gdf = pd.concat([data_gdf, split_gdf])
+    data_gdf = pd.concat([same_gdf, split_gdf])
     data_gdf.reset_index(inplace=True, drop=True)
 
-    ###########################################
-    # Merge similar records using a quad tree #
-    ###########################################
+    #########################
+    # Merge similar records #
+    #########################
 
-    children = []
-    for row in data_gdf.iterrows():
-        curr = row[1].to_dict()
-        curr["ancestors"] = []
-        children.append(quad_tree.ChildNode(curr))
-
-    # Create a quad tree with all of the satellite data
-    #   and group similar satellite images
-    tree = quad_tree.QuadTree([-180, 90], 360, 180, children)
-
-    tree.split(1)
+    # Create a DataMerger with all of the satellite data
+    #   and merge similar satellite images
+    merger = data_merger.DataMerger(data_gdf)
+    merger.merge(0.1)
 
     #########################################################
     # Export the results of the quad tree to a geojson file #
     #########################################################
 
-    # Convert quad tree data to a geojson string
-    out_dict = tree.to_dict()
+    # Convert merged data to a geojson string
+    out_dict = merger.to_dict()
     out_gdf = gpd.GeoDataFrame(out_dict, crs=data_gdf.crs)
     output = out_gdf.to_json()
 
@@ -128,7 +125,7 @@ def ingest_data():
     file.close()
 
     # Clean up the resources folder
-    os.system("rm -f Resources/sat_data.*")
+    os.system("rm -rf ./Resources")
 
     return
 
