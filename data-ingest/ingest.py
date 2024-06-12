@@ -1,11 +1,12 @@
 from create_sql import generate_command
+from dotenv import load_dotenv
 import geopandas as gpd
 import pandas as pd
-import shapely
-import os
 import antimeridian
 import data_merger
 import datetime
+import shapely
+import os
 
 
 # Generates sat_data.geojson based on the data
@@ -16,11 +17,11 @@ def ingest_data():
     # Get Data From DB #
     ####################
 
-    # Gather variables needed to generate command
-    #   to dump the requested shapefile
-    SQL = generate_command(
-        data_type="'OCN', 'GRD', 'SLC'", end=datetime.datetime(2021, 2, 1)
-    )
+    # Generate SQL command to filter data in PostgreSQL DB
+    SQL = generate_command(data_type="'OCN'", end=datetime.datetime(2021, 2, 1))
+
+    # Load credentials to connect to DB
+    load_dotenv()
     db_host = os.getenv("DB_HOST")
     db_name = os.getenv("DB_NAME")
     db_username = os.getenv("DB_USERNAME")
@@ -40,6 +41,7 @@ def ingest_data():
         + SQL
         + '"'
     )
+    os.system("mkdir Resources")
     os.system(cmd)
 
     #####################################################
@@ -65,6 +67,7 @@ def ingest_data():
 
         # Check if the polygon crosses the antimeridian
         if antimeridian.check_antimeridian(list(row_data["geometry"].exterior.coords)):
+
             # Split the polygon into two new polygons
             split_polys = antimeridian.split_polygon(
                 list(row_data["geometry"].exterior.coords)
@@ -122,7 +125,7 @@ def ingest_data():
     file.close()
 
     # Clean up the resources folder
-    os.system("rm -f Resources/sat_data.*")
+    os.system("rm -rf ./Resources")
 
     return
 
