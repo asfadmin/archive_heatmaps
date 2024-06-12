@@ -39,3 +39,5 @@ mod tests {
         assert_eq!(None.to_partial_string(), "%");
     }
 }
+
+

@@ -1,11 +1,12 @@
-use crate::{config::Config, error::ActixMapResult, redis};
+use crate::{
+    config::Config, dataset::Dataset, error::ActixMapResult, heatmap_response::HeatmapResponse,
+    redis,
+};
 use actix_web::{
     web::{Data, Json},
     Error, HttpResponse,
 };
 use serde::{Deserialize, Serialize};
-
-use crate::database::{Dataset, HeatmapResponse};
 
 #[derive(Deserialize, Serialize)]
 pub struct HeatmapQuery {
@@ -15,8 +16,8 @@ pub struct HeatmapQuery {
 #[actix_web::post("/query")]
 async fn heatmap_query(
     query: Json<HeatmapQuery>,
-    db_pool: Data<deadpool_postgres::Pool>,
     redis_pool: Data<deadpool_redis::Pool>,
+    feature_collection: Data<geojson::FeatureCollection>,
     config: Data<Config>,
 ) -> Result<HttpResponse, Error> {
     let query = query.0;
@@ -35,9 +36,7 @@ async fn heatmap_query(
             .body(response));
     }
 
-    let client = db_pool.get().await.actix_map_result()?;
-
-    let response_data = HeatmapResponse::from_database(query.dataset, &client).await?;
+    let response_data = HeatmapResponse::from_geojson(query.dataset, &feature_collection);
 
     let response = HttpResponse::Ok().json(&response_data);
 

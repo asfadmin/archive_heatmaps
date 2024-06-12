@@ -3,15 +3,20 @@ use actix_web::{
     web::Data,
     App, HttpServer,
 };
-use tokio_postgres::NoTls;
+
+use geojson::FeatureCollection;
 
 use crate::config::Config;
 use middleware::{RedisCacheGet, RedisCacheSet};
 use query::heatmap_query;
 
 mod config;
-mod database;
+mod dataset;
 mod error;
+mod geo_json_path;
+mod granule;
+mod heatmap_data;
+mod heatmap_response;
 mod middleware;
 mod query;
 mod redis;
@@ -31,15 +36,16 @@ async fn main() -> std::io::Result<()> {
         .try_deserialize()
         .expect("invalid configuration");
 
-    let postgres_pool = config
-        .postgres
-        .create_pool(None, NoTls)
-        .expect("postgres connection failed");
-
     let redis_pool = config
         .redis
         .create_pool(None)
         .expect("redis connection failed");
+
+    let feature_collection: FeatureCollection = config
+        .geo_json_path
+        .clone()
+        .try_into()
+        .expect("malformed geojson");
 
     let bind_address = config.server_address.clone();
 
@@ -49,9 +55,9 @@ async fn main() -> std::io::Result<()> {
             .wrap(Compress::default())
             .wrap(RedisCacheSet::default())
             .wrap(RedisCacheGet::default())
-            .app_data(Data::new(postgres_pool.clone()))
             .app_data(Data::new(redis_pool.clone()))
             .app_data(Data::new(config.clone()))
+            .app_data(Data::new(feature_collection.clone()))
             .service(heatmap_query)
     })
     .bind(bind_address)?

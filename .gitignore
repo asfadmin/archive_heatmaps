@@ -1,5 +1,0 @@
-*.env
-*.png
-heatmap-service/target
-heatmap-service/.env
-heatmap-service/.env_tests
