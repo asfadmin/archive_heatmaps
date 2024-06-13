@@ -1,7 +1,4 @@
-use crate::{
-    config::Config, dataset::Dataset, error::ActixMapResult, heatmap_response::HeatmapResponse,
-    redis,
-};
+use crate::{config::Config, dataset::Dataset, heatmap_response::HeatmapResponse, redis};
 use actix_web::{
     web::{Data, Json},
     Error, HttpRequest, HttpResponse,
@@ -33,7 +30,7 @@ async fn heatmap_query(
     query.
     */
     if let Some(redis_pool) = redis_wrapped {
-        if let Some(response) = redis::cache_get(query_string.clone(), &redis_pool).await? {
+        if let Some(response) = redis::cache_get(query_string.clone(), redis_pool).await? {
             return Ok(HttpResponse::Ok()
                 .content_type("application/json")
                 .body(response));
@@ -49,7 +46,7 @@ async fn heatmap_query(
             query_string,
             serde_json::to_string(&response_data)?,
             config.cache_ttl,
-            &redis_pool,
+            redis_pool,
         )
         .await?;
     }

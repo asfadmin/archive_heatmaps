@@ -56,8 +56,8 @@ async fn main() -> std::io::Result<()> {
         let mut app = App::new()
             .wrap(Logger::default())
             .wrap(Compress::default())
-            .wrap(RedisCacheSet::default())
-            .wrap(RedisCacheGet::default())
+            .wrap(RedisCacheSet)
+            .wrap(RedisCacheGet)
             .service(heatmap_query);
 
         if let Some(redis_pool_unwrapped) = redis_pool.clone() {
