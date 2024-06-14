@@ -5,7 +5,7 @@ use crate::granule::Granule;
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct HeatmapData {
     pub length: i32,
-    pub positions: Vec<Vec<f64>>,
+    pub positions: Vec<Vec<(f64, f64)>>,
     pub weights: Vec<u64>,
 }
 
@@ -18,9 +18,8 @@ impl HeatmapData {
                 .map(|granule| {
                     granule.polygon.exterior().clone().into_inner().iter().fold(
                         Vec::new(),
-                        |mut inner_collector, coord| {
-                            inner_collector.push(coord.x);
-                            inner_collector.push(coord.y);
+                        |mut inner_collector: Vec<(f64, f64)>, coord| {
+                            inner_collector.push((coord.x, coord.y));
                             inner_collector
                         },
                     )

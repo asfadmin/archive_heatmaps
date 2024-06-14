@@ -11,11 +11,11 @@ pub enum Dataset {
 }
 
 pub trait ToPartialString {
-    fn to_partial_string(&self) -> String;
+    fn _to_partial_string(&self) -> String;
 }
 
 impl ToPartialString for Option<Dataset> {
-    fn to_partial_string(&self) -> String {
+    fn _to_partial_string(&self) -> String {
         if let Some(dataset) = self {
             match dataset {
                 Dataset::Alos => "ALOS PALSAR%".to_string(),
@@ -39,5 +39,3 @@ mod tests {
         assert_eq!(None.to_partial_string(), "%");
     }
 }
-
-

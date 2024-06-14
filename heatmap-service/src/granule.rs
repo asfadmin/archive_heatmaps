@@ -20,12 +20,17 @@ impl TryFrom<&Feature> for Granule {
             .clone()
             .ok_or("feature has no properties associated with it")?
             .get("ancestors")
-            .unwrap()
+            .expect("failed to get ancestors")
             .clone()
             .as_array()
-            .unwrap()
+            .expect("failed to convert to array")
             .iter()
-            .map(|feature| feature.as_object().unwrap().clone())
+            .map(|feature| {
+                feature
+                    .as_object()
+                    .expect("failed to map ancestors")
+                    .clone()
+            })
             .collect();
 
         Ok(Granule {
@@ -35,10 +40,10 @@ impl TryFrom<&Feature> for Granule {
                 .ok_or("no geometry attached to feature")?
                 .value
                 .try_into()
-                .unwrap(),
+                .expect("failed to convert geomery to polygon"),
             ancestors: ancestors
                 .iter()
-                .map(|feature| feature.try_into().unwrap())
+                .map(|feature| feature.try_into().expect("failed to map ancestors"))
                 .collect(),
         })
     }
@@ -54,7 +59,7 @@ pub struct Ancestor {
 }
 
 impl TryFrom<&serde_json::Map<String, serde_json::Value>> for Ancestor {
-    type Error = Box<dyn std::error::Error>;
+    type Error = actix_web::error::Error;
 
     fn try_from(
         properties: &serde_json::Map<String, serde_json::Value>,
@@ -62,45 +67,53 @@ impl TryFrom<&serde_json::Map<String, serde_json::Value>> for Ancestor {
         Ok(Ancestor {
             granule_name: properties
                 .get("GRANULE_NA")
-                .unwrap()
+                .expect("failed to get granule name")
                 .as_str()
-                .unwrap()
+                .expect("failed to convert granule name to str")
                 .to_string(),
             platform_type: properties
                 .get("PLATFORM_T")
-                .unwrap()
+                .expect("failed to get platform type")
                 .as_str()
-                .unwrap()
+                .expect("failed to convert platform type to str")
                 .to_string(),
             data_sensor: properties
                 .get("DATA_SENSO")
-                .unwrap()
+                .expect("failed to get data sensor")
                 .as_str()
-                .unwrap()
+                .expect("failed to convert data sensor to string")
                 .to_string(),
             start_time: NaiveDateTime::parse_from_str(
-                properties.get("START_TIME").unwrap().as_str().unwrap(),
+                properties
+                    .get("START_TIME")
+                    .expect("failed to get start time")
+                    .as_str()
+                    .expect("failed to convert start time to str"),
                 "%Y-%m-%d %H:%M:%S",
             )
-            .unwrap(),
+            .expect("failed to parse start time from string"),
             end_time: NaiveDateTime::parse_from_str(
-                properties.get("END_TIME").unwrap().as_str().unwrap(),
+                properties
+                    .get("END_TIME")
+                    .expect("failed to get end time")
+                    .as_str()
+                    .expect("failed to convert end time to str"),
                 "%Y-%m-%d %H:%M:%S",
             )
-            .unwrap(),
+            .expect("failed to parse end time from string"),
         })
     }
 }
 
 impl Granule {
     pub fn from_feature_collection(
-        dataset: Option<Dataset>,
+        _dataset: Option<Dataset>,
         feature_collection: &FeatureCollection,
     ) -> Result<Vec<Granule>, Box<dyn std::error::Error>> {
         feature_collection
             .features
             .iter()
-            .map(|feature| Self::try_from(feature))
+            .map(Self::try_from)
             .collect()
     }
 }
