@@ -7,12 +7,7 @@ Ex:
 # .env
 SERVER_ADDRESS=127.0.0.1:8080 # the bind address for the microservice
 CACHE_TTL=3600 # how long (in seconds) the cache should last for
-POSTGRES.USER=user
-POSTGRES.PASSWORD=pass
-POSTGRES.HOST=127.0.0.1
-POSTGRES.PORT=5432
-POSTGRES.DBNAME=heatmap
-POSTGRES.POOL.MAX_SIZE=16
+GEO_JSON_PATH=/path/to/geojson
 REDIS.URL=redis://127.0.0.1:6379
 REDIS.POOL.MAX_SIZE=16
 ```
