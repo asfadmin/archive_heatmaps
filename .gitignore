@@ -2,3 +2,6 @@
 *.png
 __pycache__
 *.geojson
+.vscode
+target/
+heatmap-client/dist/
