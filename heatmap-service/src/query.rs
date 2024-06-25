@@ -1,9 +1,10 @@
-use crate::{config::Config, dataset::Dataset, heatmap_response::HeatmapResponse, redis};
 use actix_web::{
     web::{Data, Json},
     Error, HttpRequest, HttpResponse,
 };
 use serde::{Deserialize, Serialize};
+
+use crate::{config::Config, dataset::Dataset, heatmap_response::HeatmapResponse, redis};
 
 #[derive(Deserialize, Serialize)]
 pub struct HeatmapQuery {
