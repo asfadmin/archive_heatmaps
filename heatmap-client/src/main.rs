@@ -1,7 +1,7 @@
-use heatmap::Canvas;
+use display::Canvas;
 use leptos::*;
 
-mod heatmap;
+mod display;
 
 fn main() {
     console_error_panic_hook::set_once();
