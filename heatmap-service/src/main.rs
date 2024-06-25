@@ -3,12 +3,11 @@ use actix_web::{
     web::Data,
     App, HttpServer,
 };
-
 use geojson::FeatureCollection;
-
-use crate::config::Config;
 use middleware::{RedisCacheGet, RedisCacheSet};
 use query::heatmap_query;
+
+use crate::config::Config;
 
 mod config;
 mod dataset;

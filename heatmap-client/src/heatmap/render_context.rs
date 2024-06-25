@@ -1,10 +1,11 @@
+use std::rc::Rc;
+
+use winit::event_loop::EventLoopProxy;
+use winit::window::Window;
+
 use super::app::UserMessage;
 use super::geometry::generate_buffers;
 use super::geometry::Vertex;
-
-use std::rc::Rc;
-use winit::event_loop::EventLoopProxy;
-use winit::window::Window;
 
 pub struct RenderContext<'a> {
     pub surface: wgpu::Surface<'a>,
@@ -14,7 +15,6 @@ pub struct RenderContext<'a> {
     pub size: winit::dpi::PhysicalSize<u32>,
     pub render_pipeline: wgpu::RenderPipeline,
     pub vertex_buffer: wgpu::Buffer,
-    pub num_vertices: u32,
     pub index_buffer: wgpu::Buffer,
     pub num_indices: u32,
 }
@@ -22,8 +22,8 @@ pub struct RenderContext<'a> {
 /// Create a new state
 pub async fn generate_render_context<'a>(
     window: Rc<Window>,
-    event_loop_proxy: EventLoopProxy<UserMessage<'a>>,
-) -> () {
+    event_loop_proxy: EventLoopProxy<UserMessage<'_>>,
+) {
     let size = window.inner_size();
 
     ////////////////////
@@ -53,7 +53,7 @@ pub async fn generate_render_context<'a>(
             force_fallback_adapter: false,
         })
         .await
-        .unwrap();
+        .expect("ERROR: Failed to get adapter");
 
     let (device, queue) = adapter
         .request_device(
@@ -68,11 +68,10 @@ pub async fn generate_render_context<'a>(
                     wgpu::Limits::default()
                 },
             },
-            // Some(&std::path::Path::new("trace")), // Trace path
             None,
         )
         .await
-        .unwrap();
+        .expect("ERROR: Failed to get device and queue");
 
     ///////////////////////////
     // Set up surface config //
@@ -101,10 +100,9 @@ pub async fn generate_render_context<'a>(
     // Set up buffers to render //
     //////////////////////////////
     let temp_device = Rc::new(device);
-    let (vertex_buffer, num_vertices, index_buffer, num_indices) =
-        generate_buffers(temp_device.clone());
+    let (vertex_buffer, index_buffer, num_indices) = generate_buffers(temp_device.clone());
     let device =
-        Rc::<wgpu::Device>::into_inner(temp_device).expect("ERROR: Failed to unwrap device");
+        Rc::<wgpu::Device>::into_inner(temp_device).expect("ERROR: Failed to get device from Rc");
 
     ////////////////////////////
     // Set up render pipeline //
@@ -167,7 +165,6 @@ pub async fn generate_render_context<'a>(
         size,
         render_pipeline,
         vertex_buffer,
-        num_vertices,
         index_buffer,
         num_indices,
     };

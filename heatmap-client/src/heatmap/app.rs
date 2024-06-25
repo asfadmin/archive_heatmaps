@@ -1,8 +1,8 @@
-use super::render_context::RenderContext;
-use super::state::{InitStage, State};
+// Contains event loop logic for the window containing the wgpu surface
 
+use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::{Arc, Mutex};
+
 use winit::{
     application::ApplicationHandler,
     event::WindowEvent,
@@ -10,34 +10,40 @@ use winit::{
     window::{Window, WindowId},
 };
 
+use super::render_context::RenderContext;
+use super::state::{InitStage, State};
+
 pub struct App<'a> {
     pub state: State<'a>,
-    pub external_state: Arc<Mutex<ExternalState>>,
+    pub external_state: Rc<RefCell<ExternalState>>,
     pub event_loop_proxy: EventLoopProxy<UserMessage<'static>>,
 }
 
+// The application handler instance doesnt allow for error handling
+
 impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        // Create the window and store the canvas to external_state
+        // Create the window and add it to state
         self.state.window = Some(Rc::new(
             event_loop
                 .create_window(
                     Window::default_attributes()
                         .with_inner_size(winit::dpi::PhysicalSize::new(400, 450)),
                 )
-                .unwrap(),
+                .expect("ERROR: Failed to create window"),
         ));
 
+        // Store the window canvas to external state
         #[cfg(target_arch = "wasm32")]
         {
             use leptos::html::ToHtmlElement;
             use winit::platform::web::WindowExtWebSys;
 
-            self.external_state.lock().as_mut().unwrap().canvas = self
+            self.external_state.borrow_mut().canvas = self
                 .state
                 .window
                 .clone()
-                .unwrap()
+                .expect("ERROR: Failed to get window when creating HtmlCanvasElement")
                 .as_ref()
                 .canvas()
                 .map(|canvas_element| canvas_element.to_leptos_element());
@@ -54,7 +60,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
             WindowEvent::CloseRequested => self.exiting(event_loop),
 
             WindowEvent::RedrawRequested => {
-                // Continously re-render the surface
+                // Continously re-render the surface if setup is complete
                 if self.state.init_stage == InitStage::Complete {
                     match self.state.render() {
                         Ok(_) => {}
@@ -68,15 +74,23 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     }
                 }
 
-                self.state.window.as_ref().unwrap().request_redraw();
+                self.state
+                    .window
+                    .as_ref()
+                    .expect("ERROR: Failed to get window when requesting redraw")
+                    .request_redraw();
             }
 
             WindowEvent::Resized(physical_size) => {
-                // Reconfigure the surface if the window is resized
+                // Initialize setup of state when resized is first called
                 if self.state.init_stage == InitStage::Incomplete {
                     web_sys::console::log_1(&"Generating state...".into());
                     leptos::spawn_local(super::render_context::generate_render_context(
-                        self.state.window.as_ref().unwrap().clone(),
+                        self.state
+                            .window
+                            .as_ref()
+                            .expect("ERROR: Failed to get window while generating render context")
+                            .clone(),
                         self.event_loop_proxy.clone(),
                     ));
                 } else {
@@ -99,8 +113,16 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     init_stage: InitStage::Complete,
                 };
 
-                self.state
-                    .resize(self.state.window.as_ref().unwrap().inner_size());
+                // Resize configures the surface based on current canvas size
+                self.state.resize(
+                    self.state
+                        .window
+                        .as_ref()
+                        .expect(
+                            "ERROR: Failed to get window in user_event UserMessage::StateMessage",
+                        )
+                        .inner_size(),
+                );
             }
         }
     }

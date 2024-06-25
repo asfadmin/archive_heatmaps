@@ -1,6 +1,5 @@
-use leptos::*;
-
 use heatmap::Canvas;
+use leptos::*;
 
 mod heatmap;
 

@@ -1,4 +1,5 @@
 use std::rc::Rc;
+
 use wgpu::util::DeviceExt;
 /// A vertex passed into the wgsl shader
 #[repr(C)]
@@ -61,7 +62,7 @@ pub const VERTICES: &[Vertex] = &[
 // The order to draw these vertices, each set of 3 represent a triangle
 pub const INDICES: &[u16] = &[0, 1, 5, 1, 2, 4, 2, 3, 4];
 
-pub fn generate_buffers(device: Rc<wgpu::Device>) -> (wgpu::Buffer, u32, wgpu::Buffer, u32) {
+pub fn generate_buffers(device: Rc<wgpu::Device>) -> (wgpu::Buffer, wgpu::Buffer, u32) {
     //////////////////////////////
     // Set up buffers to render //
     //////////////////////////////
@@ -72,8 +73,6 @@ pub fn generate_buffers(device: Rc<wgpu::Device>) -> (wgpu::Buffer, u32, wgpu::B
         usage: wgpu::BufferUsages::VERTEX,
     });
 
-    let num_vertices = VERTICES.len() as u32;
-
     let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Index Buffer"),
         contents: bytemuck::cast_slice(INDICES),
@@ -82,5 +81,5 @@ pub fn generate_buffers(device: Rc<wgpu::Device>) -> (wgpu::Buffer, u32, wgpu::B
 
     let num_indices = INDICES.len() as u32;
 
-    (vertex_buffer, num_vertices, index_buffer, num_indices)
+    (vertex_buffer, index_buffer, num_indices)
 }

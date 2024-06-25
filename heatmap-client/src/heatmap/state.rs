@@ -1,7 +1,11 @@
-use super::render_context::RenderContext;
+// Contains the state struct which stores information needed for wgpu
+//  to render a shader
 
 use std::rc::Rc;
+
 use winit::window::Window;
+
+use super::render_context::RenderContext;
 
 /// Stores the information needed to draw to a surface with a shader
 #[derive(Default)]
@@ -11,6 +15,7 @@ pub struct State<'a> {
     pub init_stage: InitStage,
 }
 
+/// Tracks wether state is finished setting up
 #[derive(Default, PartialEq, Eq)]
 pub enum InitStage {
     #[default]
@@ -19,10 +24,13 @@ pub enum InitStage {
 }
 
 impl<'a> State<'a> {
-    // Reconfigures the surface based on the passed physical size
+    // Configures the surface based on the passed physical size
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
-            let render_context = self.render_context.as_mut().unwrap();
+            let render_context = self
+                .render_context
+                .as_mut()
+                .expect("ERROR: Failed to get render context in resize");
             render_context.size = new_size;
             let mut config = render_context.config.clone();
             config.width = new_size.width;
@@ -36,7 +44,10 @@ impl<'a> State<'a> {
 
     // Renders the contents of state to the canvas
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
-        let render_context = self.render_context.as_mut().unwrap();
+        let render_context = self
+            .render_context
+            .as_mut()
+            .expect("ERROR: Failed to get render context in render");
         let output = render_context.surface.get_current_texture()?;
         let view = output
             .texture
