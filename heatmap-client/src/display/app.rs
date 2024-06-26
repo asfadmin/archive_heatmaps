@@ -132,6 +132,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                 //////////////////////////////
                 // Set up buffers to render //
                 //////////////////////////////
+                web_sys::console::log_1(&"Generating Buffers...".into());
                 self.state.geometry = Some(Geometry::generate_buffers(
                     self.state.render_context.as_ref().unwrap(),
                     data,

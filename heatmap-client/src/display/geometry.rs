@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use wgpu::util::DeviceExt;
 
 use super::render_context::RenderContext;
