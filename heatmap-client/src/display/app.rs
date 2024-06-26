@@ -10,8 +10,10 @@ use winit::{
     window::{Window, WindowId},
 };
 
+use super::geometry::Geometry;
 use super::render_context::RenderContext;
 use super::state::{InitStage, State};
+use crate::ingest::load::BufferStorage;
 
 pub struct App<'a> {
     pub state: State<'a>,
@@ -111,6 +113,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     render_context: Some(render_context),
                     window: self.state.window.clone(),
                     init_stage: InitStage::Complete,
+                    geometry: None,
                 };
 
                 // Resize configures the surface based on current canvas size
@@ -124,6 +127,16 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                         .inner_size(),
                 );
             }
+
+            UserMessage::IncomingData(data) => {
+                //////////////////////////////
+                // Set up buffers to render //
+                //////////////////////////////
+                self.state.geometry = Some(Geometry::generate_buffers(
+                    self.state.render_context.as_ref().unwrap(),
+                    data,
+                ));
+            }
         }
     }
 }
@@ -131,6 +144,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
 // All user events that can be sent to the event loop
 pub enum UserMessage<'a> {
     StateMessage(RenderContext<'a>),
+    IncomingData(BufferStorage),
 }
 
 /// Stores the canvas as an html element

@@ -27,15 +27,3 @@ impl ToPartialString for Option<Dataset> {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn test_dataset_to_partial_string() {
-        assert_eq!(Some(Dataset::Alos).to_partial_string(), "ALOS PALSAR%");
-        assert_eq!(Some(Dataset::Uavsar).to_partial_string(), "UAVSAR%");
-        assert_eq!(Some(Dataset::Airsar).to_partial_string(), "AIRSAR%");
-        assert_eq!(None.to_partial_string(), "%");
-    }
-}

@@ -6,11 +6,13 @@ use std::rc::Rc;
 use winit::window::Window;
 
 use super::render_context::RenderContext;
+use super::geometry::Geometry;
 
 /// Stores the information needed to draw to a surface with a shader
 #[derive(Default)]
 pub struct State<'a> {
     pub render_context: Option<RenderContext<'a>>,
+    pub geometry: Option<Geometry>,
     pub window: Option<Rc<Window>>,
     pub init_stage: InitStage,
 }
@@ -60,7 +62,7 @@ impl<'a> State<'a> {
                     label: Some("Render Encoder"),
                 });
 
-        {
+        if let Some(geometry) = self.geometry.as_ref() {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -82,12 +84,12 @@ impl<'a> State<'a> {
             });
 
             render_pass.set_pipeline(&render_context.render_pipeline);
-            render_pass.set_vertex_buffer(0, render_context.vertex_buffer.slice(..));
+            render_pass.set_vertex_buffer(0, geometry.vertex_buffer.slice(..));
             render_pass.set_index_buffer(
-                render_context.index_buffer.slice(..),
+                geometry.index_buffer.slice(..),
                 wgpu::IndexFormat::Uint16,
             );
-            render_pass.draw_indexed(0..render_context.num_indices, 0, 0..1);
+            render_pass.draw_indexed(0..geometry.num_indices, 0, 0..1);
         }
 
         render_context

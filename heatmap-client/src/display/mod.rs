@@ -4,8 +4,8 @@
 
 pub use canvas::Canvas;
 
-mod app;
+pub mod app;
 mod canvas;
-mod geometry;
+pub mod geometry;
 mod render_context;
 mod state;

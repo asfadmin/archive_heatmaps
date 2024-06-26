@@ -9,6 +9,7 @@ use winit::event_loop::EventLoop;
 
 use super::app::{App, ExternalState, UserMessage};
 use super::state::State;
+use crate::ingest::load::DataLoader;
 
 /// Component to display a wgsl shader
 #[component]
@@ -30,6 +31,8 @@ pub fn Canvas() -> impl IntoView {
             event_loop_proxy: event_loop.create_proxy(),
         };
 
+        let event_loop_proxy = app.event_loop_proxy.clone();
+
         // Start the event loop
         event_loop.spawn_app(app);
 
@@ -38,6 +41,10 @@ pub fn Canvas() -> impl IntoView {
             .canvas
             .clone()
             .expect("ERROR: Failed to get external state");
+
+        let data_loader = DataLoader { event_loop_proxy };
+        
+        data_loader.load_data();
 
         mount_to_body(move || canvas)
     }

@@ -48,14 +48,17 @@ impl ToPartialString for Option<Dataset> {
 // Dont know if this function works or not, couldnt get the service set up to test it
 pub async fn request() -> HeatmapData {
     let client = reqwest::Client::new();
-    let res = client
-        .post("redis://127.0.0.1:6379") // Not sure if this is the correct url to send the request to
-        .json(&map)
+    let data = client
+        .post("http://localhost:8000/query") // TODO, some configuration mechanism for this
+        .json(&Dataset::Alos)
         .send()
-        .await?;
+        .await
+        .expect("ERROR: Failed to recive data from post request")
+        .json()
+        .await
+        .expect("ERROR: Failed to deserialize result of post request into a json string");
 
     // Deserialize the json into a HeatmapData struct
-    let data: HeatmapData = serde_json::from_str(res)?;
 
     return data;
 }

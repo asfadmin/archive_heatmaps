@@ -4,7 +4,6 @@ use winit::event_loop::EventLoopProxy;
 use winit::window::Window;
 
 use super::app::UserMessage;
-use super::geometry::generate_buffers;
 use super::geometry::Vertex;
 
 pub struct RenderContext<'a> {
@@ -14,9 +13,6 @@ pub struct RenderContext<'a> {
     pub config: wgpu::SurfaceConfiguration,
     pub size: winit::dpi::PhysicalSize<u32>,
     pub render_pipeline: wgpu::RenderPipeline,
-    pub vertex_buffer: wgpu::Buffer,
-    pub index_buffer: wgpu::Buffer,
-    pub num_indices: u32,
 }
 
 /// Create a new state
@@ -96,18 +92,9 @@ pub async fn generate_render_context<'a>(
         view_formats: vec![],
     };
 
-    //////////////////////////////
-    // Set up buffers to render //
-    //////////////////////////////
-    let temp_device = Rc::new(device);
-    let (vertex_buffer, index_buffer, num_indices) = generate_buffers(temp_device.clone());
-    let device =
-        Rc::<wgpu::Device>::into_inner(temp_device).expect("ERROR: Failed to get device from Rc");
-
     ////////////////////////////
     // Set up render pipeline //
     ////////////////////////////
-
     let shader = device.create_shader_module(wgpu::include_wgsl!("shaders/shader.wgsl"));
 
     let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -164,9 +151,6 @@ pub async fn generate_render_context<'a>(
         config,
         size,
         render_pipeline,
-        vertex_buffer,
-        index_buffer,
-        num_indices,
     };
 
     web_sys::console::log_1(&"Done Generating State".into());

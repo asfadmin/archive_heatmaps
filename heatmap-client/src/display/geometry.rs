@@ -1,12 +1,50 @@
 use std::rc::Rc;
 
 use wgpu::util::DeviceExt;
+
+use super::render_context::RenderContext;
+use crate::ingest::load::BufferStorage;
+
+pub struct Geometry {
+    pub vertex_buffer: wgpu::Buffer,
+    pub index_buffer: wgpu::Buffer,
+    pub num_indices: u32,
+}
+
+impl Geometry {
+    pub fn generate_buffers(render_context: &RenderContext, buffer_data: BufferStorage) -> Self {
+        //////////////////////////////
+        // Set up buffers to render //
+        //////////////////////////////
+
+        let vertex_buffer = render_context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Vertex Buffer"),
+            contents: bytemuck::cast_slice(buffer_data.vertices.as_slice()),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+
+        let index_buffer = render_context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Index Buffer"),
+            contents: bytemuck::cast_slice(buffer_data.indices.as_slice()),
+            usage: wgpu::BufferUsages::INDEX,
+        });
+
+        let num_indices = buffer_data.num_indices;
+
+        Geometry {
+            vertex_buffer,
+            index_buffer,
+            num_indices
+        }
+    }
+}
+
 /// A vertex passed into the wgsl shader
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
-    position: [f32; 3],
-    weight: u32,
+    pub position: [f32; 3],
+    pub weight: u32,
 }
 
 impl Vertex {
@@ -29,57 +67,4 @@ impl Vertex {
             ],
         }
     }
-}
-
-// The vertices of the shape stored in the vertex buffer
-pub const VERTICES: &[Vertex] = &[
-    Vertex {
-        position: [-0.0868241, 0.49240386, 0.0],
-        weight: 1,
-    }, // A
-    Vertex {
-        position: [-0.49513406, 0.06958647, 0.0],
-        weight: 1,
-    }, // B
-    Vertex {
-        position: [-0.21918549, -0.44939706, 0.0],
-        weight: 5,
-    }, // C
-    Vertex {
-        position: [0.35966998, -0.3473291, 0.0],
-        weight: 5,
-    }, // D
-    Vertex {
-        position: [0.44147372, 0.2347359, 0.0],
-        weight: 5,
-    }, // E
-    Vertex {
-        position: [0.44147372, 0.2347359, 0.0],
-        weight: 1,
-    }, // E2
-];
-
-// The order to draw these vertices, each set of 3 represent a triangle
-pub const INDICES: &[u16] = &[0, 1, 5, 1, 2, 4, 2, 3, 4];
-
-pub fn generate_buffers(device: Rc<wgpu::Device>) -> (wgpu::Buffer, wgpu::Buffer, u32) {
-    //////////////////////////////
-    // Set up buffers to render //
-    //////////////////////////////
-
-    let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Vertex Buffer"),
-        contents: bytemuck::cast_slice(VERTICES),
-        usage: wgpu::BufferUsages::VERTEX,
-    });
-
-    let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Index Buffer"),
-        contents: bytemuck::cast_slice(INDICES),
-        usage: wgpu::BufferUsages::INDEX,
-    });
-
-    let num_indices = INDICES.len() as u32;
-
-    (vertex_buffer, index_buffer, num_indices)
 }
