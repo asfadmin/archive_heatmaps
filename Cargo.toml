@@ -4,3 +4,5 @@ members = [
   "heatmap-service",
   "heatmap-client",
 ]
+
+resolver = "1"

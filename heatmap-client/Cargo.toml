@@ -1,7 +1,10 @@
+cargo-features = ["per-package-target"]
+
 [package]
 name = "heatmap-client"
 version = "0.1.0"
 edition = "2021"
+forced-target = "wasm32-unknown-unknown"
 
 [dependencies]
 async-std = "1.12.0"
