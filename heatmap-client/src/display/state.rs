@@ -5,8 +5,16 @@ use std::rc::Rc;
 
 use winit::window::Window;
 
-use super::render_context::RenderContext;
 use super::geometry::Geometry;
+use super::render_context::RenderContext;
+
+/// Tracks wether state is finished setting up
+#[derive(Default, PartialEq, Eq)]
+pub enum InitStage {
+    #[default]
+    Incomplete,
+    Complete,
+}
 
 /// Stores the information needed to draw to a surface with a shader
 #[derive(Default)]
@@ -15,14 +23,6 @@ pub struct State<'a> {
     pub geometry: Option<Geometry>,
     pub window: Option<Rc<Window>>,
     pub init_stage: InitStage,
-}
-
-/// Tracks wether state is finished setting up
-#[derive(Default, PartialEq, Eq)]
-pub enum InitStage {
-    #[default]
-    Incomplete,
-    Complete,
 }
 
 impl<'a> State<'a> {
@@ -84,11 +84,10 @@ impl<'a> State<'a> {
             });
 
             render_pass.set_pipeline(&render_context.render_pipeline);
+            render_pass.set_bind_group(0, &render_context.camera_context.camera_bind_group, &[]);
             render_pass.set_vertex_buffer(0, geometry.vertex_buffer.slice(..));
-            render_pass.set_index_buffer(
-                geometry.index_buffer.slice(..),
-                wgpu::IndexFormat::Uint16,
-            );
+            render_pass
+                .set_index_buffer(geometry.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
             render_pass.draw_indexed(0..geometry.num_indices, 0, 0..1);
         }
 

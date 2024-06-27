@@ -43,7 +43,7 @@ pub fn Canvas() -> impl IntoView {
             .expect("ERROR: Failed to get external state");
 
         let data_loader = DataLoader { event_loop_proxy };
-        
+
         data_loader.load_data();
 
         mount_to_body(move || canvas)

@@ -5,6 +5,7 @@
 pub use canvas::Canvas;
 
 pub mod app;
+mod camera;
 mod canvas;
 pub mod geometry;
 mod render_context;

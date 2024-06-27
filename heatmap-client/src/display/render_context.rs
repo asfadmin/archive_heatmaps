@@ -4,6 +4,7 @@ use winit::event_loop::EventLoopProxy;
 use winit::window::Window;
 
 use super::app::UserMessage;
+use super::camera::{Camera, CameraContext};
 use super::geometry::Vertex;
 
 pub struct RenderContext<'a> {
@@ -13,6 +14,7 @@ pub struct RenderContext<'a> {
     pub config: wgpu::SurfaceConfiguration,
     pub size: winit::dpi::PhysicalSize<u32>,
     pub render_pipeline: wgpu::RenderPipeline,
+    pub camera_context: CameraContext,
 }
 
 /// Create a new state
@@ -92,6 +94,8 @@ pub async fn generate_render_context<'a>(
         view_formats: vec![],
     };
 
+    let camera_context = Camera::generate_camera_data(&device, &config);
+
     ////////////////////////////
     // Set up render pipeline //
     ////////////////////////////
@@ -99,7 +103,7 @@ pub async fn generate_render_context<'a>(
 
     let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("Render Pipeline Layout"),
-        bind_group_layouts: &[],
+        bind_group_layouts: &[&camera_context.camera_bind_group_layout],
         push_constant_ranges: &[],
     });
 
@@ -128,8 +132,8 @@ pub async fn generate_render_context<'a>(
         primitive: wgpu::PrimitiveState {
             topology: wgpu::PrimitiveTopology::TriangleList,
             strip_index_format: None,
-            front_face: wgpu::FrontFace::Ccw,
-            cull_mode: Some(wgpu::Face::Back),
+            front_face: wgpu::FrontFace::Cw,
+            cull_mode: None,
             polygon_mode: wgpu::PolygonMode::Fill,
             unclipped_depth: false,
             conservative: false,
@@ -151,6 +155,7 @@ pub async fn generate_render_context<'a>(
         config,
         size,
         render_pipeline,
+        camera_context,
     };
 
     web_sys::console::log_1(&"Done Generating State".into());

@@ -100,6 +100,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     self.state.resize(physical_size);
                 }
             }
+
             _ => {}
         }
     }
@@ -129,14 +130,17 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
             }
 
             UserMessage::IncomingData(data) => {
-                //////////////////////////////
-                // Set up buffers to render //
-                //////////////////////////////
                 web_sys::console::log_1(&"Generating Buffers...".into());
+                web_sys::console::log_3(
+                    &"Incoming Data: \n".into(),
+                    &format!("Vertices: {:?}", data.vertices).into(),
+                    &format!("Indices: {:?}", data.indices).into(),
+                );
                 self.state.geometry = Some(Geometry::generate_buffers(
                     self.state.render_context.as_ref().unwrap(),
                     data,
                 ));
+                web_sys::console::log_1(&"Done Generating Buffers".into());
             }
         }
     }

@@ -9,6 +9,7 @@ forced-target = "wasm32-unknown-unknown"
 [dependencies]
 async-std = "1.12.0"
 bytemuck = { version = "1.12", features = [ "derive" ] }
+cgmath = "0.18.0"
 console_error_panic_hook = "0.1.7"
 console_log = "1.0.0"
 leptos = { version = "0.6.12", features = ["csr", "nightly"] }

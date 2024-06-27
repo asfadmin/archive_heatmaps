@@ -15,24 +15,36 @@ impl Geometry {
         // Set up buffers to render //
         //////////////////////////////
 
-        let vertex_buffer = render_context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(buffer_data.vertices.as_slice()),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
+        web_sys::console::log_3(
+            &"Buffered Data: \n".into(),
+            &format!("Vertices: {:?}", buffer_data.vertices.as_slice()).into(),
+            &format!("Indices: {:?}", buffer_data.indices.as_slice()).into(),
+        );
 
-        let index_buffer = render_context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Index Buffer"),
-            contents: bytemuck::cast_slice(buffer_data.indices.as_slice()),
-            usage: wgpu::BufferUsages::INDEX,
-        });
+        let vertex_buffer =
+            render_context
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Vertex Buffer"),
+                    contents: bytemuck::cast_slice(buffer_data.vertices.as_slice()),
+                    usage: wgpu::BufferUsages::VERTEX,
+                });
+
+        let index_buffer =
+            render_context
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Index Buffer"),
+                    contents: bytemuck::cast_slice(buffer_data.indices.as_slice()),
+                    usage: wgpu::BufferUsages::INDEX,
+                });
 
         let num_indices = buffer_data.num_indices;
 
         Geometry {
             vertex_buffer,
             index_buffer,
-            num_indices
+            num_indices,
         }
     }
 }
