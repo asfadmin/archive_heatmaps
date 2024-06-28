@@ -137,7 +137,10 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     &format!("Indices: {:?}", data.indices).into(),
                 );
                 self.state.geometry = Some(Geometry::generate_buffers(
-                    self.state.render_context.as_ref().unwrap(),
+                    self.state
+                        .render_context
+                        .as_ref()
+                        .expect("Error: Failed to get render context during Incoming data event"),
                     data,
                 ));
                 web_sys::console::log_1(&"Done Generating Buffers".into());

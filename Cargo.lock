@@ -1945,6 +1945,7 @@ dependencies = [
  "cgmath",
  "console_error_panic_hook",
  "console_log",
+ "earcutr",
  "leptos",
  "log",
  "reqwest",
