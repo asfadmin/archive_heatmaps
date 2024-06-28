@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use wgpu::BlendComponent;
 use winit::event_loop::EventLoopProxy;
 use winit::window::Window;
 
@@ -122,9 +123,17 @@ pub async fn generate_render_context<'a>(
             compilation_options: Default::default(),
             targets: &[Some(wgpu::ColorTargetState {
                 format: config.format,
-                blend: Some(wgpu::BlendState {
-                    color: wgpu::BlendComponent::REPLACE,
-                    alpha: wgpu::BlendComponent::REPLACE,
+                blend: Some(wgpu::BlendState{
+                    color: wgpu::BlendComponent {
+                        src_factor: wgpu::BlendFactor::One,
+                        dst_factor: wgpu::BlendFactor::One,
+                        operation: wgpu::BlendOperation::Add,
+                    },
+                    alpha: wgpu::BlendComponent {
+                        src_factor: wgpu::BlendFactor::One,
+                        dst_factor: wgpu::BlendFactor::Zero,
+                        operation: wgpu::BlendOperation::Add,
+                    }, 
                 }),
                 write_mask: wgpu::ColorWrites::ALL,
             })],

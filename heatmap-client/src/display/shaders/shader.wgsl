@@ -30,5 +30,6 @@ fn vs_main(
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return vec4<f32>(0, 0, f32(in.weight) / 10, 1.0);
+    return vec4<f32>(f32(in.weight) / 300, 0, 0, 0.5);
+  
 }

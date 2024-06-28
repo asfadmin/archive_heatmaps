@@ -100,12 +100,14 @@ fn mesh_data(data_exterior: HeatmapData) -> BufferStorage {
         .expect("ERROR: Failed to convert usize into u32");
 
     // Value currently unused
-    let _max_weight = *data.weights.iter().max().expect("ERROR: Weights was empty");
+    let max_weight = *data.weights.iter().max().expect("ERROR: Weights was empty");
+
+    web_sys::console::log_1(&format!("Max Weight: {:?}", max_weight).into());
 
     BufferStorage {
         vertices: total_vertices,
         indices,
         num_indices,
-        _max_weight,
+        _max_weight: max_weight,
     }
 }
