@@ -85,6 +85,7 @@ impl<'a> State<'a> {
 
             render_pass.set_pipeline(&render_context.render_pipeline);
             render_pass.set_bind_group(0, &render_context.camera_context.camera_bind_group, &[]);
+            render_pass.set_bind_group(1, &render_context.blend_bind_group, &[]);
             render_pass.set_vertex_buffer(0, geometry.vertex_buffer.slice(..));
             render_pass
                 .set_index_buffer(geometry.index_buffer.slice(..), wgpu::IndexFormat::Uint32);

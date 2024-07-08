@@ -1,6 +1,7 @@
 use wgpu::util::DeviceExt;
 
 use super::render_context::RenderContext;
+use super::texture::generate_texture;
 use crate::ingest::load::BufferStorage;
 
 pub struct Geometry {

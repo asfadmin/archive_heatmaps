@@ -1,12 +1,12 @@
 use std::rc::Rc;
 
-use wgpu::BlendComponent;
 use winit::event_loop::EventLoopProxy;
 use winit::window::Window;
 
 use super::app::UserMessage;
 use super::camera::{Camera, CameraContext};
 use super::geometry::Vertex;
+use crate::display::texture::generate_texture;
 
 pub struct RenderContext<'a> {
     pub surface: wgpu::Surface<'a>,
@@ -16,6 +16,8 @@ pub struct RenderContext<'a> {
     pub size: winit::dpi::PhysicalSize<u32>,
     pub render_pipeline: wgpu::RenderPipeline,
     pub camera_context: CameraContext,
+    pub blend_texture: wgpu::Texture,
+    pub blend_bind_group: wgpu::BindGroup,
 }
 
 /// Create a new state
@@ -95,7 +97,14 @@ pub async fn generate_render_context<'a>(
         view_formats: vec![],
     };
 
+    ////////////////////////
+    // Set up Bind Groups //
+    ////////////////////////
+
     let camera_context = Camera::generate_camera_data(&device, &config);
+
+    let (blend_texture, blend_bind_group_layout, blend_bind_group) =
+        generate_texture(&device, size);
 
     ////////////////////////////
     // Set up render pipeline //
@@ -104,7 +113,10 @@ pub async fn generate_render_context<'a>(
 
     let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("Render Pipeline Layout"),
-        bind_group_layouts: &[&camera_context.camera_bind_group_layout],
+        bind_group_layouts: &[
+            &camera_context.camera_bind_group_layout,
+            &blend_bind_group_layout,
+        ],
         push_constant_ranges: &[],
     });
 
@@ -123,7 +135,7 @@ pub async fn generate_render_context<'a>(
             compilation_options: Default::default(),
             targets: &[Some(wgpu::ColorTargetState {
                 format: config.format,
-                blend: Some(wgpu::BlendState{
+                blend: Some(wgpu::BlendState {
                     color: wgpu::BlendComponent {
                         src_factor: wgpu::BlendFactor::One,
                         dst_factor: wgpu::BlendFactor::One,
@@ -133,7 +145,7 @@ pub async fn generate_render_context<'a>(
                         src_factor: wgpu::BlendFactor::One,
                         dst_factor: wgpu::BlendFactor::Zero,
                         operation: wgpu::BlendOperation::Add,
-                    }, 
+                    },
                 }),
                 write_mask: wgpu::ColorWrites::ALL,
             })],
@@ -165,6 +177,8 @@ pub async fn generate_render_context<'a>(
         size,
         render_pipeline,
         camera_context,
+        blend_texture,
+        blend_bind_group,
     };
 
     web_sys::console::log_1(&"Done Generating State".into());

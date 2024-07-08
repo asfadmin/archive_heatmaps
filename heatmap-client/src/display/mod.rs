@@ -10,3 +10,4 @@ mod canvas;
 pub mod geometry;
 mod render_context;
 mod state;
+mod texture;
