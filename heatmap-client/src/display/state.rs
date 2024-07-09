@@ -51,58 +51,59 @@ impl<'a> State<'a> {
             .as_mut()
             .expect("ERROR: Failed to get render context in render");
 
-
         ///////////////////////
         // Blend Render Pass //
         ///////////////////////
-        /// 
-        let output = &render_context.blend_texture;
-        let view = output
-            .create_view(&wgpu::TextureViewDescriptor::default());
+
+        let output = &render_context.texture_context.texture;
+        let view = output.create_view(&wgpu::TextureViewDescriptor::default());
 
         let mut blend_encoder =
             render_context
                 .device
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("Blend Render Encoder"),
-                }
-            );
-        
+                });
+
         if let Some(geometry) = self.geometry.as_ref() {
-            let mut blend_render_pass = blend_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Blend Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.0,
-                            g: 0.0,
-                            b: 0.0,
-                            a: 0.0,
-                        }),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                occlusion_query_set: None,
-                timestamp_writes: None,
-            });
+            let mut blend_render_pass =
+                blend_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("Blend Render Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color {
+                                r: 0.0,
+                                g: 0.0,
+                                b: 0.0,
+                                a: 0.0,
+                            }),
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                    occlusion_query_set: None,
+                    timestamp_writes: None,
+                });
 
             blend_render_pass.set_pipeline(&render_context.blend_render_pipeline);
-            blend_render_pass.set_bind_group(0, &render_context.camera_context.camera_bind_group, &[]);
+            blend_render_pass.set_bind_group(
+                0,
+                &render_context.camera_context.camera_bind_group,
+                &[],
+            );
             blend_render_pass.set_vertex_buffer(0, geometry.blend_vertex_buffer.slice(..));
-            blend_render_pass
-                .set_index_buffer(geometry.blend_index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+            blend_render_pass.set_index_buffer(
+                geometry.blend_index_buffer.slice(..),
+                wgpu::IndexFormat::Uint32,
+            );
             blend_render_pass.draw_indexed(0..geometry.blend_num_indices, 0, 0..1);
-
-            
         }
 
         render_context
             .queue
             .submit(std::iter::once(blend_encoder.finish()));
-
 
         ////////////////////////////
         // Color Ramp Render Pass //
@@ -114,39 +115,46 @@ impl<'a> State<'a> {
             .create_view(&wgpu::TextureViewDescriptor::default());
 
         let mut color_ramp_encoder =
-        render_context
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("Color Ramp Render Encoder"),
-            });
+            render_context
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Color Ramp Render Encoder"),
+                });
 
         if let Some(geometry) = self.geometry.as_ref() {
-            let mut color_render_pass = color_ramp_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Color Ramp Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &color_view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.0,
-                            g: 0.0,
-                            b: 0.0,
-                            a: 1.0,
-                        }),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                occlusion_query_set: None,
-                timestamp_writes: None,
-            });
+            let mut color_render_pass =
+                color_ramp_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("Color Ramp Render Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &color_view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color {
+                                r: 0.0,
+                                g: 0.0,
+                                b: 0.0,
+                                a: 1.0,
+                            }),
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                    occlusion_query_set: None,
+                    timestamp_writes: None,
+                });
 
             color_render_pass.set_pipeline(&render_context.color_ramp_render_pipeline);
-            color_render_pass.set_bind_group(0, &render_context.camera_context.camera_bind_group, &[]);
-            color_render_pass.set_bind_group(1, &render_context.blend_bind_group, &[]);
+            color_render_pass.set_bind_group(
+                0,
+                &render_context.camera_context.camera_bind_group,
+                &[],
+            );
+            color_render_pass.set_bind_group(1, &render_context.texture_context.bind_group, &[]);
             color_render_pass.set_vertex_buffer(0, geometry.color_vertex_buffer.slice(..));
-            color_render_pass
-                .set_index_buffer(geometry.color_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            color_render_pass.set_index_buffer(
+                geometry.color_index_buffer.slice(..),
+                wgpu::IndexFormat::Uint16,
+            );
             color_render_pass.draw_indexed(0..geometry.color_num_indices, 0, 0..1);
         }
 
@@ -154,7 +162,7 @@ impl<'a> State<'a> {
             .queue
             .submit(std::iter::once(color_ramp_encoder.finish()));
         color_ramp_output.present();
-    
+
         Ok(())
     }
 }

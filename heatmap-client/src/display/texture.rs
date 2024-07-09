@@ -1,9 +1,13 @@
-use super::render_context::RenderContext;
+pub struct TextureContext {
+    pub texture: wgpu::Texture,
+    pub bind_group_layout: wgpu::BindGroupLayout,
+    pub bind_group: wgpu::BindGroup,
+}
 
 pub fn generate_texture(
     device: &wgpu::Device,
     size: winit::dpi::PhysicalSize<u32>,
-) -> (wgpu::Texture, wgpu::BindGroupLayout, wgpu::BindGroup) {
+) -> TextureContext {
     let texture_size = wgpu::Extent3d {
         width: size.width,
         height: size.height,
@@ -70,5 +74,9 @@ pub fn generate_texture(
         label: Some("blend_bind_group"),
     });
 
-    (blend_texture, blend_bind_group_layout, blend_bind_group)
+    TextureContext {
+        texture: blend_texture,
+        bind_group_layout: blend_bind_group_layout,
+        bind_group: blend_bind_group,
+    }
 }

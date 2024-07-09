@@ -3,19 +3,27 @@ use wgpu::util::DeviceExt;
 use super::render_context::RenderContext;
 use crate::ingest::load::BufferStorage;
 
-
 // To-do: Make this based on the size of the surface
 const COLOR_VERTICES: &[Vertex] = &[
-    Vertex { position: [-180.0, -90.0, 0.0], weight: 0},
-    Vertex { position: [180.0, -90.0, 0.0], weight: 0},
-    Vertex { position: [180.0, 90.0, 0.0], weight: 0},
-    Vertex { position: [-180.0, 90.0, 0.0], weight: 0},
+    Vertex {
+        position: [-180.0, -90.0, 0.0],
+        weight: 0,
+    },
+    Vertex {
+        position: [180.0, -90.0, 0.0],
+        weight: 0,
+    },
+    Vertex {
+        position: [180.0, 90.0, 0.0],
+        weight: 0,
+    },
+    Vertex {
+        position: [-180.0, 90.0, 0.0],
+        weight: 0,
+    },
 ];
 
-const COLOR_INDICES: &[u16] = &[
-    0, 2, 3,
-    0, 2, 1,
-];
+const COLOR_INDICES: &[u16] = &[0, 2, 3, 0, 2, 1];
 pub struct Geometry {
     pub blend_vertex_buffer: wgpu::Buffer,
     pub blend_index_buffer: wgpu::Buffer,
@@ -57,24 +65,23 @@ impl Geometry {
 
         let blend_num_indices = buffer_data.num_indices;
 
-        let color_vertex_buffer = 
-                render_context
-                    .device
-                    .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                        label: Some("Color Ramp Vertex Buffer"),
-                        contents: bytemuck::cast_slice(COLOR_VERTICES),
-                        usage: wgpu::BufferUsages::VERTEX,
-                    }
-                );
+        let color_vertex_buffer =
+            render_context
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Color Ramp Vertex Buffer"),
+                    contents: bytemuck::cast_slice(COLOR_VERTICES),
+                    usage: wgpu::BufferUsages::VERTEX,
+                });
 
         let color_index_buffer =
             render_context
-                    .device
-                    .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                        label: Some("Color Ramp Index Buffer"),
-                        contents: bytemuck::cast_slice(COLOR_INDICES),
-                        usage: wgpu::BufferUsages::INDEX,
-                    });
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Color Ramp Index Buffer"),
+                    contents: bytemuck::cast_slice(COLOR_INDICES),
+                    usage: wgpu::BufferUsages::INDEX,
+                });
 
         let color_num_indices = COLOR_INDICES.len() as u32;
 

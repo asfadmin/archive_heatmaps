@@ -13,6 +13,7 @@ use winit::{
 use super::geometry::Geometry;
 use super::render_context::RenderContext;
 use super::state::{InitStage, State};
+use super::texture::generate_texture;
 use crate::ingest::load::BufferStorage;
 
 pub struct App<'a> {
@@ -98,6 +99,21 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                 } else {
                     web_sys::console::log_1(&"Resizing".into());
                     self.state.resize(physical_size);
+                    self.state
+                        .render_context
+                        .as_mut()
+                        .expect("ERROR: Failed to get render context in resize event")
+                        .texture_context = generate_texture(
+                        &self
+                            .state
+                            .render_context
+                            .as_ref()
+                            .expect(
+                                "ERROR: Failed to get render context to get device in resize event",
+                            )
+                            .device,
+                        physical_size,
+                    )
                 }
             }
 
