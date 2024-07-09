@@ -79,7 +79,7 @@ impl<'a> State<'a> {
                             r: 0.0,
                             g: 0.0,
                             b: 0.0,
-                            a: 1.0,
+                            a: 0.0,
                         }),
                         store: wgpu::StoreOp::Store,
                     },
@@ -91,10 +91,10 @@ impl<'a> State<'a> {
 
             blend_render_pass.set_pipeline(&render_context.blend_render_pipeline);
             blend_render_pass.set_bind_group(0, &render_context.camera_context.camera_bind_group, &[]);
-            blend_render_pass.set_vertex_buffer(0, geometry.vertex_buffer.slice(..));
+            blend_render_pass.set_vertex_buffer(0, geometry.blend_vertex_buffer.slice(..));
             blend_render_pass
-                .set_index_buffer(geometry.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-            blend_render_pass.draw_indexed(0..geometry.num_indices, 0, 0..1);
+                .set_index_buffer(geometry.blend_index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+            blend_render_pass.draw_indexed(0..geometry.blend_num_indices, 0, 0..1);
 
             
         }
@@ -122,15 +122,15 @@ impl<'a> State<'a> {
 
         if let Some(geometry) = self.geometry.as_ref() {
             let mut color_render_pass = color_ramp_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Render Pass"),
+                label: Some("Color Ramp Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &color_view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 1.0,
-                            g: 1.0,
-                            b: 1.0,
+                            r: 0.0,
+                            g: 0.0,
+                            b: 0.0,
                             a: 1.0,
                         }),
                         store: wgpu::StoreOp::Store,
@@ -144,10 +144,10 @@ impl<'a> State<'a> {
             color_render_pass.set_pipeline(&render_context.color_ramp_render_pipeline);
             color_render_pass.set_bind_group(0, &render_context.camera_context.camera_bind_group, &[]);
             color_render_pass.set_bind_group(1, &render_context.blend_bind_group, &[]);
-            color_render_pass.set_vertex_buffer(0, geometry.vertex_buffer.slice(..));
+            color_render_pass.set_vertex_buffer(0, geometry.color_vertex_buffer.slice(..));
             color_render_pass
-                .set_index_buffer(geometry.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-            color_render_pass.draw_indexed(0..geometry.num_indices, 0, 0..1);
+                .set_index_buffer(geometry.color_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            color_render_pass.draw_indexed(0..geometry.color_num_indices, 0, 0..1);
         }
 
         render_context
