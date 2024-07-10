@@ -3,8 +3,11 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use leptos::html::ToHtmlElement;
+use winit::platform::web::WindowExtWebSys;
 use winit::{
     application::ApplicationHandler,
+    dpi::{LogicalSize, PhysicalSize},
     event::WindowEvent,
     event_loop::{ActiveEventLoop, EventLoopProxy},
     window::{Window, WindowId},
@@ -35,21 +38,14 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                 .expect("ERROR: Failed to create window"),
         ));
 
-        // Store the window canvas to external state
-        #[cfg(target_arch = "wasm32")]
-        {
-            use leptos::html::ToHtmlElement;
-            use winit::platform::web::WindowExtWebSys;
-
-            self.external_state.borrow_mut().canvas = self
-                .state
-                .window
-                .clone()
-                .expect("ERROR: Failed to get window when creating HtmlCanvasElement")
-                .as_ref()
-                .canvas()
-                .map(|canvas_element| canvas_element.to_leptos_element());
-        }
+        self.external_state.borrow_mut().canvas = self
+            .state
+            .window
+            .clone()
+            .expect("ERROR: Failed to get window when creating HtmlCanvasElement")
+            .as_ref()
+            .canvas()
+            .map(|canvas_element| canvas_element.to_leptos_element());
     }
 
     fn window_event(
@@ -58,6 +54,34 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
+        // regardless of the event, we must poll the current browser window size
+        // and resize the winit window (our canvas) to match
+        {
+            let window = self
+                .state
+                .window
+                .clone()
+                .expect("failed to get window in window event");
+            let browser_window =
+                web_sys::window().expect("failed to get browser window in window event");
+
+            let width = browser_window
+                .inner_width()
+                .expect("failed to get window inner width in window event")
+                .as_f64()
+                .expect("failed type conversion in window event") as u32;
+            let height = browser_window
+                .inner_height()
+                .expect("failed to get window inner height in window event")
+                .as_f64()
+                .expect("failed type conversion in window even") as u32;
+            let factor = window.scale_factor();
+            let logical = LogicalSize { width, height };
+            let PhysicalSize { width, height }: PhysicalSize<u32> = logical.to_physical(factor);
+
+            let _ = window.request_inner_size(PhysicalSize::new(width, height));
+        }
+
         match event {
             WindowEvent::CloseRequested => self.exiting(event_loop),
 
@@ -101,7 +125,9 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                 }
             }
 
-            _ => {}
+            _ => {
+                self.state.handle_input_event(event);
+            }
         }
     }
 
@@ -110,11 +136,13 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
             UserMessage::StateMessage(render_context) => {
                 // Fill out the rest of the state class with the contents of StateMessage
                 web_sys::console::log_1(&"Assign state values in application handler...".into());
+
                 self.state = State {
                     render_context: Some(render_context),
                     window: self.state.window.clone(),
                     init_stage: InitStage::Complete,
                     geometry: None,
+                    input_state: self.state.input_state.clone(),
                 };
 
                 // Resize configures the surface based on current canvas size

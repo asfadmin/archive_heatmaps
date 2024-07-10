@@ -1,52 +1,34 @@
 use wgpu::util::DeviceExt;
 
-#[rustfmt::skip]
-pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
-    1.0, 0.0, 0.0, 0.0,
-    0.0, 1.0, 0.0, 0.0,
-    0.0, 0.0, 0.5, 0.5,
-    0.0, 0.0, 0.0, 1.0,
-);
+use super::input::InputState;
+use super::render_context::RenderContext;
+
+pub enum CameraEvent {
+    Resize(u32, u32),
+    Translate(cgmath::Vector2<f64>),
+    AspectRatio(f64),
+    Zoom(f64, cgmath::Vector2<f64>),
+}
 
 pub struct CameraContext {
-    pub _camera: Camera,
-    pub _camera_uniform: CameraUniform,
-    pub _camera_buffer: wgpu::Buffer,
+    pub camera: Camera,
+    pub camera_uniform: CameraUniform,
+    pub camera_buffer: wgpu::Buffer,
     pub camera_bind_group_layout: wgpu::BindGroupLayout,
     pub camera_bind_group: wgpu::BindGroup,
 }
 
-pub struct Camera {
-    pub eye: cgmath::Point3<f32>,
-    pub target: cgmath::Point3<f32>,
-    pub up: cgmath::Vector3<f32>,
-    pub aspect: f32,
-    pub fovy: f32,
-    pub znear: f32,
-    pub zfar: f32,
-}
-
-impl Camera {
-    pub fn build_view_projection_matrix(&self) -> cgmath::Matrix4<f32> {
-        let view = cgmath::Matrix4::look_at_rh(self.eye, self.target, self.up);
-        let proj = cgmath::perspective(cgmath::Deg(self.fovy), self.aspect, self.znear, self.zfar);
-
-        OPENGL_TO_WGPU_MATRIX * proj * view
-    }
-
-    pub fn generate_camera_data(
+impl CameraContext {
+    pub fn generate_camera_context(
         device: &wgpu::Device,
         config: &wgpu::SurfaceConfiguration,
-    ) -> CameraContext {
+    ) -> Self {
         let camera = Camera {
-            eye: (0.0, 0.0, 150.0).into(),
-            target: (0.0, 0.0, 0.0).into(),
-
-            up: cgmath::Vector3::unit_y(),
-            aspect: config.width as f32 / config.height as f32,
-            fovy: 45.0,
-            znear: 0.1,
-            zfar: 100.0,
+            aspect: config.width as f64 / config.height as f64,
+            width: config.width as f64,
+            height: config.height as f64,
+            position: (0.0, 0.0).into(),
+            zoom: 10.0,
         };
 
         let mut camera_uniform = CameraUniform::new();
@@ -83,12 +65,99 @@ impl Camera {
         });
 
         CameraContext {
-            _camera: camera,
-            _camera_uniform: camera_uniform,
-            _camera_buffer: camera_buffer,
+            camera,
+            camera_uniform,
+            camera_buffer,
             camera_bind_group_layout,
             camera_bind_group,
         }
+    }
+
+    pub fn run_camera_logic(&mut self, input_state: &mut InputState) {
+        self.update_camera(CameraEvent::Zoom(
+            input_state.consume_scroll_delta() * self.camera.zoom * 0.001,
+            (input_state.cursor_position.x, input_state.cursor_position.y).into(),
+        ));
+
+        let drag_delta = input_state.consume_drag_delta();
+        self.update_camera(CameraEvent::Translate(
+            self.mouse_coordinate_convert((drag_delta.x, drag_delta.y).into()),
+        ));
+
+        self.rebuild_view_matrix();
+    }
+
+    pub fn mouse_coordinate_convert(
+        &self,
+        mut coordinate: cgmath::Vector2<f64>,
+    ) -> cgmath::Vector2<f64> {
+        coordinate.x *= -1.0;
+
+        // convert to world scale
+        coordinate / self.camera.zoom
+    }
+
+    pub fn update_camera(&mut self, camera_event: CameraEvent) {
+        match camera_event {
+            CameraEvent::Resize(width, height) => {
+                let aspect = width as f64 / height as f64;
+                self.update_camera(CameraEvent::AspectRatio(aspect));
+                self.camera.width = width as f64;
+                self.camera.height = height as f64;
+
+                web_sys::console::log_1(&format!("{:?}, {:?}", width, height).into());
+            }
+
+            CameraEvent::AspectRatio(aspect) => {
+                self.camera.aspect = aspect;
+            }
+
+            CameraEvent::Zoom(zoom, mut pos) => {
+                let scale_factor = (self.camera.zoom + zoom) / self.camera.zoom;
+
+                self.camera.zoom += zoom;
+
+                web_sys::console::log_1(&format!("{:?}", self.camera.zoom).into());
+
+                pos = self.mouse_coordinate_convert(pos);
+                self.update_camera(CameraEvent::Translate(pos - pos * scale_factor));
+            }
+
+            CameraEvent::Translate(pos) => {
+                self.camera.position += pos;
+            }
+        }
+    }
+
+    pub fn rebuild_view_matrix(&mut self) {
+        self.camera_uniform.update_view_proj(&self.camera);
+    }
+
+    pub fn write_camera_buffer(&self, render_context: &RenderContext) {
+        render_context.queue.write_buffer(
+            &self.camera_buffer,
+            0,
+            bytemuck::cast_slice(&[self.camera_uniform]),
+        )
+    }
+}
+
+pub struct Camera {
+    pub aspect: f64,
+    pub width: f64,
+    pub height: f64,
+    pub zoom: f64,
+    pub position: cgmath::Vector2<f64>,
+}
+
+impl Camera {
+    pub fn build_view_projection_matrix(&self) -> cgmath::Matrix4<f64> {
+        let view = cgmath::Matrix4::from_scale(self.zoom)
+            * cgmath::Matrix4::from_translation(-self.position.extend(0.0));
+
+        let proj = cgmath::ortho(0.0, self.width, -self.height, 0.0, -1.0, 1.0);
+
+        proj * view
     }
 }
 
@@ -107,6 +176,8 @@ impl CameraUniform {
     }
 
     fn update_view_proj(&mut self, camera: &Camera) {
-        self.view_proj = camera.build_view_projection_matrix().into();
+        let view_proj_f64: [[f64; 4]; 4] = camera.build_view_projection_matrix().into();
+
+        self.view_proj = view_proj_f64.map(|x| x.map(|y| y as f32));
     }
 }

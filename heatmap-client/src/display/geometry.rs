@@ -14,7 +14,6 @@ impl Geometry {
         //////////////////////////////
         // Set up buffers to render //
         //////////////////////////////
-
         web_sys::console::log_3(
             &"Buffered Data: \n".into(),
             &format!("Vertices: {:?}", buffer_data.vertices.as_slice()).into(),

@@ -6,6 +6,7 @@ use std::rc::Rc;
 
 use leptos::*;
 use winit::event_loop::EventLoop;
+use winit::platform::web::EventLoopExtWebSys;
 
 use super::app::{App, ExternalState, UserMessage};
 use super::state::State;
@@ -19,33 +20,29 @@ pub fn Canvas() -> impl IntoView {
         .build()
         .expect("ERROR: Failed to create event loop");
 
-    #[cfg(target_arch = "wasm32")]
-    {
-        use winit::platform::web::EventLoopExtWebSys;
-        // The canvas element will be stored here once it has been created
-        let external_state = Rc::new(RefCell::new(ExternalState::default()));
+    // The canvas element will be stored here once it has been created
+    let external_state = Rc::new(RefCell::new(ExternalState::default()));
 
-        let app = App {
-            external_state: external_state.clone(),
-            state: State::default(),
-            event_loop_proxy: event_loop.create_proxy(),
-        };
+    let app = App {
+        external_state: external_state.clone(),
+        state: State::default(),
+        event_loop_proxy: event_loop.create_proxy(),
+    };
 
-        let event_loop_proxy = app.event_loop_proxy.clone();
+    let event_loop_proxy = app.event_loop_proxy.clone();
 
-        // Start the event loop
-        event_loop.spawn_app(app);
+    // Start the event loop
+    event_loop.spawn_app(app);
 
-        let canvas = external_state
-            .borrow()
-            .canvas
-            .clone()
-            .expect("ERROR: Failed to get external state");
+    let canvas = external_state
+        .borrow()
+        .canvas
+        .clone()
+        .expect("ERROR: Failed to get external state");
 
-        let data_loader = DataLoader { event_loop_proxy };
+    let data_loader = DataLoader { event_loop_proxy };
 
-        data_loader.load_data();
+    data_loader.load_data();
 
-        mount_to_body(move || canvas)
-    }
+    mount_to_body(move || canvas)
 }

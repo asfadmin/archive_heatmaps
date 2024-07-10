@@ -1,3 +1,4 @@
+#![feature(let_chains)]
 use display::Canvas;
 use leptos::*;
 

@@ -1,11 +1,11 @@
 use std::rc::Rc;
 
-use wgpu::BlendComponent;
+use winit::dpi::PhysicalSize;
 use winit::event_loop::EventLoopProxy;
 use winit::window::Window;
 
 use super::app::UserMessage;
-use super::camera::{Camera, CameraContext};
+use super::camera::CameraContext;
 use super::geometry::Vertex;
 
 pub struct RenderContext<'a> {
@@ -15,6 +15,7 @@ pub struct RenderContext<'a> {
     pub config: wgpu::SurfaceConfiguration,
     pub size: winit::dpi::PhysicalSize<u32>,
     pub render_pipeline: wgpu::RenderPipeline,
+    pub limits: wgpu::Limits,
     pub camera_context: CameraContext,
 }
 
@@ -23,7 +24,7 @@ pub async fn generate_render_context<'a>(
     window: Rc<Window>,
     event_loop_proxy: EventLoopProxy<UserMessage<'_>>,
 ) {
-    let size = window.inner_size();
+    let size = PhysicalSize::new(800, 800);
 
     ////////////////////
     // Set up surface //
@@ -72,6 +73,8 @@ pub async fn generate_render_context<'a>(
         .await
         .expect("ERROR: Failed to get device and queue");
 
+    let limits = device.limits();
+
     ///////////////////////////
     // Set up surface config //
     ///////////////////////////
@@ -84,6 +87,7 @@ pub async fn generate_render_context<'a>(
         .copied()
         .find(|f| f.is_srgb())
         .unwrap_or(surface_caps.formats[0]);
+
     let config = wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         format: surface_format,
@@ -95,7 +99,7 @@ pub async fn generate_render_context<'a>(
         view_formats: vec![],
     };
 
-    let camera_context = Camera::generate_camera_data(&device, &config);
+    let camera_context = CameraContext::generate_camera_context(&device, &config);
 
     ////////////////////////////
     // Set up render pipeline //
@@ -123,7 +127,7 @@ pub async fn generate_render_context<'a>(
             compilation_options: Default::default(),
             targets: &[Some(wgpu::ColorTargetState {
                 format: config.format,
-                blend: Some(wgpu::BlendState{
+                blend: Some(wgpu::BlendState {
                     color: wgpu::BlendComponent {
                         src_factor: wgpu::BlendFactor::One,
                         dst_factor: wgpu::BlendFactor::One,
@@ -133,7 +137,7 @@ pub async fn generate_render_context<'a>(
                         src_factor: wgpu::BlendFactor::One,
                         dst_factor: wgpu::BlendFactor::Zero,
                         operation: wgpu::BlendOperation::Add,
-                    }, 
+                    },
                 }),
                 write_mask: wgpu::ColorWrites::ALL,
             })],
@@ -164,6 +168,7 @@ pub async fn generate_render_context<'a>(
         config,
         size,
         render_pipeline,
+        limits,
         camera_context,
     };
 

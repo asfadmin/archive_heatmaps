@@ -3,9 +3,12 @@
 
 use std::rc::Rc;
 
+use winit::event::WindowEvent;
 use winit::window::Window;
 
+use super::camera::CameraEvent;
 use super::geometry::Geometry;
+use super::input::InputState;
 use super::render_context::RenderContext;
 
 /// Tracks wether state is finished setting up
@@ -22,22 +25,45 @@ pub struct State<'a> {
     pub render_context: Option<RenderContext<'a>>,
     pub geometry: Option<Geometry>,
     pub window: Option<Rc<Window>>,
+    pub input_state: InputState,
     pub init_stage: InitStage,
 }
 
 impl<'a> State<'a> {
+    // handles input events
+    pub fn handle_input_event(&mut self, event: WindowEvent) {
+        self.input_state.eat_event(event);
+    }
+
     // Configures the surface based on the passed physical size
-    pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
+    pub fn resize(&mut self, mut new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
             let render_context = self
                 .render_context
                 .as_mut()
                 .expect("ERROR: Failed to get render context in resize");
+
+            render_context
+                .camera_context
+                .update_camera(CameraEvent::Resize(new_size.width, new_size.height));
+
+            // Ensure new render surface size is within the maximum supported
+            // texture size by the graphics card.
+            if new_size.width > render_context.limits.max_texture_dimension_2d {
+                new_size.width = render_context.limits.max_texture_dimension_2d;
+            }
+
+            if new_size.height > render_context.limits.max_texture_dimension_2d {
+                new_size.height = render_context.limits.max_texture_dimension_2d;
+            }
+
             render_context.size = new_size;
+
             let mut config = render_context.config.clone();
             config.width = new_size.width;
             config.height = new_size.height;
             render_context.config = config;
+
             render_context
                 .surface
                 .configure(&render_context.device, &render_context.config);
@@ -61,6 +87,15 @@ impl<'a> State<'a> {
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("Render Encoder"),
                 });
+
+        // run camera logic
+        render_context
+            .camera_context
+            .run_camera_logic(&mut self.input_state);
+
+        render_context
+            .camera_context
+            .write_camera_buffer(render_context);
 
         if let Some(geometry) = self.geometry.as_ref() {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {

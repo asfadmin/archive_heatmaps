@@ -8,5 +8,6 @@ pub mod app;
 mod camera;
 mod canvas;
 pub mod geometry;
+mod input;
 mod render_context;
 mod state;
