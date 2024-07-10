@@ -10,7 +10,7 @@ use super::camera::CameraEvent;
 use super::geometry::Geometry;
 use super::input::InputState;
 use super::render_context::RenderContext;
-use super::texture::generate_texture;
+use super::texture::generate_blend_texture;
 
 /// Tracks wether state is finished setting up
 #[derive(Default, PartialEq, Eq)]
@@ -69,7 +69,8 @@ impl<'a> State<'a> {
                 .surface
                 .configure(&render_context.device, &render_context.config);
 
-            render_context.texture_context = generate_texture(&render_context.device, new_size);
+            render_context.blend_texture_context =
+                generate_blend_texture(&render_context.device, new_size);
         }
     }
 
@@ -84,7 +85,7 @@ impl<'a> State<'a> {
         // Blend Render Pass //
         ///////////////////////
 
-        let output = &render_context.texture_context.texture;
+        let output = &render_context.blend_texture_context.texture;
         let view = output.create_view(&wgpu::TextureViewDescriptor::default());
 
         let mut blend_encoder =
@@ -187,7 +188,11 @@ impl<'a> State<'a> {
                 &render_context.camera_context.camera_bind_group,
                 &[],
             );
-            color_render_pass.set_bind_group(1, &render_context.texture_context.bind_group, &[]);
+            color_render_pass.set_bind_group(
+                1,
+                &render_context.blend_texture_context.bind_group,
+                &[],
+            );
             color_render_pass.set_vertex_buffer(0, geometry.color_vertex_buffer.slice(..));
             color_render_pass.set_index_buffer(
                 geometry.color_index_buffer.slice(..),

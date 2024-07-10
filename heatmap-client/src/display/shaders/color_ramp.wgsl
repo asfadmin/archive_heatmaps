@@ -35,7 +35,7 @@ var blended_samp: sampler;
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let color = textureSample(blended_tex, blended_samp, in.tex_coords);
 
-    return colormap(color.x / 25);
+    return colormap(color.x / 50);
 }
 
 

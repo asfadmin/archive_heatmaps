@@ -6,7 +6,7 @@ use winit::{dpi::PhysicalSize, event_loop::EventLoopProxy};
 use super::app::UserMessage;
 use super::camera::CameraContext;
 use super::geometry::Vertex;
-use crate::display::texture::{generate_texture, TextureContext};
+use super::texture::{generate_blend_texture, generate_colormap_texture, TextureContext};
 
 pub struct RenderContext<'a> {
     pub surface: wgpu::Surface<'a>,
@@ -18,7 +18,8 @@ pub struct RenderContext<'a> {
     pub blend_render_pipeline: wgpu::RenderPipeline,
     pub color_ramp_render_pipeline: wgpu::RenderPipeline,
     pub camera_context: CameraContext,
-    pub texture_context: TextureContext,
+    pub blend_texture_context: TextureContext,
+    pub colormap_texture_context: TextureContext,
 }
 
 /// Create a new state
@@ -103,7 +104,8 @@ pub async fn generate_render_context<'a>(
 
     let camera_context = CameraContext::generate_camera_context(&device, &config);
 
-    let texture_context = generate_texture(&device, size);
+    let blend_texture_context = generate_blend_texture(&device, size);
+    let colormap_texture_context = generate_colormap_texture(&device, &queue);
 
     ////////////////////////////
     // Set up render pipeline //
@@ -173,7 +175,7 @@ pub async fn generate_render_context<'a>(
             label: Some("Color Ramp Render Pipeline Layout"),
             bind_group_layouts: &[
                 &camera_context.camera_bind_group_layout,
-                &texture_context.bind_group_layout,
+                &blend_texture_context.bind_group_layout,
             ],
             push_constant_ranges: &[],
         });
@@ -227,7 +229,8 @@ pub async fn generate_render_context<'a>(
         blend_render_pipeline,
         color_ramp_render_pipeline,
         camera_context,
-        texture_context,
+        blend_texture_context,
+        colormap_texture_context,
     };
 
     web_sys::console::log_1(&"Done Generating State".into());
