@@ -89,7 +89,7 @@ impl TryFrom<&serde_json::Map<String, serde_json::Value>> for Ancestor {
                     .expect("failed to get start time")
                     .as_str()
                     .expect("failed to convert start time to str"),
-                "%Y-%m-%d %H:%M:%S",
+                "%Y-%m-%d %H:%M:%S%.f",
             )
             .expect("failed to parse start time from string"),
             end_time: NaiveDateTime::parse_from_str(
@@ -98,7 +98,7 @@ impl TryFrom<&serde_json::Map<String, serde_json::Value>> for Ancestor {
                     .expect("failed to get end time")
                     .as_str()
                     .expect("failed to convert end time to str"),
-                "%Y-%m-%d %H:%M:%S",
+                "%Y-%m-%d %H:%M:%S%.f",
             )
             .expect("failed to parse end time from string"),
         })
