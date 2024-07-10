@@ -1,3 +1,4 @@
+use actix_cors::Cors;
 use actix_web::{
     middleware::{Compress, Logger},
     web::Data,
@@ -57,6 +58,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(Compress::default())
             .wrap(RedisCacheSet)
             .wrap(RedisCacheGet)
+            .wrap(Cors::permissive()) //TODO only for debug
             .service(heatmap_query);
 
         if let Some(redis_pool_unwrapped) = redis_pool.clone() {

@@ -1,7 +1,9 @@
-use heatmap::Canvas;
+#![feature(let_chains)]
+use display::Canvas;
 use leptos::*;
 
-mod heatmap;
+mod display;
+mod ingest;
 
 fn main() {
     console_error_panic_hook::set_once();

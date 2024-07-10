@@ -4,8 +4,11 @@
 
 pub use canvas::Canvas;
 
-mod app;
+pub mod app;
+mod camera;
 mod canvas;
-mod geometry;
+pub mod geometry;
+mod input;
 mod render_context;
 mod state;
+mod texture;
