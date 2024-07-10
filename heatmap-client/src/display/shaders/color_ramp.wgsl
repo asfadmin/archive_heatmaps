@@ -38,9 +38,9 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     }
 
     let tex_dim = textureDimensions(colormap_tex);
-    let map_coord = clamp(weight, 0.0, f32(tex_dim));
+    let map_coord = clamp(weight * 10, 0.0, f32(tex_dim - 1));
 
-    let color = textureLoad(colormap_tex, u32(map_coord * 10), 0);
+    let color = textureLoad(colormap_tex, u32(map_coord), 0);
 
     return vec4<f32>(color);
 }
