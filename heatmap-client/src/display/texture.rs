@@ -1,3 +1,5 @@
+use image::GenericImageView;
+
 pub struct TextureContext {
     pub texture: wgpu::Texture,
     pub bind_group_layout: wgpu::BindGroupLayout,
@@ -82,9 +84,17 @@ pub fn generate_blend_texture(
 }
 
 pub fn generate_colormap_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> TextureContext {
+
+    // Def of colormap, should make this fancier in the future, currently a placeholder
+    let colormap_bytes = include_bytes!("../../assets/temperature.png");
+    let colormap_image = image::load_from_memory(colormap_bytes).unwrap();
+    let colormap_rgba = colormap_image.to_rgba8();
+
+    let dimensions = colormap_image.dimensions();
+
     let texture_size = wgpu::Extent3d {
-        width: 4,
-        height: 1,
+        width: dimensions.0,
+        height: dimensions.1,
         depth_or_array_layers: 1,
     };
     let texture = device.create_texture(&wgpu::TextureDescriptor {
@@ -92,16 +102,13 @@ pub fn generate_colormap_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> 
         mip_level_count: 1,
         sample_count: 1,
         dimension: wgpu::TextureDimension::D1,
-        format: wgpu::TextureFormat::Rgba8Uint,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
         usage: wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::TEXTURE_BINDING,
         label: Some("colormap texture"),
         view_formats: &[],
     });
 
-    // Def of colormap, should make this fancier in the future, currently a placeholder
-    let colormap = [
-        0, 90, 128, 1, 0, 128, 77, 1, 168, 192, 49, 1, 201, 30, 30, 1,
-    ];
+    web_sys::console::log_1(&format!("{:?}", colormap_image).into());
 
     queue.write_texture(
         wgpu::ImageCopyTexture {
@@ -110,11 +117,11 @@ pub fn generate_colormap_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> 
             origin: wgpu::Origin3d::ZERO,
             aspect: wgpu::TextureAspect::All,
         },
-        &colormap,
+        &colormap_rgba,
         wgpu::ImageDataLayout {
             offset: 0,
-            bytes_per_row: Some(4 * texture_size.width),
-            rows_per_image: Some(texture_size.height),
+            bytes_per_row: Some(4 * dimensions.0),
+            rows_per_image: Some(1),
         },
         texture_size,
     );
@@ -136,7 +143,7 @@ pub fn generate_colormap_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> 
                 binding: 0,
                 visibility: wgpu::ShaderStages::FRAGMENT,
                 ty: wgpu::BindingType::Texture {
-                    sample_type: wgpu::TextureSampleType::Uint,
+                    sample_type: wgpu::TextureSampleType::Float { filterable: true },
                     view_dimension: wgpu::TextureViewDimension::D1,
                     multisampled: false,
                 },

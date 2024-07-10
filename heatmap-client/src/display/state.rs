@@ -185,7 +185,7 @@ impl<'a> State<'a> {
             color_render_pass.set_pipeline(&render_context.color_ramp_render_pipeline);
             color_render_pass.set_bind_group(
                 0,
-                &render_context.camera_context.camera_bind_group,
+                &render_context.colormap_texture_context.bind_group,
                 &[],
             );
             color_render_pass.set_bind_group(

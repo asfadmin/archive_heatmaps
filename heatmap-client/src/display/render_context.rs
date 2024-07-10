@@ -174,7 +174,7 @@ pub async fn generate_render_context<'a>(
         device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Color Ramp Render Pipeline Layout"),
             bind_group_layouts: &[
-                &camera_context.camera_bind_group_layout,
+                &colormap_texture_context.bind_group_layout,
                 &blend_texture_context.bind_group_layout,
             ],
             push_constant_ranges: &[],
