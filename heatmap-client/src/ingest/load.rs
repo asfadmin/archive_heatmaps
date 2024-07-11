@@ -2,8 +2,8 @@ extern crate earcutr;
 use winit::event_loop::EventLoopProxy;
 
 use super::request::{request, HeatmapData};
-use crate::display::app::UserMessage;
-use crate::display::geometry::Vertex;
+use crate::canvas::app::UserMessage;
+use crate::canvas::geometry::Vertex;
 
 pub struct BufferStorage {
     pub vertices: Vec<Vertex>,
