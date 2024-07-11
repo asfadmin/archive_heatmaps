@@ -10,7 +10,7 @@ use super::camera::CameraEvent;
 use super::geometry::Geometry;
 use super::input::InputState;
 use super::render_context::RenderContext;
-use super::texture::generate_texture;
+use super::texture::generate_blend_texture;
 
 /// Tracks wether state is finished setting up
 #[derive(Default, PartialEq, Eq)]
@@ -69,7 +69,8 @@ impl<'a> State<'a> {
                 .surface
                 .configure(&render_context.device, &render_context.config);
 
-            render_context.texture_context = generate_texture(&render_context.device, new_size);
+            render_context.blend_texture_context =
+                generate_blend_texture(&render_context.device, new_size);
         }
     }
 
@@ -84,7 +85,7 @@ impl<'a> State<'a> {
         // Blend Render Pass //
         ///////////////////////
 
-        let output = &render_context.texture_context.texture;
+        let output = &render_context.blend_texture_context.texture;
         let view = output.create_view(&wgpu::TextureViewDescriptor::default());
 
         let mut blend_encoder =
@@ -144,25 +145,25 @@ impl<'a> State<'a> {
             .submit(std::iter::once(blend_encoder.finish()));
 
         ////////////////////////////
-        // Color Ramp Render Pass //
+        // Colormap Render Pass //
         ////////////////////////////
 
-        let color_ramp_output = render_context.surface.get_current_texture()?;
-        let color_view = color_ramp_output
+        let colormap_output = render_context.surface.get_current_texture()?;
+        let color_view = colormap_output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
-        let mut color_ramp_encoder =
+        let mut colormap_encoder =
             render_context
                 .device
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some("Color Ramp Render Encoder"),
+                    label: Some("Colormap Render Encoder"),
                 });
 
         if let Some(geometry) = self.geometry.as_ref() {
             let mut color_render_pass =
-                color_ramp_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: Some("Color Ramp Render Pass"),
+                colormap_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("Colormap Render Pass"),
                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                         view: &color_view,
                         resolve_target: None,
@@ -181,13 +182,17 @@ impl<'a> State<'a> {
                     timestamp_writes: None,
                 });
 
-            color_render_pass.set_pipeline(&render_context.color_ramp_render_pipeline);
+            color_render_pass.set_pipeline(&render_context.colormap_render_pipeline);
             color_render_pass.set_bind_group(
                 0,
-                &render_context.camera_context.camera_bind_group,
+                &render_context.colormap_texture_context.bind_group,
                 &[],
             );
-            color_render_pass.set_bind_group(1, &render_context.texture_context.bind_group, &[]);
+            color_render_pass.set_bind_group(
+                1,
+                &render_context.blend_texture_context.bind_group,
+                &[],
+            );
             color_render_pass.set_vertex_buffer(0, geometry.color_vertex_buffer.slice(..));
             color_render_pass.set_index_buffer(
                 geometry.color_index_buffer.slice(..),
@@ -198,8 +203,8 @@ impl<'a> State<'a> {
 
         render_context
             .queue
-            .submit(std::iter::once(color_ramp_encoder.finish()));
-        color_ramp_output.present();
+            .submit(std::iter::once(colormap_encoder.finish()));
+        colormap_output.present();
 
         Ok(())
     }

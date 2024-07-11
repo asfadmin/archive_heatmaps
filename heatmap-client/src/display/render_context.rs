@@ -6,7 +6,7 @@ use winit::{dpi::PhysicalSize, event_loop::EventLoopProxy};
 use super::app::UserMessage;
 use super::camera::CameraContext;
 use super::geometry::Vertex;
-use crate::display::texture::{generate_texture, TextureContext};
+use super::texture::{generate_blend_texture, generate_colormap_texture, TextureContext};
 
 pub struct RenderContext<'a> {
     pub surface: wgpu::Surface<'a>,
@@ -16,9 +16,10 @@ pub struct RenderContext<'a> {
     pub size: winit::dpi::PhysicalSize<u32>,
     pub limits: wgpu::Limits,
     pub blend_render_pipeline: wgpu::RenderPipeline,
-    pub color_ramp_render_pipeline: wgpu::RenderPipeline,
+    pub colormap_render_pipeline: wgpu::RenderPipeline,
     pub camera_context: CameraContext,
-    pub texture_context: TextureContext,
+    pub blend_texture_context: TextureContext,
+    pub colormap_texture_context: TextureContext,
 }
 
 /// Create a new state
@@ -103,7 +104,8 @@ pub async fn generate_render_context<'a>(
 
     let camera_context = CameraContext::generate_camera_context(&device, &config);
 
-    let texture_context = generate_texture(&device, size);
+    let blend_texture_context = generate_blend_texture(&device, size);
+    let colormap_texture_context = generate_colormap_texture(&device, &queue);
 
     ////////////////////////////
     // Set up render pipeline //
@@ -165,56 +167,54 @@ pub async fn generate_render_context<'a>(
         multiview: None,
     });
 
-    let color_ramp_shader =
-        device.create_shader_module(wgpu::include_wgsl!("shaders/color_ramp.wgsl"));
+    let colormap_shader = device.create_shader_module(wgpu::include_wgsl!("shaders/colormap.wgsl"));
 
-    let color_ramp_render_pipeline_layout =
+    let colormap_render_pipeline_layout =
         device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Color Ramp Render Pipeline Layout"),
             bind_group_layouts: &[
-                &camera_context.camera_bind_group_layout,
-                &texture_context.bind_group_layout,
+                &colormap_texture_context.bind_group_layout,
+                &blend_texture_context.bind_group_layout,
             ],
             push_constant_ranges: &[],
         });
 
-    let color_ramp_render_pipeline =
-        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Color Ramp Render Pipeline"),
-            layout: Some(&color_ramp_render_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &color_ramp_shader,
-                entry_point: "vs_main",
-                buffers: &[Vertex::desc()],
-                compilation_options: Default::default(),
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &color_ramp_shader,
-                entry_point: "fs_main",
-                compilation_options: Default::default(),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: config.format,
-                    blend: None,
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Cw,
-                cull_mode: None,
-                polygon_mode: wgpu::PolygonMode::Fill,
-                unclipped_depth: false,
-                conservative: false,
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-            multiview: None,
-        });
+    let colormap_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("Color Ramp Render Pipeline"),
+        layout: Some(&colormap_render_pipeline_layout),
+        vertex: wgpu::VertexState {
+            module: &colormap_shader,
+            entry_point: "vs_main",
+            buffers: &[Vertex::desc()],
+            compilation_options: Default::default(),
+        },
+        fragment: Some(wgpu::FragmentState {
+            module: &colormap_shader,
+            entry_point: "fs_main",
+            compilation_options: Default::default(),
+            targets: &[Some(wgpu::ColorTargetState {
+                format: config.format,
+                blend: None,
+                write_mask: wgpu::ColorWrites::ALL,
+            })],
+        }),
+        primitive: wgpu::PrimitiveState {
+            topology: wgpu::PrimitiveTopology::TriangleList,
+            strip_index_format: None,
+            front_face: wgpu::FrontFace::Cw,
+            cull_mode: None,
+            polygon_mode: wgpu::PolygonMode::Fill,
+            unclipped_depth: false,
+            conservative: false,
+        },
+        depth_stencil: None,
+        multisample: wgpu::MultisampleState {
+            count: 1,
+            mask: !0,
+            alpha_to_coverage_enabled: false,
+        },
+        multiview: None,
+    });
 
     // StateMessage is sent to the event loop with the contained variables
     let message = RenderContext {
@@ -225,9 +225,10 @@ pub async fn generate_render_context<'a>(
         size,
         limits,
         blend_render_pipeline,
-        color_ramp_render_pipeline,
+        colormap_render_pipeline,
         camera_context,
-        texture_context,
+        blend_texture_context,
+        colormap_texture_context,
     };
 
     web_sys::console::log_1(&"Done Generating State".into());
