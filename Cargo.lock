@@ -2101,6 +2101,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "stylance",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
@@ -4661,6 +4662,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "siphasher"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56199f7ddabf13fe5074ce809e7d3f42b42ae711800501b5b16ea82ad029c39d"
+
+[[package]]
 name = "slab"
 version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4792,6 +4799,41 @@ name = "strsim"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
+
+[[package]]
+name = "stylance"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c198f95dcc55143bcac6f2ffaf833b2596d45530ac5077e1e379e8363e220f40"
+dependencies = [
+ "stylance-macros",
+]
+
+[[package]]
+name = "stylance-core"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f3b56d240b0a87bc00820215a2be33d3af82c046d2247414351f1f78597e7f09"
+dependencies = [
+ "anyhow",
+ "serde",
+ "siphasher",
+ "toml 0.8.14",
+ "winnow 0.5.40",
+]
+
+[[package]]
+name = "stylance-macros"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d2af6656753e3a4cb88bff6b8285cd9b16a076e18453117b89413cff7ff6ed04"
+dependencies = [
+ "anyhow",
+ "proc-macro2",
+ "quote",
+ "stylance-core",
+ "syn 2.0.66",
+]
 
 [[package]]
 name = "subtle"

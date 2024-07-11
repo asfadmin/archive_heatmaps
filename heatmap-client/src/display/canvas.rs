@@ -12,6 +12,8 @@ use super::app::{App, ExternalState, UserMessage};
 use super::state::State;
 use crate::ingest::load::DataLoader;
 
+stylance::import_crate_style!(style, "style/canvas.scss");
+
 /// Component to display a wgsl shader
 #[component]
 pub fn Canvas() -> impl IntoView {
@@ -38,7 +40,8 @@ pub fn Canvas() -> impl IntoView {
         .borrow()
         .canvas
         .clone()
-        .expect("ERROR: Failed to get external state");
+        .expect("ERROR: Failed to get external state")
+        .attr("class", style::wgpu_surface);
 
     let data_loader = DataLoader { event_loop_proxy };
 
