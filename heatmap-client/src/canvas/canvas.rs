@@ -12,7 +12,7 @@ use super::app::{App, ExternalState, UserMessage};
 use super::state::State;
 use crate::ingest::load::DataLoader;
 
-stylance::import_crate_style!(style, "style/canvas.scss");
+stylance::import_crate_style!(style, "src/canvas/canvas.module.scss");
 
 /// Component to display a wgsl shader
 #[component]
