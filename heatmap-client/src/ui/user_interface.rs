@@ -14,5 +14,12 @@ pub fn UserInterface() -> impl IntoView {
             }
             class=style::user_interface
         >"Click Me!"</button>
+
+        <select
+            class=style::colormap_selector
+        >
+        <option value="magma">"Magma"</option>
+        <option value="rainbow-soft">"Rainbow Soft"</option>
+        </select>
     }
 }
