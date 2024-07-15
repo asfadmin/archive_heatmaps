@@ -20,6 +20,7 @@ pub fn Canvas() -> impl IntoView {
     // Signal from the UI determining selected colormap
     let filter = use_context::<ReadSignal<String>>()
         .expect("ERROR: Failed to get colormap read signal context in Canvas()");
+    
 
     // Create event loop that can handle UserMessage events
     let event_loop = EventLoop::<UserMessage>::with_user_event()
@@ -52,7 +53,9 @@ pub fn Canvas() -> impl IntoView {
 
     let data_loader = DataLoader { event_loop_proxy };
 
-    data_loader.load_data();
+    create_effect(move |_| { 
+        data_loader.load_data(filter()) 
+    });
 
     // Compiler is dumb, these are necessary braces
     view! { {canvas} }

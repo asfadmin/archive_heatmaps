@@ -16,22 +16,21 @@ pub struct DataLoader {
 }
 
 impl DataLoader {
-    pub fn load_data(&self) {
-        leptos::spawn_local(load_data_async(self.event_loop_proxy.clone()));
+    pub fn load_data(&self, filter: String) {
+        leptos::spawn_local(load_data_async(self.event_loop_proxy.clone(), filter));
     }
 }
 
-async fn load_data_async(event_loop_proxy: EventLoopProxy<UserMessage<'static>>) {
+async fn load_data_async(event_loop_proxy: EventLoopProxy<UserMessage<'static>>, filter: String) {
     // Request data from the server
     let data = request().await;
 
     // Filter the recived data
     web_sys::console::log_1(&"Filtering data...".into());
-    let filtered_data = filter(data);
 
     // Convert the filtered data into a triangular mesh
     web_sys::console::log_1(&"Meshing data...".into());
-    let meshed_data = mesh_data(filtered_data);
+    let meshed_data = mesh_data(data);
     web_sys::console::log_3(
         &"Meshed Data: \n".into(),
         &format!("Vertices: {:?}", meshed_data.vertices).into(),
@@ -43,11 +42,6 @@ async fn load_data_async(event_loop_proxy: EventLoopProxy<UserMessage<'static>>)
     let _ = event_loop_proxy.send_event(UserMessage::IncomingData(meshed_data));
 }
 
-fn filter(data: HeatmapData) -> HeatmapData {
-    data
-}
-
-// I think this is working but it has not been tested, I couldnt figure out how to get the heatmap-service set up to actually recieve the post request
 fn mesh_data(data_exterior: HeatmapData) -> BufferStorage {
     let data = data_exterior.data;
     let mut total_vertices: Vec<Vertex> = Vec::new();
