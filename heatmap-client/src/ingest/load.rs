@@ -23,7 +23,7 @@ impl DataLoader {
 
 async fn load_data_async(event_loop_proxy: EventLoopProxy<UserMessage<'static>>, filter: String) {
     // Request data from the server
-    let data = request().await;
+    let data = request(filter).await;
 
     // Filter the recived data
     web_sys::console::log_1(&"Filtering data...".into());

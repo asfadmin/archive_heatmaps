@@ -9,8 +9,8 @@ pub struct HeatmapResponse {
 }
 
 impl HeatmapResponse {
-    pub fn from_geojson(dataset: Option<Dataset>, feature_collection: &FeatureCollection) -> Self {
-        let granules = Granule::from_feature_collection(dataset, feature_collection).unwrap();
+    pub fn from_geojson(filter: String, feature_collection: &FeatureCollection) -> Self {
+        let granules = Granule::from_feature_collection(filter, feature_collection).unwrap();
 
         Self::from_granules(granules)
     }

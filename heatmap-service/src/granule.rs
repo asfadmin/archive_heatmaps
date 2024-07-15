@@ -107,7 +107,7 @@ impl TryFrom<&serde_json::Map<String, serde_json::Value>> for Ancestor {
 
 impl Granule {
     pub fn from_feature_collection(
-        _dataset: Option<Dataset>,
+        _dataset: String,
         feature_collection: &FeatureCollection,
     ) -> Result<Vec<Granule>, Box<dyn std::error::Error>> {
         feature_collection
@@ -117,3 +117,7 @@ impl Granule {
             .collect()
     }
 }
+
+
+
+//Somewhere in here is where we need to do the filtering

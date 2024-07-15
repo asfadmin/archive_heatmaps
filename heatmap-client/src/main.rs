@@ -10,7 +10,7 @@ mod ui;
 fn main() {
     console_error_panic_hook::set_once();
 
-    let (filter, set_filter) = create_signal(String::from("magma"));
+    let (filter, set_filter) = create_signal(String::from("GRD/S1-A"));
 
     provide_context(filter);
 

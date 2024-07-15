@@ -18,7 +18,7 @@ pub struct HeatmapResponse {
 
 #[derive(Deserialize, Serialize)]
 pub struct HeatmapQuery {
-    pub dataset: Option<Dataset>,
+    pub filter: String,
 }
 
 #[derive(Deserialize, Serialize, Clone, Copy)]
@@ -50,12 +50,12 @@ impl ToPartialString for Option<Dataset> {
 }
 
 // Dont know if this function works or not, couldnt get the service set up to test it
-pub async fn request() -> HeatmapData {
+pub async fn request(filter: String) -> HeatmapData {
     let client = reqwest::Client::new();
     let data = client
         .post("http://localhost:8000/query") // TODO, some configuration mechanism for this
         .json(&HeatmapQuery {
-            dataset: Some(Dataset::Alos),
+            filter,
         })
         .send()
         .await

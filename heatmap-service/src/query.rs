@@ -8,7 +8,7 @@ use crate::{config::Config, dataset::Dataset, heatmap_response::HeatmapResponse,
 
 #[derive(Deserialize, Serialize)]
 pub struct HeatmapQuery {
-    pub dataset: Option<Dataset>,
+    pub filter: String,
 }
 
 #[actix_web::post("/query")]
@@ -38,7 +38,7 @@ async fn heatmap_query(
         }
     }
 
-    let response_data = HeatmapResponse::from_geojson(query.dataset, &feature_collection);
+    let response_data = HeatmapResponse::from_geojson(query.filter, &feature_collection);
 
     let response = HttpResponse::Ok().json(&response_data);
 
