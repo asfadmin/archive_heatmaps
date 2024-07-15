@@ -9,7 +9,7 @@ use winit::event_loop::EventLoop;
 use winit::platform::web::EventLoopExtWebSys;
 
 use super::app::{App, ExternalState, UserMessage};
-use super::state::State;
+use super::state::{LeptosSignals, State};
 use crate::ingest::load::DataLoader;
 
 stylance::import_crate_style!(style, "src/canvas/canvas.module.scss");
@@ -17,6 +17,10 @@ stylance::import_crate_style!(style, "src/canvas/canvas.module.scss");
 /// Component to display a wgsl shader
 #[component]
 pub fn Canvas() -> impl IntoView {
+    // Signal from the UI determining selected colormap
+    let filter = use_context::<ReadSignal<String>>()
+        .expect("ERROR: Failed to get colormap read signal context in Canvas()");
+
     // Create event loop that can handle UserMessage events
     let event_loop = EventLoop::<UserMessage>::with_user_event()
         .build()
@@ -27,7 +31,10 @@ pub fn Canvas() -> impl IntoView {
 
     let app = App {
         external_state: external_state.clone(),
-        state: State::default(),
+        state: State {
+            leptos_signals: Some(LeptosSignals { filter }),
+            ..Default::default()
+        },
         event_loop_proxy: event_loop.create_proxy(),
     };
 
@@ -47,5 +54,6 @@ pub fn Canvas() -> impl IntoView {
 
     data_loader.load_data();
 
-    mount_to_body(move || canvas)
+    // Compiler is dumb, these are necessary braces
+    view! { {canvas} }
 }

@@ -10,12 +10,16 @@ mod ui;
 fn main() {
     console_error_panic_hook::set_once();
 
-    leptos::mount_to_body(move || {
-        view! {
-            <div>
-                <UserInterface></UserInterface>
-                <Canvas></Canvas>
-            </div>
-        }
-    })
+    let (filter, set_filter) = create_signal(String::from("magma"));
+
+    provide_context(filter);
+
+    let app = view! {
+        <div>
+            <UserInterface set_filter/>
+            <Canvas></Canvas>
+        </div>
+    };
+
+    leptos::mount_to_body(move || app)
 }

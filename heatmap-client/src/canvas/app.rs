@@ -143,6 +143,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     init_stage: InitStage::Complete,
                     geometry: None,
                     input_state: self.state.input_state.clone(),
+                    leptos_signals: self.state.leptos_signals.clone(),
                 };
 
                 // Resize configures the surface based on current canvas size

@@ -3,6 +3,7 @@
 
 use std::rc::Rc;
 
+use leptos::ReadSignal;
 use winit::event::WindowEvent;
 use winit::window::Window;
 
@@ -20,6 +21,11 @@ pub enum InitStage {
     Complete,
 }
 
+#[derive(Clone)]
+pub struct LeptosSignals {
+    pub filter: ReadSignal<String>,
+}
+
 /// Stores the information needed to draw to a surface with a shader
 #[derive(Default)]
 pub struct State<'a> {
@@ -28,6 +34,7 @@ pub struct State<'a> {
     pub window: Option<Rc<Window>>,
     pub input_state: InputState,
     pub init_stage: InitStage,
+    pub leptos_signals: Option<LeptosSignals>,
 }
 
 impl<'a> State<'a> {

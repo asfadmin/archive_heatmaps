@@ -9,21 +9,42 @@
 
 .user_interface-acc4278 {
     position:absolute;
-    top:10px;
-    left:10px;
+    top:0px;
+    left:0px;
     z-index:1;
-    width: 150px;
-    height: 50px;
-    color:red;
-    background-color: orange;
 }
 
-.colormap_selector-acc4278 {
-    position: absolute;
-    top: 3%;
-    left: 90%;
-    z-index: 1;
-    width: 8%;
-    height: 30px;
-    
+.data_types-acc4278 {
+    position: relative;
+    top: 20px;
+    left: 20px;
+}
+
+.sat_selection-acc4278 {
+    position: relative;
+    top: -29px;
+    left: 100px;
+}
+
+.radio_buttons-acc4278 {
+   
+}
+
+.radio_text-acc4278 {
+    padding-left: 5px;
+    color: white;
+}
+
+.range_slider-acc4278 {
+    position:relative;
+    top:10px;
+    left:10px;
+    opacity: 100%;
+}
+
+.range_text-acc4278 {
+    position: relative;
+    top: 3px;
+    padding-left: 50px;
+    color: white;
 }
