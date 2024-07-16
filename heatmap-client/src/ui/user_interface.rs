@@ -1,6 +1,5 @@
 use leptos::wasm_bindgen::JsCast;
 use leptos::*;
-use web_sys::Element;
 
 stylance::import_crate_style!(style, "src/ui/user_interface.module.scss");
 
@@ -67,16 +66,6 @@ pub fn UserInterface(set_filter: WriteSignal<String>) -> impl IntoView {
     view! {
         <div class=style::user_interface>
             <form on:submit=on_submit>
-                <input
-                    class=style::range_slider
-                    id="date_range"
-                    type="range"
-                    min="1"
-                    max="100"
-                    value="50"
-                />
-                    <br/><label class=style::range_text for="date_range">"Date Range"</label><br/>
-
                 <div class = style::data_types>
                     <input class=style::check_box type="checkbox" id="grd" name="granule_type" value="GRD" checked/>
                         <label class=style::radio_text for="grd">"GRD"</label><br/>

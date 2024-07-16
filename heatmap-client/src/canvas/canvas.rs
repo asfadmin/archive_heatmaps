@@ -9,7 +9,7 @@ use winit::event_loop::EventLoop;
 use winit::platform::web::EventLoopExtWebSys;
 
 use super::app::{App, ExternalState, UserMessage};
-use super::state::{LeptosSignals, State};
+use super::state::State;
 use crate::ingest::load::DataLoader;
 
 stylance::import_crate_style!(style, "src/canvas/canvas.module.scss");
@@ -31,10 +31,7 @@ pub fn Canvas() -> impl IntoView {
 
     let app = App {
         external_state: external_state.clone(),
-        state: State {
-            leptos_signals: Some(LeptosSignals { filter }),
-            ..Default::default()
-        },
+        state: State::default(),
         event_loop_proxy: event_loop.create_proxy(),
     };
 

@@ -3,8 +3,6 @@ use geo::Polygon;
 use geojson::{Feature, FeatureCollection};
 use serde::Serialize;
 
-use crate::dataset::Dataset;
-
 #[derive(Debug, Serialize, Clone)]
 pub struct Granule {
     pub polygon: Polygon,

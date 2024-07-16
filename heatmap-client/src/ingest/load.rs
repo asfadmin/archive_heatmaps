@@ -25,10 +25,7 @@ async fn load_data_async(event_loop_proxy: EventLoopProxy<UserMessage<'static>>,
     // Request data from the server
     let data = request(filter).await;
 
-    // Filter the recived data
-    web_sys::console::log_1(&"Filtering data...".into());
-
-    // Convert the filtered data into a triangular mesh
+    // Convert the data into a triangular mesh
     web_sys::console::log_1(&"Meshing data...".into());
     let meshed_data = mesh_data(data);
     web_sys::console::log_3(
