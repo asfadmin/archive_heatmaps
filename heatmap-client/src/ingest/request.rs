@@ -54,9 +54,7 @@ pub async fn request(filter: String) -> HeatmapData {
     let client = reqwest::Client::new();
     let data = client
         .post("http://localhost:8000/query") // TODO, some configuration mechanism for this
-        .json(&HeatmapQuery {
-            filter,
-        })
+        .json(&HeatmapQuery { filter })
         .send()
         .await
         .expect("ERROR: Failed to recive data from post request");

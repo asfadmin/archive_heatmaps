@@ -10,7 +10,8 @@ mod ui;
 fn main() {
     console_error_panic_hook::set_once();
 
-    let (filter, set_filter) = create_signal(String::from("GRD/S1-A"));
+    let (filter, set_filter) =
+        create_signal(String::from("GRD/SLC/OCN S1A/S1B 2021-01-01 2021-02-01"));
 
     provide_context(filter);
 
