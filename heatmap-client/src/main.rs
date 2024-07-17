@@ -18,7 +18,7 @@ fn main() {
     let app = view! {
         <div>
             <UserInterface set_filter/>
-            <Canvas></Canvas>
+            <Canvas/>
         </div>
     };
 

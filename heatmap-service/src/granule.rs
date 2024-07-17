@@ -53,7 +53,6 @@ pub struct Ancestor {
     pub platform_type: String,
     data_sensor: String,
     pub start_time: NaiveDateTime,
-    end_time: NaiveDateTime,
 }
 
 impl TryFrom<&serde_json::Map<String, serde_json::Value>> for Ancestor {
@@ -90,15 +89,6 @@ impl TryFrom<&serde_json::Map<String, serde_json::Value>> for Ancestor {
                 "%Y-%m-%d %H:%M:%S%.f",
             )
             .expect("failed to parse start time from string"),
-            end_time: NaiveDateTime::parse_from_str(
-                properties
-                    .get("END_TIME")
-                    .expect("failed to get end time")
-                    .as_str()
-                    .expect("failed to convert end time to str"),
-                "%Y-%m-%d %H:%M:%S%.f",
-            )
-            .expect("failed to parse end time from string"),
         })
     }
 }

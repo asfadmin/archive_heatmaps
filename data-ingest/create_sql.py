@@ -14,12 +14,12 @@ import datetime as date
 def generate_command(
     start=date.datetime(2021, 1, 1),
     end=date.datetime(2021, 2, 1),
-    platform_type="'SB'",
+    platform_type="'SA', 'SB'",
     data_type="'GRD'",
 ):
 
     cmd = (
-        """SELECT ST_AsText(ST_Centroid(shape)), g.*
+        """SELECT ST_AsText(ST_Centroid(shape)), g.granule_name, g.platform_type, g.data_sensor_type, g.start_time, g.shape
         
                 FROM granule g 
                 

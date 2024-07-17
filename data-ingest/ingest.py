@@ -20,8 +20,6 @@ def ingest_data():
     # Generate SQL command to filter data in PostgreSQL DB
     SQL = generate_command(data_type="'OCN', 'SLC', 'GRD'")
 
-    print(SQL)
-
     # Load credentials to connect to DB
     load_dotenv()
     db_host = os.getenv("DB_HOST")
