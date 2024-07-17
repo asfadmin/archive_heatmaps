@@ -64,7 +64,7 @@ pub fn UserInterface(set_filter: WriteSignal<String>) -> impl IntoView {
         web_sys::console::log_1(&format!("{:?}", sat_filter_string).into());
 
         if sat_filter_string == " ".to_string() {
-            sat_filter_string += "S1A/S1B";
+            sat_filter_string += "SA/SB";
         }
 
         let mut filter_string = granule_filter_string + &sat_filter_string;
@@ -91,9 +91,9 @@ pub fn UserInterface(set_filter: WriteSignal<String>) -> impl IntoView {
                 </div>
 
                 <div class = style::sat_selection_div>
-                    <input class=style::check_box type="checkbox" id="s1-a" name="sat_selection" value="S1A"/>
+                    <input class=style::check_box type="checkbox" id="s1-a" name="sat_selection" value="SA"/>
                         <label class=style::radio_text for="s1-a">"S1A"</label><br/>
-                    <input class=style::check_box type="checkbox" id="s1-b" name="sat_selection" value="S1B"/>
+                    <input class=style::check_box type="checkbox" id="s1-b" name="sat_selection" value="SB"/>
                         <label class=style::radio_text for="s1-b">"S1B"</label><br/>
                 </div>
 

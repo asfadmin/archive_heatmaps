@@ -50,9 +50,9 @@ impl TryFrom<&Feature> for Granule {
 #[derive(Debug, Serialize, Clone)]
 pub struct Ancestor {
     pub granule_name: String,
-    platform_type: String,
+    pub platform_type: String,
     data_sensor: String,
-    start_time: NaiveDateTime,
+    pub start_time: NaiveDateTime,
     end_time: NaiveDateTime,
 }
 
