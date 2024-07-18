@@ -27,6 +27,7 @@ pub fn UserInterface(set_filter: WriteSignal<String>) -> impl IntoView {
     let doc = document();
 
     // Might be worth reworking this, we are mixing web_sys and leptos here but weve done the same elsewhere so we could also just roll with it
+    // This closure is run when the submit button is pressed, it formats a filter string and sets a signal
     let on_submit = move |ev: leptos::ev::SubmitEvent| {
         // Stop page from reloading
         ev.prevent_default();
@@ -81,6 +82,7 @@ pub fn UserInterface(set_filter: WriteSignal<String>) -> impl IntoView {
 
         let mut filter_string = granule_filter_string + &sat_filter_string;
 
+        // Convert slider values into Dates
         let start_date = NaiveDate::from_num_days_from_ce_opt(start_date() as i32)
             .expect("Failed to parse start date");
         let end_date = NaiveDate::from_num_days_from_ce_opt(end_date() as i32)
@@ -98,7 +100,6 @@ pub fn UserInterface(set_filter: WriteSignal<String>) -> impl IntoView {
             <form on:submit=on_submit>
                 <div class=style::data_types>
                     <input
-                        class=style::check_box
                         type="checkbox"
                         id="grd"
                         name="granule_type"
@@ -109,7 +110,6 @@ pub fn UserInterface(set_filter: WriteSignal<String>) -> impl IntoView {
                     </label>
                     <br/>
                     <input
-                        class=style::check_box
                         type="checkbox"
                         id="slc"
                         name="granule_type"
@@ -120,7 +120,6 @@ pub fn UserInterface(set_filter: WriteSignal<String>) -> impl IntoView {
                     </label>
                     <br/>
                     <input
-                        class=style::check_box
                         type="checkbox"
                         id="ocn"
                         name="granule_type"
@@ -133,7 +132,6 @@ pub fn UserInterface(set_filter: WriteSignal<String>) -> impl IntoView {
 
                 <div class=style::sat_selection_div>
                     <input
-                        class=style::check_box
                         type="checkbox"
                         id="s1-a"
                         name="sat_selection"
@@ -144,7 +142,6 @@ pub fn UserInterface(set_filter: WriteSignal<String>) -> impl IntoView {
                     </label>
                     <br/>
                     <input
-                        class=style::check_box
                         type="checkbox"
                         id="s1-b"
                         name="sat_selection"
@@ -156,11 +153,10 @@ pub fn UserInterface(set_filter: WriteSignal<String>) -> impl IntoView {
                     <br/>
                 </div>
 
-                <div class=style::date_filter>
+                <div>
                     <input
-                        class=style::date_slider
                         type="range"
-                        prop:value=start_date()
+                        prop:value=start_date
                         on:change=move |ev| {
                             let val = event_target_value(&ev)
                                 .parse::<i64>()
@@ -176,9 +172,8 @@ pub fn UserInterface(set_filter: WriteSignal<String>) -> impl IntoView {
                         max=max_date
                     />
                     <input
-                        class=style::date_slider
                         type="range"
-                        prop:value=max_date
+                        prop:value=end_date
                         on:change=move |ev| {
                             let val = event_target_value(&ev)
                                 .parse::<i64>()

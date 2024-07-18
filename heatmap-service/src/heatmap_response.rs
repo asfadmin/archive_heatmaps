@@ -26,7 +26,8 @@ impl HeatmapResponse {
         while i < granules.len() {
             let mut j = 0;
             while j < granules[i].ancestors.len() {
-                // Get granule name and parse the start date from this string
+                // Get granule data, granule type is contained in granule_name, 
+                // look at Sentinel 1 naming conventions for clarification
                 let gran_type = &granules[i].ancestors[j].granule_name[7..10];
                 let gran_plat = &granules[i].ancestors[j].platform_type;
                 let gran_date = granules[i].ancestors[j].start_time.date();
