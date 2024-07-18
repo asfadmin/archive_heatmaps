@@ -11,24 +11,20 @@ pub struct HeatmapData {
 
 impl HeatmapData {
     pub fn from_granules(granules: Vec<Granule>) -> Self {
+        let mut positions = Vec::new();
+        let mut weights = Vec::new();
+
+        for granule in granules.iter() {
+            let mut polygons = granule.get_polygons();
+            let len = polygons.len();
+            weights.append(vec![granule.ancestors.len() as u64; len].as_mut());
+            positions.append(polygons.as_mut());
+        }
+
         Self {
             length: granules.len() as i32,
-            positions: granules
-                .iter()
-                .map(|granule| {
-                    granule.polygon.exterior().clone().into_inner().iter().fold(
-                        Vec::new(),
-                        |mut inner_collector: Vec<(f64, f64)>, coord| {
-                            inner_collector.push((coord.x, coord.y));
-                            inner_collector
-                        },
-                    )
-                })
-                .collect(),
-            weights: granules
-                .iter()
-                .map(|granule| granule.ancestors.len() as u64)
-                .collect(),
+            positions,
+            weights,
         }
     }
 }

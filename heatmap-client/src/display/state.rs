@@ -132,11 +132,13 @@ impl<'a> State<'a> {
                 &render_context.camera_context.camera_bind_group,
                 &[],
             );
+
             blend_render_pass.set_vertex_buffer(0, geometry.blend_vertex_buffer.slice(..));
             blend_render_pass.set_index_buffer(
                 geometry.blend_index_buffer.slice(..),
                 wgpu::IndexFormat::Uint32,
             );
+
             blend_render_pass.draw_indexed(0..geometry.blend_num_indices, 0, 0..1);
         }
 
@@ -169,9 +171,9 @@ impl<'a> State<'a> {
                         resolve_target: None,
                         ops: wgpu::Operations {
                             load: wgpu::LoadOp::Clear(wgpu::Color {
-                                r: 0.0,
-                                g: 0.0,
-                                b: 0.0,
+                                r: 0.02,
+                                g: 0.02,
+                                b: 0.02,
                                 a: 1.0,
                             }),
                             store: wgpu::StoreOp::Store,
@@ -181,6 +183,22 @@ impl<'a> State<'a> {
                     occlusion_query_set: None,
                     timestamp_writes: None,
                 });
+
+            color_render_pass.set_pipeline(&render_context.outline_render_pipeline);
+
+            color_render_pass.set_bind_group(
+                0,
+                &render_context.camera_context.camera_bind_group,
+                &[],
+            );
+
+            color_render_pass.set_vertex_buffer(0, geometry.outline_vertex_buffer.slice(..));
+            color_render_pass.set_index_buffer(
+                geometry.outline_index_buffer.slice(..),
+                wgpu::IndexFormat::Uint32,
+            );
+
+            color_render_pass.draw_indexed(0..geometry.outline_num_indices, 0, 0..1);
 
             color_render_pass.set_pipeline(&render_context.colormap_render_pipeline);
             color_render_pass.set_bind_group(

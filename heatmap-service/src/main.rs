@@ -4,20 +4,22 @@ use actix_web::{
     web::Data,
     App, HttpServer,
 };
-use geojson::FeatureCollection;
 use middleware::{RedisCacheGet, RedisCacheSet};
-use query::heatmap_query;
+use query::{heatmap_query, outline_query};
 
 use crate::config::Config;
+use crate::geo_assets::GeoAssets;
 
 mod config;
 mod dataset;
 mod error;
+mod geo_assets;
 mod geo_json_path;
 mod granule;
 mod heatmap_data;
 mod heatmap_response;
 mod middleware;
+mod outline_response;
 mod query;
 mod redis;
 mod tests;
@@ -44,11 +46,7 @@ async fn main() -> std::io::Result<()> {
 
     config.redis = None;
 
-    let feature_collection: FeatureCollection = config
-        .geo_json_path
-        .clone()
-        .try_into()
-        .expect("malformed geojson");
+    let geo_assets = GeoAssets::from_config(config.clone());
 
     let bind_address = config.server_address.clone();
 
@@ -59,14 +57,15 @@ async fn main() -> std::io::Result<()> {
             .wrap(RedisCacheSet)
             .wrap(RedisCacheGet)
             .wrap(Cors::permissive()) //TODO only for debug
-            .service(heatmap_query);
+            .service(heatmap_query)
+            .service(outline_query);
 
         if let Some(redis_pool_unwrapped) = redis_pool.clone() {
             app = app.app_data(Data::new(redis_pool_unwrapped.clone()));
         }
 
         app.app_data(Data::new(config.clone()))
-            .app_data(Data::new(feature_collection.clone()))
+            .app_data(Data::new(geo_assets.clone()))
     })
     .bind(bind_address)?
     .run()

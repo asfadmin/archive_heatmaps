@@ -25,6 +25,9 @@ const COLOR_VERTICES: &[Vertex] = &[
 
 const COLOR_INDICES: &[u16] = &[0, 2, 3, 0, 2, 1];
 pub struct Geometry {
+    pub outline_vertex_buffer: wgpu::Buffer,
+    pub outline_index_buffer: wgpu::Buffer,
+    pub outline_num_indices: u32,
     pub blend_vertex_buffer: wgpu::Buffer,
     pub blend_index_buffer: wgpu::Buffer,
     pub blend_num_indices: u32,
@@ -34,7 +37,11 @@ pub struct Geometry {
 }
 
 impl Geometry {
-    pub fn generate_buffers(render_context: &RenderContext, buffer_data: BufferStorage) -> Self {
+    pub fn generate_buffers(
+        render_context: &RenderContext,
+        buffer_data: BufferStorage,
+        outline_data: BufferStorage,
+    ) -> Self {
         //////////////////////////////
         // Set up buffers to render //
         //////////////////////////////
@@ -64,6 +71,26 @@ impl Geometry {
 
         let blend_num_indices = buffer_data.num_indices;
 
+        let outline_vertex_buffer =
+            render_context
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Outline Vertex Buffer"),
+                    contents: bytemuck::cast_slice(outline_data.vertices.as_slice()),
+                    usage: wgpu::BufferUsages::VERTEX,
+                });
+
+        let outline_index_buffer =
+            render_context
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Outline Index Buffer"),
+                    contents: bytemuck::cast_slice(outline_data.indices.as_slice()),
+                    usage: wgpu::BufferUsages::INDEX,
+                });
+
+        let outline_num_indices = outline_data.num_indices;
+
         let color_vertex_buffer =
             render_context
                 .device
@@ -85,6 +112,9 @@ impl Geometry {
         let color_num_indices = COLOR_INDICES.len() as u32;
 
         Geometry {
+            outline_vertex_buffer,
+            outline_index_buffer,
+            outline_num_indices,
             blend_vertex_buffer,
             blend_index_buffer,
             blend_num_indices,

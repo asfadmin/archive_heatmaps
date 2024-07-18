@@ -27,4 +27,3 @@ winit = "0.30.3"
 
 [lints.clippy]
 unwrap_used = "warn"
-expect_used = "warn"

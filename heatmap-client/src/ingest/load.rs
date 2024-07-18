@@ -1,9 +1,14 @@
 extern crate earcutr;
 use winit::event_loop::EventLoopProxy;
 
-use super::request::{request, HeatmapData};
+use super::request::{request, HeatmapData, OutlineResponse};
 use crate::display::app::UserMessage;
 use crate::display::geometry::Vertex;
+
+enum Data {
+    Outline(OutlineResponse),
+    Heatmap(HeatmapData),
+}
 
 pub struct BufferStorage {
     pub vertices: Vec<Vertex>,
@@ -23,15 +28,12 @@ impl DataLoader {
 
 async fn load_data_async(event_loop_proxy: EventLoopProxy<UserMessage<'static>>) {
     // Request data from the server
-    let data = request().await;
+    let (data, outline_data) = request().await;
 
-    // Filter the recived data
-    web_sys::console::log_1(&"Filtering data...".into());
-    let filtered_data = filter(data);
-
-    // Convert the filtered data into a triangular mesh
+    // Convert the data into a triangular mesh
     web_sys::console::log_1(&"Meshing data...".into());
-    let meshed_data = mesh_data(filtered_data);
+    let meshed_data = mesh_data(Data::Heatmap(data));
+    let meshed_outline_data = mesh_data(Data::Outline(outline_data));
     web_sys::console::log_3(
         &"Meshed Data: \n".into(),
         &format!("Vertices: {:?}", meshed_data.vertices).into(),
@@ -40,23 +42,33 @@ async fn load_data_async(event_loop_proxy: EventLoopProxy<UserMessage<'static>>)
 
     // Send the triangular mesh to the event loop
     web_sys::console::log_1(&"Sending Mesh to event loop".into());
-    let _ = event_loop_proxy.send_event(UserMessage::IncomingData(meshed_data));
+    let _ =
+        event_loop_proxy.send_event(UserMessage::IncomingData(meshed_data, meshed_outline_data));
 }
 
-fn filter(data: HeatmapData) -> HeatmapData {
-    data
-}
+fn mesh_data(data_exterior: Data) -> BufferStorage {
+    let positions: Vec<Vec<(f64, f64)>>;
+    let mut weights: Vec<u64> = Vec::new();
 
-// I think this is working but it has not been tested, I couldnt figure out how to get the heatmap-service set up to actually recieve the post request
-fn mesh_data(data_exterior: HeatmapData) -> BufferStorage {
-    let data = data_exterior.data;
+    match data_exterior {
+        Data::Outline(outline_data) => {
+            positions = outline_data.data.positions;
+        }
+
+        Data::Heatmap(heatmap_data) => {
+            positions = heatmap_data.data.positions;
+            weights = heatmap_data.data.weights;
+        }
+    }
+
     let mut total_vertices: Vec<Vertex> = Vec::new();
     let mut indices: Vec<u32> = Vec::new();
 
     let mut i: usize = 0;
-    while i < data.positions.len() {
+    while i < positions.len() {
+        // this needs to be reworked badly
         // Format the polygon to conform to earcutr crate
-        let mut original_polygon = data.positions[i].clone();
+        let mut original_polygon = positions[i].clone();
         let _ = original_polygon.pop();
         let mut new_polygon = Vec::<Vec<f64>>::new();
         for vertex in original_polygon {
@@ -80,12 +92,18 @@ fn mesh_data(data_exterior: HeatmapData) -> BufferStorage {
             j += 1;
         }
 
+        let mut weight: u32 = 0;
+
+        if let Some(weight_data) = weights.get(i) {
+            weight = *weight_data as u32;
+        }
+
         // Place data for each vertex into a vertex struct
         let mut j = 0;
         while j < new_polygon.len() {
             total_vertices.push(Vertex {
                 position: [new_polygon[j][0] as f32, new_polygon[j][1] as f32, 0.0],
-                weight: data.weights[i] as u32,
+                weight,
             });
 
             j += 1;
@@ -100,7 +118,7 @@ fn mesh_data(data_exterior: HeatmapData) -> BufferStorage {
         .expect("ERROR: Failed to convert usize into u32");
 
     // Value currently unused
-    let max_weight = *data.weights.iter().max().expect("ERROR: Weights was empty");
+    let max_weight = *weights.iter().max().unwrap_or(&0);
 
     web_sys::console::log_1(&format!("Max Weight: {:?}", max_weight).into());
 
