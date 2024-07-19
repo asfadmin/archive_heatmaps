@@ -1,3 +1,5 @@
+extern crate heatmap_api;
+
 use chrono::naive::NaiveDate;
 use leptos::wasm_bindgen::JsCast;
 use leptos::*;
@@ -5,10 +7,7 @@ use leptos::*;
 stylance::import_crate_style!(style, "src/ui/user_interface.module.scss");
 
 #[component]
-pub fn UserInterface(set_filter: WriteSignal<String>) -> impl IntoView {
-    let filter = use_context::<ReadSignal<String>>()
-        .expect("ERROR: Failed to get colormap read signal context in Canvas()");
-
+pub fn UserInterface(set_filter: WriteSignal<heatmap_api::Filter>) -> impl IntoView {
     let base_date = NaiveDate::from_ymd_opt(1, 1, 1).expect("Failed to create Naive");
 
     let min_date: i64 = NaiveDate::from_ymd_opt(2021, 1, 2)
@@ -32,7 +31,7 @@ pub fn UserInterface(set_filter: WriteSignal<String>) -> impl IntoView {
         // Stop page from reloading
         ev.prevent_default();
 
-        let mut granule_filter_string = "".to_string();
+        let mut product_type = Vec::new();
 
         // If there is a checked button in granule_type append its value to the filter_string
         if let Ok(nodes) = doc.query_selector_all("input[name=granule_type]:checked") {
@@ -43,22 +42,23 @@ pub fn UserInterface(set_filter: WriteSignal<String>) -> impl IntoView {
                     .dyn_into::<web_sys::Element>()
                     .expect("Failed to cast Node to element")
                     .get_attribute("value")
-                    .expect("Failed to get value attribute");
-                granule_filter_string += &val;
-                if i != nodes.length() - 1 {
-                    granule_filter_string += "/";
+                    .expect("Failed to get value attribute")
+                    .parse::<u32>()
+                    .expect("Failed to parse u32 from val");
+
+                match val {
+                    0 => product_type.push(heatmap_api::ProductTypes::GroundRangeDetected),
+                    1 => product_type.push(heatmap_api::ProductTypes::SingleLookComplex),
+                    2 => product_type.push(heatmap_api::ProductTypes::Ocean),
+                    _ => (),
                 }
             }
         }
 
-        if granule_filter_string.is_empty() {
-            granule_filter_string += "GRD/SLC/OCN"
-        }
+        let mut platform_type = Vec::new();
 
-        let mut sat_filter_string = "".to_string();
         // If there is a checked button in sat_selection append its value to the filter_string
         if let Ok(nodes) = doc.query_selector_all("input[name=sat_selection]:checked") {
-            sat_filter_string += " ";
             for i in 0..nodes.length() {
                 let val = nodes
                     .get(i)
@@ -66,87 +66,63 @@ pub fn UserInterface(set_filter: WriteSignal<String>) -> impl IntoView {
                     .dyn_into::<web_sys::Element>()
                     .expect("Failed to cast Node to element")
                     .get_attribute("value")
-                    .expect("Failed to get value attribute");
-                sat_filter_string += &val;
-                if i != nodes.length() - 1 {
-                    sat_filter_string += "/";
+                    .expect("Failed to get value attribute")
+                    .parse::<u32>()
+                    .expect("Failed to parse u32 from val");
+
+                match val {
+                    0 => platform_type.push(heatmap_api::PlatformType::Sentinel1A),
+                    1 => platform_type.push(heatmap_api::PlatformType::Sentinel1B),
+                    _ => (),
                 }
             }
         }
 
-        web_sys::console::log_1(&format!("{:?}", sat_filter_string).into());
-
-        if sat_filter_string == *" " {
-            sat_filter_string += "SA/SB";
-        }
-
-        let mut filter_string = granule_filter_string + &sat_filter_string;
-
         // Convert slider values into Dates
         let start_date = NaiveDate::from_num_days_from_ce_opt(start_date() as i32)
-            .expect("Failed to parse start date");
+            .expect("Failed to parse start date")
+            .format("%Y-%m-%d")
+            .to_string();
         let end_date = NaiveDate::from_num_days_from_ce_opt(end_date() as i32)
-            .expect("Failed to parse end date");
+            .expect("Failed to parse end date")
+            .format("%Y-%m-%d")
+            .to_string();
 
-        filter_string += &(" ".to_string() + &start_date.format("%Y-%m-%d").to_string());
-
-        filter_string += &(" ".to_string() + &end_date.format("%Y-%m-%d").to_string());
-
-        set_filter(filter_string)
+        set_filter(heatmap_api::Filter {
+            product_type,
+            platform_type,
+            start_date,
+            end_date,
+        })
     };
 
     view! {
         <div class=style::user_interface>
             <form on:submit=on_submit>
                 <div class=style::data_types>
-                    <input
-                        type="checkbox"
-                        id="grd"
-                        name="granule_type"
-                        value="GRD"
-                    />
+                    <input type="checkbox" id="grd" name="granule_type" value=0/>
                     <label class=style::radio_text for="grd">
                         "GRD"
                     </label>
                     <br/>
-                    <input
-                        type="checkbox"
-                        id="slc"
-                        name="granule_type"
-                        value="SLC"
-                    />
+                    <input type="checkbox" id="slc" name="granule_type" value=1/>
                     <label class=style::radio_text for="slc">
                         "SLC"
                     </label>
                     <br/>
-                    <input
-                        type="checkbox"
-                        id="ocn"
-                        name="granule_type"
-                        value="OCN"
-                    />
+                    <input type="checkbox" id="ocn" name="granule_type" value=2/>
                     <label class=style::radio_text for="ocn">
                         "OCN"
                     </label>
                 </div>
 
                 <div class=style::sat_selection_div>
-                    <input
-                        type="checkbox"
-                        id="s1-a"
-                        name="sat_selection"
-                        value="SA"
-                    />
+                    <input type="checkbox" id="s1-a" name="sat_selection" value=0/>
                     <label class=style::radio_text for="s1-a">
                         "S1A"
                     </label>
                     <br/>
-                    <input
-                        type="checkbox"
-                        id="s1-b"
-                        name="sat_selection"
-                        value="SB"
-                    />
+                    <input type="checkbox" id="s1-b" name="sat_selection" value=1/>
                     <label class=style::radio_text for="s1-b">
                         "S1B"
                     </label>
@@ -194,9 +170,6 @@ pub fn UserInterface(set_filter: WriteSignal<String>) -> impl IntoView {
 
                 <input class=style::submit_button type="submit" value="Submit"/>
             </form>
-
-            <p class=style::range_text>"Filter: " {filter}</p>
-
         </div>
     }
 }

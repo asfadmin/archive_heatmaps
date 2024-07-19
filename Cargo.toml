@@ -2,7 +2,7 @@
 
 members = [ 
   "heatmap-service",
-  "heatmap-client",
+  "heatmap-client", "heatmap-api",
 ]
 
 resolver = "1"

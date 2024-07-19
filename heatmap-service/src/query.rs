@@ -2,19 +2,13 @@ use actix_web::{
     web::{Data, Json},
     Error, HttpRequest, HttpResponse,
 };
-use serde::{Deserialize, Serialize};
 
 use crate::{config::Config, heatmap_response::HeatmapResponse, redis};
-
-#[derive(Deserialize, Serialize)]
-pub struct HeatmapQuery {
-    pub filter: String,
-}
 
 #[actix_web::post("/query")]
 async fn heatmap_query(
     req: HttpRequest,
-    query: Json<HeatmapQuery>,
+    query: Json<heatmap_api::HeatmapQuery>,
     feature_collection: Data<geojson::FeatureCollection>,
     config: Data<Config>,
 ) -> Result<HttpResponse, Error> {

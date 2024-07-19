@@ -1,7 +1,7 @@
 extern crate earcutr;
 use winit::event_loop::EventLoopProxy;
 
-use super::request::{request, HeatmapData};
+use super::request::request;
 use crate::canvas::app::UserMessage;
 use crate::canvas::geometry::Vertex;
 
@@ -16,30 +16,28 @@ pub struct DataLoader {
 }
 
 impl DataLoader {
-    pub fn load_data(&self, filter: String) {
+    pub fn load_data(&self, filter: heatmap_api::Filter) {
         leptos::spawn_local(load_data_async(self.event_loop_proxy.clone(), filter));
     }
 }
 
-async fn load_data_async(event_loop_proxy: EventLoopProxy<UserMessage<'static>>, filter: String) {
+async fn load_data_async(
+    event_loop_proxy: EventLoopProxy<UserMessage<'static>>,
+    filter: heatmap_api::Filter,
+) {
     // Request data from the server
     let data = request(filter).await;
 
     // Convert the data into a triangular mesh
     web_sys::console::log_1(&"Meshing data...".into());
     let meshed_data = mesh_data(data);
-    web_sys::console::log_3(
-        &"Meshed Data: \n".into(),
-        &format!("Vertices: {:?}", meshed_data.vertices).into(),
-        &format!("Indices: {:?}", meshed_data.indices).into(),
-    );
 
     // Send the triangular mesh to the event loop
     web_sys::console::log_1(&"Sending Mesh to event loop".into());
     let _ = event_loop_proxy.send_event(UserMessage::IncomingData(meshed_data));
 }
 
-fn mesh_data(data_exterior: HeatmapData) -> BufferStorage {
+fn mesh_data(data_exterior: heatmap_api::HeatmapData) -> BufferStorage {
     let data = data_exterior.data;
     let mut total_vertices: Vec<Vertex> = Vec::new();
     let mut indices: Vec<u32> = Vec::new();

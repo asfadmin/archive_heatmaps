@@ -18,7 +18,7 @@ stylance::import_crate_style!(style, "src/canvas/canvas.module.scss");
 #[component]
 pub fn Canvas() -> impl IntoView {
     // Signal from the UI determining selected colormap
-    let filter = use_context::<ReadSignal<String>>()
+    let filter = use_context::<ReadSignal<heatmap_api::Filter>>()
         .expect("ERROR: Failed to get colormap read signal context in Canvas()");
 
     // Create event loop that can handle UserMessage events

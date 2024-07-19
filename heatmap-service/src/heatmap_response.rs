@@ -10,47 +10,33 @@ pub struct HeatmapResponse {
 }
 
 impl HeatmapResponse {
-    pub fn from_geojson(filter: String, feature_collection: &FeatureCollection) -> Self {
+    pub fn from_geojson(
+        filter: heatmap_api::Filter,
+        feature_collection: &FeatureCollection,
+    ) -> Self {
         let mut granules = Granule::from_feature_collection(feature_collection).unwrap();
 
-        // Parsing the filter string, " " denotes seperate categorys, / denotes different filters in each category
-        let filters: Vec<&str> = filter.split(" ").collect();
-        let data_type: Vec<&str> = filters[0].split("/").collect();
-        let platform_type: Vec<&str> = filters[1].split("/").collect();
-        let start_date: NaiveDate =
-            NaiveDate::parse_from_str(filters[2], "%Y-%m-%d").expect("Faile to parse start_date");
-        let end_date: NaiveDate =
-            NaiveDate::parse_from_str(filters[3], "%Y-%m-%d").expect("Faile to parse end_date");
+        let data_type = filter.product_type;
+        let platform_type = filter.platform_type;
+        let start_date = NaiveDate::parse_from_str(&filter.start_date, "%Y-%m-%d")
+            .expect("Faile to parse start_date");
+        let end_date = NaiveDate::parse_from_str(&filter.end_date, "%Y-%m-%d")
+            .expect("Faile to parse end_date");
 
-        let mut i = 0;
-        while i < granules.len() {
-            let mut j = 0;
-            while j < granules[i].ancestors.len() {
-                // Get granule data, granule type is contained in granule_name, 
-                // look at Sentinel 1 naming conventions for clarification
-                let gran_type = &granules[i].ancestors[j].granule_name[7..10];
-                let gran_plat = &granules[i].ancestors[j].platform_type;
-                let gran_date = granules[i].ancestors[j].start_time.date();
+        
+        for granule in granules.iter_mut() {
+            // Retain only those ancestors who fall within the filter
+            granule.ancestors.retain(|ancestor| {
+                let granule_date = ancestor.start_time.date();
 
-                // Remove any ancestors outside of the filter
-                if !data_type.contains(&&gran_type)
-                    || !platform_type.contains(&&gran_plat[..])
-                    || gran_date < start_date
-                    || gran_date > end_date
-                {
-                    granules[i].ancestors.remove(j);
-                } else {
-                    j += 1;
-                }
-            }
-
-            // If we removed all ancestors remove the granule
-            if granules[i].ancestors.is_empty() {
-                granules.remove(i);
-            } else {
-                i += 1;
-            }
+                data_type.contains(&ancestor.product_type)
+                    && platform_type.contains(&ancestor.platform_type)
+                    && granule_date >= start_date
+                    && granule_date <= end_date
+            });
         }
+
+        granules.retain(|granule| !granule.ancestors.is_empty());
 
         Self::from_granules(granules.clone())
     }
