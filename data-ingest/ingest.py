@@ -18,7 +18,7 @@ def ingest_data():
     ####################
 
     # Generate SQL command to filter data in PostgreSQL DB
-    SQL = generate_command(data_type="'OCN'", end=datetime.datetime(2021, 2, 1))
+    SQL = generate_command(data_type="'OCN', 'SLC', 'GRD'")
 
     # Load credentials to connect to DB
     load_dotenv()

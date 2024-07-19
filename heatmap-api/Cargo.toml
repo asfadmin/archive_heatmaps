@@ -1,0 +1,10 @@
+[package]
+name = "heatmap-api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chrono = "0.4.38"
+leptos = "0.6.12"
+serde = "1.0.204"
+serde_json = "1.0.120"

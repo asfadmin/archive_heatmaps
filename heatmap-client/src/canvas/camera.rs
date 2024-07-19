@@ -117,8 +117,6 @@ impl CameraContext {
 
                 self.camera.zoom += zoom;
 
-                web_sys::console::log_1(&format!("{:?}", self.camera.zoom).into());
-
                 pos = self.mouse_coordinate_convert(pos);
                 self.update_camera(CameraEvent::Translate(pos - pos * scale_factor));
             }

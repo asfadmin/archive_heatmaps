@@ -38,11 +38,6 @@ impl Geometry {
         //////////////////////////////
         // Set up buffers to render //
         //////////////////////////////
-        web_sys::console::log_3(
-            &"Buffered Data: \n".into(),
-            &format!("Vertices: {:?}", buffer_data.vertices.as_slice()).into(),
-            &format!("Indices: {:?}", buffer_data.indices.as_slice()).into(),
-        );
 
         let blend_vertex_buffer =
             render_context
