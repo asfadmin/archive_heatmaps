@@ -1,3 +1,0 @@
-Dev Notes:
-1) To use stylance you create a file in src in the form *.module.scss where * is a the filename
-2) You then run 'stylance . --output-file ./style/bundled.scss' in the heatmap-client directory

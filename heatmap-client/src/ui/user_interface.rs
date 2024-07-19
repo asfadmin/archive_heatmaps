@@ -3,8 +3,7 @@ extern crate heatmap_api;
 use chrono::naive::NaiveDate;
 use leptos::wasm_bindgen::JsCast;
 use leptos::*;
-
-stylance::import_crate_style!(style, "src/ui/user_interface.module.scss");
+use stylers::style_str;
 
 #[component]
 pub fn UserInterface(set_filter: WriteSignal<heatmap_api::Filter>) -> impl IntoView {
@@ -96,40 +95,58 @@ pub fn UserInterface(set_filter: WriteSignal<heatmap_api::Filter>) -> impl IntoV
         })
     };
 
-    view! {
-        <div class=style::user_interface>
+    let (class_name, style_val) = style_str!("UserInterface",
+        div.user_interface {
+            position:absolute;
+            z-index:1;
+        }
+
+        .text {
+            color: white;
+        }
+
+        #platform_types {
+            position: relative;
+            top: -50px;
+            left: 65px;
+        }
+    );
+
+    view! { class=class_name,
+        <style>{style_val}</style>
+        <div class="user_interface">
             <form on:submit=on_submit>
-                <div class=style::data_types>
-                    <input type="checkbox" id="grd" name="granule_type" value=0/>
-                    <label class=style::radio_text for="grd">
+                <div id="product_types">
+                    <input type="checkbox" id="grd" name="granule_type" value=0 checked/>
+                    <label class="text" for="grd">
                         "GRD"
                     </label>
                     <br/>
-                    <input type="checkbox" id="slc" name="granule_type" value=1/>
-                    <label class=style::radio_text for="slc">
+                    <input type="checkbox" id="slc" name="granule_type" value=1 checked/>
+                    <label class="text" for="slc">
                         "SLC"
                     </label>
                     <br/>
-                    <input type="checkbox" id="ocn" name="granule_type" value=2/>
-                    <label class=style::radio_text for="ocn">
+                    <input type="checkbox" id="ocn" name="granule_type" value=2 checked/>
+                    <label class="text" for="ocn">
                         "OCN"
                     </label>
                 </div>
 
-                <div class=style::sat_selection_div>
-                    <input type="checkbox" id="s1-a" name="sat_selection" value=0/>
-                    <label class=style::radio_text for="s1-a">
+                <div id="platform_types">
+                    <input type="checkbox" id="s1-a" name="sat_selection" value=0 checked/>
+                    <label class="text" for="s1-a">
                         "S1A"
                     </label>
                     <br/>
-                    <input type="checkbox" id="s1-b" name="sat_selection" value=1/>
-                    <label class=style::radio_text for="s1-b">
+                    <input type="checkbox" id="s1-b" name="sat_selection" value=1 checked/>
+                    <label class="text" for="s1-b">
                         "S1B"
                     </label>
                     <br/>
                 </div>
 
-                <div>
+                <div id="date_range">
                     <input
                         type="range"
                         prop:value=start_date
@@ -164,11 +181,11 @@ pub fn UserInterface(set_filter: WriteSignal<heatmap_api::Filter>) -> impl IntoV
                         min=min_date
                         max=max_date
                     />
-                    <p class=style::radio_text>"Start Date: " {start_date}</p>
-                    <p class=style::radio_text>"End Date: " {end_date}</p>
+                    <p class="text">"Start Date: " {start_date}</p>
+                    <p class="text">"End Date: " {end_date}</p>
                 </div>
 
-                <input class=style::submit_button type="submit" value="Submit"/>
+                <input class="submit_button" type="submit" value="Submit"/>
             </form>
         </div>
     }

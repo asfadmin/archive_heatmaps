@@ -5,6 +5,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use leptos::*;
+use stylers::{style, style_str};
 use winit::event_loop::EventLoop;
 use winit::platform::web::EventLoopExtWebSys;
 
@@ -12,12 +13,10 @@ use super::app::{App, ExternalState, UserMessage};
 use super::state::State;
 use crate::ingest::load::DataLoader;
 
-stylance::import_crate_style!(style, "src/canvas/canvas.module.scss");
-
 /// Component to display a wgsl shader
 #[component]
 pub fn Canvas() -> impl IntoView {
-    // Signal from the UI determining selected colormap
+    // Signal from the UI containing the filter
     let filter = use_context::<ReadSignal<heatmap_api::Filter>>()
         .expect("ERROR: Failed to get colormap read signal context in Canvas()");
 
@@ -45,12 +44,24 @@ pub fn Canvas() -> impl IntoView {
         .canvas
         .clone()
         .expect("ERROR: Failed to get external state")
-        .attr("class", style::wgpu_surface);
+        .attr("class", "wgpu_surface");
 
     let data_loader = DataLoader { event_loop_proxy };
 
     create_effect(move |_| data_loader.load_data(filter()));
 
+    let (class_name, style_val) = style_str! {"Canvas",
+        .wgpu_surface {
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            z-index: 0;
+        }
+    };
+
     // Compiler is dumb, these are necessary braces
-    view! { {canvas} }
+    view! { class=class_name,
+        <style>{style_val}</style>
+        {canvas}
+    }
 }
