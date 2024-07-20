@@ -1,4 +1,8 @@
 extern crate earcutr;
+use std::collections::VecDeque;
+
+use geo::geometry::Polygon;
+use geo::{coord, TriangulateEarcut};
 use winit::event_loop::EventLoopProxy;
 
 use super::request::request;
@@ -9,7 +13,6 @@ pub struct BufferStorage {
     pub vertices: Vec<Vertex>,
     pub indices: Vec<u32>,
     pub num_indices: u32,
-    pub _max_weight: u64,
 }
 pub struct DataLoader {
     pub event_loop_proxy: EventLoopProxy<UserMessage<'static>>,
@@ -39,45 +42,59 @@ async fn load_data_async(
 
 fn mesh_data(data_exterior: heatmap_api::HeatmapData) -> BufferStorage {
     let data = data_exterior.data;
+
+    let mut weights = VecDeque::from(data.weights);
+
+    let mut polygons: Vec<geo::Polygon> = data
+        .positions
+        .iter()
+        .map(|poly| {
+            poly.iter()
+                .map(|(x, y)| {
+                    coord! {x: *x, y: *y}
+                })
+                .collect()
+        })
+        .map(|mut exterior: Vec<geo::Coord>| {
+            // Last entry is a duplicate of the first
+            let _ = exterior.pop();
+            geo::Polygon::new(geo::LineString(exterior.clone()), Vec::new())
+        })
+        .collect();
+
     let mut total_vertices: Vec<Vertex> = Vec::new();
     let mut indices: Vec<u32> = Vec::new();
 
-    let mut i: usize = 0;
-    while i < data.positions.len() {
-        // Format the polygon to conform to earcutr crate
-        let mut original_polygon = data.positions[i].clone();
-        let _ = original_polygon.pop();
-        let mut new_polygon = Vec::<Vec<f64>>::new();
-        for vertex in original_polygon {
-            new_polygon.push(vec![vertex.0, vertex.1]);
-        }
-
+    for poly in polygons.iter_mut() {
         // Run the ear cutting algorithm, triangles contains a list of indices after
-        let (vertices, holes, dimensions) = earcutr::flatten(&vec![new_polygon.clone()]);
-        let triangles = earcutr::earcut(&vertices, &holes, dimensions)
-            .expect("ERROR: Faile to earcut in mesh_data()");
+        let triangles_raw = poly.earcut_triangles_raw();
 
         // Append current indices to the end of prior indices with offset
-        let mut j = 0;
         let offset = total_vertices.len();
-        while j < triangles.len() {
+        for indice in triangles_raw.triangle_indices.iter() {
             indices.push(
-                (triangles[j] + offset)
+                (indice + offset)
                     .try_into()
                     .expect("ERROR: Failed to convert usize to u32"),
             );
-            j += 1;
         }
 
         // Place data for each vertex into a vertex struct
-        let mut j = 0;
-        while j < new_polygon.len() {
+        let weight = weights
+            .pop_front()
+            .expect("Weights was not equal to the number of polygons");
+        let mut i = 0;
+        while i < triangles_raw.vertices.len() {
             total_vertices.push(Vertex {
-                position: [new_polygon[j][0] as f32, new_polygon[j][1] as f32, 0.0],
-                weight: data.weights[i] as u32,
+                position: [
+                    triangles_raw.vertices[i] as f32,
+                    triangles_raw.vertices[i + 1] as f32 as f32,
+                    0.0,
+                ],
+                weight: weight as u32,
             });
 
-            j += 1;
+            i += 2;
         }
 
         i += 1;
@@ -88,15 +105,9 @@ fn mesh_data(data_exterior: heatmap_api::HeatmapData) -> BufferStorage {
         .try_into()
         .expect("ERROR: Failed to convert usize into u32");
 
-    // Value currently unused
-    let max_weight = *data.weights.iter().max().expect("ERROR: Weights was empty");
-
-    web_sys::console::log_1(&format!("Max Weight: {:?}", max_weight).into());
-
     BufferStorage {
         vertices: total_vertices,
         indices,
         num_indices,
-        _max_weight: max_weight,
     }
 }

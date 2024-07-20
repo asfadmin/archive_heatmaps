@@ -2235,6 +2235,7 @@ dependencies = [
  "console_error_panic_hook",
  "console_log",
  "earcutr",
+ "geo",
  "heatmap-api",
  "image",
  "leptos",
