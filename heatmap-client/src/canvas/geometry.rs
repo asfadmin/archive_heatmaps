@@ -25,45 +25,96 @@ const COLOR_VERTICES: &[Vertex] = &[
 
 const COLOR_INDICES: &[u16] = &[0, 2, 3, 0, 2, 1];
 pub struct Geometry {
-    pub blend_vertex_buffer: wgpu::Buffer,
-    pub blend_index_buffer: wgpu::Buffer,
-    pub blend_num_indices: u32,
-    pub color_vertex_buffer: wgpu::Buffer,
-    pub color_index_buffer: wgpu::Buffer,
-    pub color_num_indices: u32,
+    pub lod_0_layer: BufferLayer,
+    pub lod_1_layer: BufferLayer,
+    pub lod_2_layer: BufferLayer,
+    pub color_layer: BufferLayer,
+}
+
+pub struct BufferLayer {
+    pub vertex_buffer: wgpu::Buffer,
+    pub index_buffer: wgpu::Buffer,
+    pub num_indices: u32,
 }
 
 impl Geometry {
-    pub fn generate_buffers(render_context: &RenderContext, buffer_data: BufferStorage) -> Self {
+    pub fn generate_buffers(
+        render_context: &RenderContext,
+        buffer_data: Vec<BufferStorage>,
+    ) -> Self {
         //////////////////////////////
         // Set up buffers to render //
         //////////////////////////////
 
-        let blend_vertex_buffer =
+        // LOD 0
+        let lod_0_vertex_buffer =
             render_context
                 .device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Blending Vertex Buffer"),
-                    contents: bytemuck::cast_slice(buffer_data.vertices.as_slice()),
+                    label: Some("LOD 0 Vertex Buffer"),
+                    contents: bytemuck::cast_slice(buffer_data[0].vertices.as_slice()),
                     usage: wgpu::BufferUsages::VERTEX,
                 });
 
-        let blend_index_buffer =
+        let lod_0_index_buffer =
             render_context
                 .device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Blending Index Buffer"),
-                    contents: bytemuck::cast_slice(buffer_data.indices.as_slice()),
+                    label: Some("LOD 0 Index Buffer"),
+                    contents: bytemuck::cast_slice(buffer_data[0].indices.as_slice()),
                     usage: wgpu::BufferUsages::INDEX,
                 });
 
-        let blend_num_indices = buffer_data.num_indices;
+        let lod_0_num_indices = buffer_data[0].num_indices;
 
+        // LOD 1
+        let lod_1_vertex_buffer =
+            render_context
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("LOD 1 Vertex Buffer"),
+                    contents: bytemuck::cast_slice(buffer_data[1].vertices.as_slice()),
+                    usage: wgpu::BufferUsages::VERTEX,
+                });
+
+        let lod_1_index_buffer =
+            render_context
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("LOD 1 Index Buffer"),
+                    contents: bytemuck::cast_slice(buffer_data[1].indices.as_slice()),
+                    usage: wgpu::BufferUsages::INDEX,
+                });
+
+        let lod_1_num_indices = buffer_data[1].num_indices;
+
+        // LOD 2
+        let lod_2_vertex_buffer =
+            render_context
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("LOD 2 Vertex Buffer"),
+                    contents: bytemuck::cast_slice(buffer_data[2].vertices.as_slice()),
+                    usage: wgpu::BufferUsages::VERTEX,
+                });
+
+        let lod_2_index_buffer =
+            render_context
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("LOD 2 Index Buffer"),
+                    contents: bytemuck::cast_slice(buffer_data[2].indices.as_slice()),
+                    usage: wgpu::BufferUsages::INDEX,
+                });
+
+        let lod_2_num_indices = buffer_data[2].num_indices;
+
+        //Colormap Texture
         let color_vertex_buffer =
             render_context
                 .device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Color Ramp Vertex Buffer"),
+                    label: Some("Color Map Vertex Buffer"),
                     contents: bytemuck::cast_slice(COLOR_VERTICES),
                     usage: wgpu::BufferUsages::VERTEX,
                 });
@@ -72,7 +123,7 @@ impl Geometry {
             render_context
                 .device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Color Ramp Index Buffer"),
+                    label: Some("Color Map Index Buffer"),
                     contents: bytemuck::cast_slice(COLOR_INDICES),
                     usage: wgpu::BufferUsages::INDEX,
                 });
@@ -80,12 +131,26 @@ impl Geometry {
         let color_num_indices = COLOR_INDICES.len() as u32;
 
         Geometry {
-            blend_vertex_buffer,
-            blend_index_buffer,
-            blend_num_indices,
-            color_vertex_buffer,
-            color_index_buffer,
-            color_num_indices,
+            lod_0_layer: BufferLayer {
+                vertex_buffer: lod_0_vertex_buffer,
+                index_buffer: lod_0_index_buffer,
+                num_indices: lod_0_num_indices,
+            },
+            lod_1_layer: BufferLayer {
+                vertex_buffer: lod_1_vertex_buffer,
+                index_buffer: lod_1_index_buffer,
+                num_indices: lod_1_num_indices,
+            },
+            lod_2_layer: BufferLayer {
+                vertex_buffer: lod_2_vertex_buffer,
+                index_buffer: lod_2_index_buffer,
+                num_indices: lod_2_num_indices,
+            },
+            color_layer: BufferLayer {
+                vertex_buffer: color_vertex_buffer,
+                index_buffer: color_index_buffer,
+                num_indices: color_num_indices,
+            },
         }
     }
 }

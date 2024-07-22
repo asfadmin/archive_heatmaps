@@ -1,14 +1,15 @@
 extern crate earcutr;
 use std::collections::VecDeque;
 
-use geo::geometry::Polygon;
-use geo::{coord, TriangulateEarcut};
+use geo::geometry::{Coord, LineString, Polygon};
+use geo::{coord, Simplify, TriangulateEarcut};
 use winit::event_loop::EventLoopProxy;
 
 use super::request::request;
 use crate::canvas::app::UserMessage;
 use crate::canvas::geometry::Vertex;
 
+#[derive(Clone)]
 pub struct BufferStorage {
     pub vertices: Vec<Vertex>,
     pub indices: Vec<u32>,
@@ -40,12 +41,11 @@ async fn load_data_async(
     let _ = event_loop_proxy.send_event(UserMessage::IncomingData(meshed_data));
 }
 
-fn mesh_data(data_exterior: heatmap_api::HeatmapData) -> BufferStorage {
+fn mesh_data(data_exterior: heatmap_api::HeatmapData) -> Vec<BufferStorage> {
     let data = data_exterior.data;
+    let mut lods: Vec<BufferStorage> = Vec::new();
 
-    let mut weights = VecDeque::from(data.weights);
-
-    let mut polygons: Vec<geo::Polygon> = data
+    let mut polygons: Vec<Polygon> = data
         .positions
         .iter()
         .map(|poly| {
@@ -55,59 +55,65 @@ fn mesh_data(data_exterior: heatmap_api::HeatmapData) -> BufferStorage {
                 })
                 .collect()
         })
-        .map(|mut exterior: Vec<geo::Coord>| {
+        .map(|mut exterior: Vec<Coord>| {
             // Last entry is a duplicate of the first
             let _ = exterior.pop();
-            geo::Polygon::new(geo::LineString(exterior.clone()), Vec::new())
+            Polygon::new(LineString(exterior.clone()), Vec::new())
         })
         .collect();
 
-    let mut total_vertices: Vec<Vertex> = Vec::new();
-    let mut indices: Vec<u32> = Vec::new();
+    let mut level = 0.0;
+    while level <= 1.0 {
+        let mut weights = VecDeque::from(data.weights.clone());
+        let mut total_vertices: Vec<Vertex> = Vec::new();
+        let mut indices: Vec<u32> = Vec::new();
 
-    for poly in polygons.iter_mut() {
-        // Run the ear cutting algorithm, triangles contains a list of indices after
-        let triangles_raw = poly.earcut_triangles_raw();
+        for poly in polygons.iter_mut() {
+            let simplified = poly.simplify(&level);
+            // Run the ear cutting algorithm, triangles contains a list of indices after
+            let triangles_raw = simplified.earcut_triangles_raw();
 
-        // Append current indices to the end of prior indices with offset
-        let offset = total_vertices.len();
-        for indice in triangles_raw.triangle_indices.iter() {
-            indices.push(
-                (indice + offset)
-                    .try_into()
-                    .expect("ERROR: Failed to convert usize to u32"),
-            );
+            // Append current indices to the end of prior indices with offset
+            let offset = total_vertices.len();
+            for indice in triangles_raw.triangle_indices.iter() {
+                indices.push(
+                    (indice + offset)
+                        .try_into()
+                        .expect("ERROR: Failed to convert usize to u32"),
+                );
+            }
+
+            // Place data for each vertex into a vertex struct
+            let weight = weights
+                .pop_front()
+                .expect("Weights was not equal to the number of polygons");
+            let mut i = 0;
+            while i < triangles_raw.vertices.len() {
+                total_vertices.push(Vertex {
+                    position: [
+                        triangles_raw.vertices[i] as f32,
+                        triangles_raw.vertices[i + 1] as f32,
+                        0.0,
+                    ],
+                    weight: weight as u32,
+                });
+
+                i += 2;
+            }
         }
 
-        // Place data for each vertex into a vertex struct
-        let weight = weights
-            .pop_front()
-            .expect("Weights was not equal to the number of polygons");
-        let mut i = 0;
-        while i < triangles_raw.vertices.len() {
-            total_vertices.push(Vertex {
-                position: [
-                    triangles_raw.vertices[i] as f32,
-                    triangles_raw.vertices[i + 1] as f32 as f32,
-                    0.0,
-                ],
-                weight: weight as u32,
-            });
+        let num_indices = indices
+            .len()
+            .try_into()
+            .expect("ERROR: Failed to convert usize into u32");
 
-            i += 2;
-        }
+        lods.push(BufferStorage {
+            vertices: total_vertices,
+            indices,
+            num_indices,
+        });
 
-        i += 1;
+        level += 0.5;
     }
-
-    let num_indices = indices
-        .len()
-        .try_into()
-        .expect("ERROR: Failed to convert usize into u32");
-
-    BufferStorage {
-        vertices: total_vertices,
-        indices,
-        num_indices,
-    }
+    lods
 }

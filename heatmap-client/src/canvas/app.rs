@@ -176,7 +176,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
 // All user events that can be sent to the event loop
 pub enum UserMessage<'a> {
     StateMessage(RenderContext<'a>),
-    IncomingData(BufferStorage),
+    IncomingData(Vec<BufferStorage>),
 }
 
 /// Stores the canvas as an html element
