@@ -106,13 +106,13 @@ impl<'a> State<'a> {
 
         if let Some(geometry) = self.geometry.as_ref() {
             let zoom = render_context.camera_context.camera.zoom;
-            let mut active_blend_layer = &geometry.lod_0_layer;
+            let mut active_blend_layer = &geometry.lod_layers[0];
             match zoom {
-                6.5..7.5 => {
-                    active_blend_layer = &geometry.lod_1_layer;
+                6.0..7.5 => {
+                    active_blend_layer = &geometry.lod_layers[1];
                 }
-                0.0..6.5 => {
-                    active_blend_layer = &geometry.lod_2_layer;
+                0.0..6.0 => {
+                    active_blend_layer = &geometry.lod_layers[2];
                 }
                 _ => (),
             }
