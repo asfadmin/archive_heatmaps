@@ -108,7 +108,7 @@ def ingest_data():
     # Create a DataMerger with all of the satellite data
     #   and merge similar satellite images
     merger = data_merger.DataMerger(data_gdf)
-    merger.merge(0.1)
+    merger.merge(1.0)
 
     #########################################################
     # Export the results of the quad tree to a geojson file #

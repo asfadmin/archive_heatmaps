@@ -5,7 +5,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use leptos::*;
-use stylers::{style, style_str};
+use stylers::style_str;
 use winit::event_loop::EventLoop;
 use winit::platform::web::EventLoopExtWebSys;
 
