@@ -32,7 +32,7 @@ pub struct OutlineResponse {
 
 impl OutlineResponse {
     pub fn from_geojson(feature_collection: &FeatureCollection) -> Self {
-        let granules = Granule::from_feature_collection(None, feature_collection).unwrap();
+        let granules = Granule::from_feature_collection(feature_collection).unwrap();
 
         Self::from_granules(granules)
     }

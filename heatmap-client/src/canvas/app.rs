@@ -159,11 +159,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
 
             UserMessage::IncomingData(data, outline_data) => {
                 web_sys::console::log_1(&"Generating Buffers...".into());
-                web_sys::console::log_3(
-                    &"Incoming Data: \n".into(),
-                    &format!("Vertices: {:?}", data.vertices).into(),
-                    &format!("Indices: {:?}", data.indices).into(),
-                );
+
                 self.state.geometry = Some(Geometry::generate_buffers(
                     self.state
                         .render_context
@@ -182,7 +178,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
 // All user events that can be sent to the event loop
 pub enum UserMessage<'a> {
     StateMessage(RenderContext<'a>),
-    IncomingData(BufferStorage, BufferStorage),
+    IncomingData(Vec<BufferStorage>, Vec<BufferStorage>),
 }
 
 /// Stores the canvas as an html element

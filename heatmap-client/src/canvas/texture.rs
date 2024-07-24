@@ -108,8 +108,6 @@ pub fn generate_colormap_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> 
         view_formats: &[],
     });
 
-    web_sys::console::log_1(&format!("{:?}", colormap_image).into());
-
     queue.write_texture(
         wgpu::ImageCopyTexture {
             texture: &texture,

@@ -2,22 +2,16 @@ use actix_web::{
     web::{Data, Json},
     Error, HttpRequest, HttpResponse,
 };
-use serde::{Deserialize, Serialize};
 
+use crate::geo_assets::GeoAssets;
 use crate::outline_response::OutlineResponse;
-use crate::GeoAssets;
-use crate::{config::Config, dataset::Dataset, heatmap_response::HeatmapResponse, redis};
-
-#[derive(Deserialize, Serialize)]
-pub struct HeatmapQuery {
-    pub dataset: Option<Dataset>,
-}
+use crate::{config::Config, heatmap_response::HeatmapResponse, redis};
 
 #[actix_web::post("/heatmap")]
 async fn heatmap_query(
     req: HttpRequest,
-    query: Json<HeatmapQuery>,
     geo_assets: Data<GeoAssets>,
+    query: Json<heatmap_api::HeatmapQuery>,
     config: Data<Config>,
 ) -> Result<HttpResponse, Error> {
     let query = query.0;
@@ -42,7 +36,7 @@ async fn heatmap_query(
         }
     }
 
-    let response_data = HeatmapResponse::from_geojson(query.dataset, feature_collection);
+    let response_data = HeatmapResponse::from_geojson(query.filter, feature_collection);
 
     let response = HttpResponse::Ok().json(&response_data);
 
