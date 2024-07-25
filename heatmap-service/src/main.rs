@@ -10,6 +10,7 @@ use query::{heatmap_query, outline_query};
 use crate::config::Config;
 use crate::geo_assets::GeoAssets;
 
+mod assets;
 mod config;
 mod dataset;
 mod error;
