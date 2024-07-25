@@ -3,11 +3,17 @@ use std::collections::VecDeque;
 
 use geo::geometry::{Coord, LineString, Polygon};
 use geo::{coord, Simplify, TriangulateEarcut};
+use heatmap_api::{HeatmapData, OutlineResponse};
 use winit::event_loop::EventLoopProxy;
 
 use super::request::request;
 use crate::canvas::app::UserMessage;
 use crate::canvas::geometry::Vertex;
+
+enum Data {
+    Outline(OutlineResponse),
+    Heatmap(HeatmapData),
+}
 
 #[derive(Clone)]
 pub struct BufferStorage {
@@ -15,6 +21,7 @@ pub struct BufferStorage {
     pub indices: Vec<u32>,
     pub num_indices: u32,
 }
+
 pub struct DataLoader {
     pub event_loop_proxy: EventLoopProxy<UserMessage<'static>>,
 }
@@ -30,23 +37,51 @@ async fn load_data_async(
     filter: heatmap_api::Filter,
 ) {
     // Request data from the server
-    let data = request(filter).await;
+    let (data, outline_data) = request(filter).await;
 
     // Convert the data into a triangular mesh
     web_sys::console::log_1(&"Meshing data...".into());
-    let meshed_data = mesh_data(data);
+    let meshed_data = mesh_data(Data::Heatmap(data));
+    let meshed_outline_data = mesh_data(Data::Outline(outline_data));
+    web_sys::console::log_3(
+        &"Meshed Data: \n".into(),
+        &format!(
+            "Vertices: {:?}",
+            meshed_data.first().expect("Empty meshed data").vertices
+        )
+        .into(),
+        &format!(
+            "Indices: {:?}",
+            meshed_data.first().expect("no indices").indices
+        )
+        .into(),
+    );
 
     // Send the triangular mesh to the event loop
     web_sys::console::log_1(&"Sending Mesh to event loop".into());
-    let _ = event_loop_proxy.send_event(UserMessage::IncomingData(meshed_data));
+    let _ =
+        event_loop_proxy.send_event(UserMessage::IncomingData(meshed_data, meshed_outline_data));
 }
 
-fn mesh_data(data_exterior: heatmap_api::HeatmapData) -> Vec<BufferStorage> {
-    let data = data_exterior.data;
+fn mesh_data(data_exterior: Data) -> Vec<BufferStorage> {
+    let positions: Vec<Vec<(f64, f64)>>;
+    let weights: Vec<u64>;
+
+    match data_exterior {
+        Data::Outline(outline_data) => {
+            positions = outline_data.data.positions;
+            weights = vec![0; positions.len()];
+        }
+
+        Data::Heatmap(heatmap_data) => {
+            positions = heatmap_data.data.positions;
+            weights = heatmap_data.data.weights;
+        }
+    }
+
     let mut lods: Vec<BufferStorage> = Vec::new();
 
-    let mut polygons: Vec<Polygon> = data
-        .positions
+    let mut polygons: Vec<Polygon> = positions
         .iter()
         .map(|poly| {
             poly.iter()
@@ -64,7 +99,7 @@ fn mesh_data(data_exterior: heatmap_api::HeatmapData) -> Vec<BufferStorage> {
 
     let mut level = 0.0;
     while level <= 1.0 {
-        let mut weights = VecDeque::from(data.weights.clone());
+        let mut weights = VecDeque::from(weights.clone());
         let mut total_vertices: Vec<Vertex> = Vec::new();
         let mut indices: Vec<u32> = Vec::new();
 

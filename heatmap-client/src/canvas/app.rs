@@ -157,7 +157,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                 );
             }
 
-            UserMessage::IncomingData(data) => {
+            UserMessage::IncomingData(data, outline_data) => {
                 web_sys::console::log_1(&"Generating Buffers...".into());
 
                 self.state.geometry = Some(Geometry::generate_buffers(
@@ -166,7 +166,9 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                         .as_ref()
                         .expect("Error: Failed to get render context during Incoming data event"),
                     data,
+                    outline_data,
                 ));
+
                 web_sys::console::log_1(&"Done Generating Buffers".into());
             }
         }
@@ -176,7 +178,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
 // All user events that can be sent to the event loop
 pub enum UserMessage<'a> {
     StateMessage(RenderContext<'a>),
-    IncomingData(Vec<BufferStorage>),
+    IncomingData(Vec<BufferStorage>, Vec<BufferStorage>),
 }
 
 /// Stores the canvas as an html element

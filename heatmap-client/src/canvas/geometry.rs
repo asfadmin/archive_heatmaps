@@ -1,4 +1,5 @@
-use wgpu::{util::DeviceExt};
+use wgpu::util::DeviceExt;
+
 use super::render_context::RenderContext;
 use crate::ingest::load::BufferStorage;
 
@@ -26,6 +27,7 @@ const COLOR_INDICES: &[u16] = &[0, 2, 3, 0, 2, 1];
 pub struct Geometry {
     pub lod_layers: Vec<BufferLayer>,
     pub color_layer: BufferLayer,
+    pub outline_layers: Vec<BufferLayer>,
 }
 
 pub struct BufferLayer {
@@ -38,42 +40,16 @@ impl Geometry {
     pub fn generate_buffers(
         render_context: &RenderContext,
         buffer_data: Vec<BufferStorage>,
+        outline_data: Vec<BufferStorage>,
     ) -> Self {
         //////////////////////////////
         // Set up buffers to render //
         //////////////////////////////
-        
-        let mut lod_layers: Vec<BufferLayer> = Vec::new();
 
-        for i in 0..buffer_data.len() {
-            let lod_vertex_buffer =
-                render_context
-                    .device
-                    .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                        label: Some(&(format!("LOD {:?} Vertex Buffer", i))),
-                        contents: bytemuck::cast_slice(buffer_data[i].vertices.as_slice()),
-                        usage: wgpu::BufferUsages::VERTEX,
-                    });
+        let lod_layers = gen_lod_layers(render_context, buffer_data, "Heatmap");
 
-            let lod_index_buffer =
-                render_context
-                    .device
-                    .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                        label: Some(&(format!("LOD {:?} Index Buffer", i))),
-                        contents: bytemuck::cast_slice(buffer_data[i].indices.as_slice()),
-                        usage: wgpu::BufferUsages::INDEX,
-                    });
+        let outline_layers = gen_lod_layers(render_context, outline_data, "Outline");
 
-            let lod_num_indices = buffer_data[i].num_indices;
-
-            lod_layers.push( BufferLayer {
-                vertex_buffer: lod_vertex_buffer,
-                index_buffer: lod_index_buffer,
-                num_indices: lod_num_indices,
-            })
-        }
-
-       
         //Colormap Texture
         let color_vertex_buffer =
             render_context
@@ -97,6 +73,7 @@ impl Geometry {
 
         Geometry {
             lod_layers,
+            outline_layers,
             color_layer: BufferLayer {
                 vertex_buffer: color_vertex_buffer,
                 index_buffer: color_index_buffer,
@@ -104,6 +81,44 @@ impl Geometry {
             },
         }
     }
+}
+
+fn gen_lod_layers(
+    render_context: &RenderContext,
+    buffer_data: Vec<BufferStorage>,
+    label: &str,
+) -> Vec<BufferLayer> {
+    let mut lod_layers: Vec<BufferLayer> = Vec::new();
+
+    for (i, layer) in buffer_data.iter().enumerate() {
+        let lod_vertex_buffer =
+            render_context
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some(&(format!("{:?} LOD {:?} Vertex Buffer", label, i))),
+                    contents: bytemuck::cast_slice(layer.vertices.as_slice()),
+                    usage: wgpu::BufferUsages::VERTEX,
+                });
+
+        let lod_index_buffer =
+            render_context
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some(&(format!("{:?} LOD {:?} Index Buffer", label, i))),
+                    contents: bytemuck::cast_slice(layer.indices.as_slice()),
+                    usage: wgpu::BufferUsages::INDEX,
+                });
+
+        let lod_num_indices = buffer_data[i].num_indices;
+
+        lod_layers.push(BufferLayer {
+            vertex_buffer: lod_vertex_buffer,
+            index_buffer: lod_index_buffer,
+            num_indices: lod_num_indices,
+        })
+    }
+
+    lod_layers
 }
 
 /// A vertex passed into the wgsl shader

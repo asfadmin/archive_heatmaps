@@ -86,3 +86,14 @@ pub struct InteriorData {
 pub struct HeatmapResponse {
     pub data: HeatmapData,
 }
+
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
+pub struct OutlineData {
+    pub length: i32,
+    pub positions: Vec<Vec<(f64, f64)>>,
+}
+
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
+pub struct OutlineResponse {
+    pub data: OutlineData,
+}

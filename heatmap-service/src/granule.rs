@@ -2,11 +2,12 @@ use chrono::NaiveDateTime;
 use geo::Polygon;
 use geojson::{Feature, FeatureCollection};
 use heatmap_api::{DataSensor, PlatformType, ProductTypes};
+use log::warn;
 use serde::Serialize;
 
 #[derive(Debug, Serialize, Clone)]
 pub struct Granule {
-    pub polygon: Polygon,
+    pub polygons: Vec<Polygon>,
     pub ancestors: Vec<Ancestor>,
 }
 
@@ -14,32 +15,55 @@ impl TryFrom<&Feature> for Granule {
     type Error = Box<dyn std::error::Error>;
 
     fn try_from(feature: &Feature) -> Result<Granule, Self::Error> {
-        let ancestors: Vec<serde_json::Map<String, serde_json::Value>> = feature
+        let mut ancestors: Vec<serde_json::Map<String, serde_json::Value>> = Vec::new();
+        if let Some(ancestors_properties) = feature
             .properties
             .clone()
             .ok_or("feature has no properties associated with it")?
             .get("ancestors")
-            .expect("failed to get ancestors")
-            .clone()
-            .as_array()
-            .expect("failed to convert to array")
-            .iter()
-            .map(|feature| {
-                feature
-                    .as_object()
-                    .expect("failed to map ancestors")
-                    .clone()
-            })
-            .collect();
+        {
+            ancestors = ancestors_properties
+                .clone()
+                .as_array()
+                .expect("failed to convert to array")
+                .iter()
+                .map(|feature| {
+                    feature
+                        .as_object()
+                        .expect("failed to map ancestors")
+                        .clone()
+                })
+                .collect();
+        }
+
+        let mut polygons: Vec<Polygon> = Vec::new();
+
+        if let Some(geometry) = feature.geometry.clone() {
+            match geometry.value {
+                geojson::Value::Polygon(_) => {
+                    polygons.push(
+                        geometry
+                            .value
+                            .try_into()
+                            .expect("failed to convert geometry into polygon"),
+                    );
+                }
+
+                geojson::Value::MultiPolygon(_) => {
+                    let multi_polygon: geo::MultiPolygon = geometry
+                        .try_into()
+                        .expect("failed to convert geometry to multipolygon");
+                    polygons = multi_polygon.0;
+                }
+
+                _ => {
+                    warn!("geometry exists but is unparsed in granule");
+                }
+            }
+        }
 
         Ok(Granule {
-            polygon: feature
-                .geometry
-                .clone()
-                .ok_or("no geometry attached to feature")?
-                .value
-                .try_into()
-                .expect("failed to convert geomery to polygon"),
+            polygons,
             ancestors: ancestors
                 .iter()
                 .map(|feature| feature.try_into().expect("failed to map ancestors"))
@@ -116,6 +140,21 @@ impl Granule {
             .features
             .iter()
             .map(Self::try_from)
+            .collect()
+    }
+
+    pub fn get_polygons(&self) -> Vec<Vec<(f64, f64)>> {
+        self.polygons
+            .iter()
+            .map(|granule| {
+                granule.exterior().clone().into_inner().iter().fold(
+                    Vec::new(),
+                    |mut inner_collector: Vec<(f64, f64)>, coord| {
+                        inner_collector.push((coord.x, coord.y));
+                        inner_collector
+                    },
+                )
+            })
             .collect()
     }
 }

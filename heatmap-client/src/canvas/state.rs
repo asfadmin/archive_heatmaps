@@ -149,6 +149,7 @@ impl<'a> State<'a> {
                 active_blend_layer.index_buffer.slice(..),
                 wgpu::IndexFormat::Uint32,
             );
+
             blend_render_pass.draw_indexed(0..active_blend_layer.num_indices, 0, 0..1);
         }
 
@@ -173,6 +174,18 @@ impl<'a> State<'a> {
                 });
 
         if let Some(geometry) = self.geometry.as_ref() {
+            let zoom = render_context.camera_context.camera.zoom;
+            let mut active_outline_layer = &geometry.outline_layers[0];
+            match zoom {
+                6.0..7.5 => {
+                    active_outline_layer = &geometry.outline_layers[1];
+                }
+                0.0..6.0 => {
+                    active_outline_layer = &geometry.outline_layers[2];
+                }
+                _ => (),
+            }
+
             let mut color_render_pass =
                 colormap_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: Some("Colormap Render Pass"),
@@ -181,9 +194,9 @@ impl<'a> State<'a> {
                         resolve_target: None,
                         ops: wgpu::Operations {
                             load: wgpu::LoadOp::Clear(wgpu::Color {
-                                r: 0.0,
-                                g: 0.0,
-                                b: 0.0,
+                                r: 0.02,
+                                g: 0.02,
+                                b: 0.02,
                                 a: 1.0,
                             }),
                             store: wgpu::StoreOp::Store,
@@ -193,6 +206,22 @@ impl<'a> State<'a> {
                     occlusion_query_set: None,
                     timestamp_writes: None,
                 });
+
+            color_render_pass.set_pipeline(&render_context.outline_render_pipeline);
+
+            color_render_pass.set_bind_group(
+                0,
+                &render_context.camera_context.camera_bind_group,
+                &[],
+            );
+
+            color_render_pass.set_vertex_buffer(0, active_outline_layer.vertex_buffer.slice(..));
+            color_render_pass.set_index_buffer(
+                active_outline_layer.index_buffer.slice(..),
+                wgpu::IndexFormat::Uint32,
+            );
+
+            color_render_pass.draw_indexed(0..active_outline_layer.num_indices, 0, 0..1);
 
             color_render_pass.set_pipeline(&render_context.colormap_render_pipeline);
             color_render_pass.set_bind_group(

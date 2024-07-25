@@ -17,6 +17,7 @@ pub struct RenderContext<'a> {
     pub limits: wgpu::Limits,
     pub blend_render_pipeline: wgpu::RenderPipeline,
     pub colormap_render_pipeline: wgpu::RenderPipeline,
+    pub outline_render_pipeline: wgpu::RenderPipeline,
     pub camera_context: CameraContext,
     pub blend_texture_context: TextureContext,
     pub colormap_texture_context: TextureContext,
@@ -194,6 +195,52 @@ pub async fn generate_render_context<'a>(
             compilation_options: Default::default(),
             targets: &[Some(wgpu::ColorTargetState {
                 format: config.format,
+                blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                write_mask: wgpu::ColorWrites::ALL,
+            })],
+        }),
+        primitive: wgpu::PrimitiveState {
+            topology: wgpu::PrimitiveTopology::TriangleList,
+            strip_index_format: None,
+            front_face: wgpu::FrontFace::Cw,
+            cull_mode: None,
+            polygon_mode: wgpu::PolygonMode::Fill,
+            unclipped_depth: false,
+            conservative: false,
+        },
+        depth_stencil: None,
+        multisample: wgpu::MultisampleState {
+            count: 1,
+            mask: !0,
+            alpha_to_coverage_enabled: false,
+        },
+        multiview: None,
+    });
+
+    let outline_shader = device.create_shader_module(wgpu::include_wgsl!("shaders/outline.wgsl"));
+
+    let outline_render_pipeline_layout =
+        device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("Outline Render Pipeline Layout"),
+            bind_group_layouts: &[&camera_context.camera_bind_group_layout],
+            push_constant_ranges: &[],
+        });
+
+    let outline_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("Outline Render Pipeline"),
+        layout: Some(&outline_render_pipeline_layout),
+        vertex: wgpu::VertexState {
+            module: &outline_shader,
+            entry_point: "vs_main",
+            buffers: &[Vertex::desc()],
+            compilation_options: Default::default(),
+        },
+        fragment: Some(wgpu::FragmentState {
+            module: &outline_shader,
+            entry_point: "fs_main",
+            compilation_options: Default::default(),
+            targets: &[Some(wgpu::ColorTargetState {
+                format: wgpu::TextureFormat::Rgba8UnormSrgb,
                 blend: None,
                 write_mask: wgpu::ColorWrites::ALL,
             })],
@@ -226,6 +273,7 @@ pub async fn generate_render_context<'a>(
         limits,
         blend_render_pipeline,
         colormap_render_pipeline,
+        outline_render_pipeline,
         camera_context,
         blend_texture_context,
         colormap_texture_context,

@@ -23,7 +23,6 @@ impl HeatmapResponse {
         let end_date = NaiveDate::parse_from_str(&filter.end_date, "%Y-%m-%d")
             .expect("Faile to parse end_date");
 
-        
         for granule in granules.iter_mut() {
             // Retain only those ancestors who fall within the filter
             granule.ancestors.retain(|ancestor| {

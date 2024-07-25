@@ -3,19 +3,23 @@ use actix_web::{
     Error, HttpRequest, HttpResponse,
 };
 
+use crate::geo_assets::GeoAssets;
+use crate::outline_response::OutlineResponse;
 use crate::{config::Config, heatmap_response::HeatmapResponse, redis};
 
-#[actix_web::post("/query")]
+#[actix_web::post("/heatmap")]
 async fn heatmap_query(
     req: HttpRequest,
+    geo_assets: Data<GeoAssets>,
     query: Json<heatmap_api::HeatmapQuery>,
-    feature_collection: Data<geojson::FeatureCollection>,
     config: Data<Config>,
 ) -> Result<HttpResponse, Error> {
     let query = query.0;
     let query_string = serde_json::to_string(&query)?;
 
     let redis_wrapped = req.app_data::<deadpool_redis::Pool>();
+
+    let feature_collection = &geo_assets.heatmap_features;
 
     /*
     why check cache if there is already a middleware handling caching?
@@ -32,7 +36,7 @@ async fn heatmap_query(
         }
     }
 
-    let response_data = HeatmapResponse::from_geojson(query.filter, &feature_collection);
+    let response_data = HeatmapResponse::from_geojson(query.filter, feature_collection);
 
     let response = HttpResponse::Ok().json(&response_data);
 
@@ -45,6 +49,17 @@ async fn heatmap_query(
         )
         .await?;
     }
+
+    Ok(response)
+}
+
+#[actix_web::get("/outline")]
+async fn outline_query(geo_assets: Data<GeoAssets>) -> Result<HttpResponse, Error> {
+    let feature_collection = &geo_assets.outline_features;
+
+    let response_data = OutlineResponse::from_geojson(feature_collection);
+
+    let response = HttpResponse::Ok().json(&response_data);
 
     Ok(response)
 }

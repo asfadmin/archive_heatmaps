@@ -32,4 +32,3 @@ geo = "0.28.0"
 
 [lints.clippy]
 unwrap_used = "warn"
-expect_used = "warn"
