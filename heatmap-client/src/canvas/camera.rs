@@ -28,7 +28,7 @@ impl CameraContext {
             width: config.width as f64,
             height: config.height as f64,
             position: (0.0, 0.0).into(),
-            zoom: 20.0,
+            zoom: 1.0,
         };
 
         let mut camera_uniform = CameraUniform::new();
