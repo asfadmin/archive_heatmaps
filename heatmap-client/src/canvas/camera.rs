@@ -28,7 +28,7 @@ impl CameraContext {
             width: config.width as f64,
             height: config.height as f64,
             position: (0.0, 0.0).into(),
-            zoom: 10.0,
+            zoom: 20.0,
         };
 
         let mut camera_uniform = CameraUniform::new();
@@ -104,26 +104,66 @@ impl CameraContext {
                 self.update_camera(CameraEvent::AspectRatio(aspect));
                 self.camera.width = width as f64;
                 self.camera.height = height as f64;
-
-                web_sys::console::log_1(&format!("{:?}, {:?}", width, height).into());
             }
 
             CameraEvent::AspectRatio(aspect) => {
                 self.camera.aspect = aspect;
             }
 
-            CameraEvent::Zoom(zoom, mut pos) => {
+            CameraEvent::Zoom(mut zoom, mut pos) => {
+                let camera_size =
+                    cgmath::Vector2::<f64>::new(self.camera.width, self.camera.height)
+                        / (self.camera.zoom + zoom);
+
+                if camera_size.x > 360.0 {
+                    zoom = self.camera.width / 360.0 - self.camera.zoom;
+                }
+
+                if camera_size.y > 170.0 {
+                    zoom = zoom.max(self.camera.height / 170.0 - self.camera.zoom);
+                }
+
+                if self.camera.zoom + zoom < 0.0 {
+                    zoom = -self.camera.zoom + 0.001;
+                }
+
                 let scale_factor = (self.camera.zoom + zoom) / self.camera.zoom;
 
                 self.camera.zoom += zoom;
-
-                web_sys::console::log_1(&format!("Zoom: {:?}", self.camera.zoom).into());
-
                 pos = self.mouse_coordinate_convert(pos);
                 self.update_camera(CameraEvent::Translate(pos - pos * scale_factor));
             }
 
-            CameraEvent::Translate(pos) => {
+            CameraEvent::Translate(mut pos) => {
+                let camera_upper_bounds: cgmath::Vector2<f64> = self.camera.position
+                    + pos
+                    + cgmath::Vector2::<f64>::new(
+                        self.camera.width / self.camera.zoom,
+                        -self.camera.height / self.camera.zoom,
+                    );
+
+                let camera_lower_bounds: cgmath::Vector2<f64> = self.camera.position + pos;
+
+                if camera_upper_bounds.x > 180.0 {
+                    pos.x = 0.0;
+                    self.camera.position.x = 180.0 - self.camera.width / self.camera.zoom;
+                }
+
+                if camera_upper_bounds.y < -90.0 {
+                    pos.y = 0.0;
+                    self.camera.position.y = -90.0 + self.camera.height / self.camera.zoom;
+                }
+
+                if camera_lower_bounds.y > 80.0 {
+                    pos.y = 0.0;
+                    self.camera.position.y = 80.0;
+                }
+
+                if camera_lower_bounds.x < -180.0 {
+                    pos.x = 0.0;
+                    self.camera.position.x = -180.0;
+                }
+
                 self.camera.position += pos;
             }
         }
