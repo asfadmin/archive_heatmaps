@@ -1,4 +1,5 @@
 use image::GenericImageView;
+use web_sys::js_sys::Math::ceil;
 
 pub struct TextureContext {
     pub texture: wgpu::Texture,
@@ -177,4 +178,31 @@ pub fn generate_colormap_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> 
         bind_group_layout,
         bind_group,
     }
+}
+
+pub fn generate_max_weight_texture(
+    device: &wgpu::Device,
+    size: winit::dpi::PhysicalSize<u32>,
+) -> wgpu::Texture {
+    // Buffer size must be a multiple of 256 to map to CPU
+    let tex_width = ceil((size.width as f64) / 256.0) as u32 * 256;
+
+    let texture_size = wgpu::Extent3d {
+        width: tex_width,
+        height: size.height,
+        depth_or_array_layers: 1,
+    };
+
+    let texture = device.create_texture(&wgpu::TextureDescriptor {
+        size: texture_size,
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        usage: wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::RENDER_ATTACHMENT,
+        label: Some("Max Weight Texture"),
+        view_formats: &[],
+    });
+
+    texture
 }

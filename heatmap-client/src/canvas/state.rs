@@ -3,14 +3,15 @@
 
 use std::rc::Rc;
 
+use wgpu::{Extent3d, ImageCopyBufferBase, ImageCopyTextureBase, Origin3d};
 use winit::event::WindowEvent;
 use winit::window::Window;
 
 use super::camera::CameraEvent;
-use super::geometry::Geometry;
+use super::geometry::{generate_max_weight_buffer, Geometry};
 use super::input::InputState;
 use super::render_context::RenderContext;
-use super::texture::generate_blend_texture;
+use super::texture::{generate_blend_texture, generate_max_weight_texture};
 
 /// Tracks wether state is finished setting up
 #[derive(Default, PartialEq, Eq)]
@@ -71,6 +72,17 @@ impl<'a> State<'a> {
 
             render_context.blend_texture_context =
                 generate_blend_texture(&render_context.device, new_size);
+
+            render_context.max_weight_texture =
+                generate_max_weight_texture(&render_context.device, new_size);
+
+            render_context.max_weight_buffer = generate_max_weight_buffer(
+                &render_context.device,
+                winit::dpi::PhysicalSize::<u32> {
+                    width: render_context.max_weight_texture.width(),
+                    height: render_context.max_weight_texture.height(),
+                },
+            );
         }
     }
 
@@ -158,94 +170,181 @@ impl<'a> State<'a> {
             .submit(std::iter::once(blend_encoder.finish()));
 
         ////////////////////////////
-        // Colormap Render Pass //
+        // Max Weight Render Pass //
         ////////////////////////////
 
-        let colormap_output = render_context.surface.get_current_texture()?;
-        let color_view = colormap_output
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
+        if render_context.max_weight.is_none() {
+            let max_weight_output = &render_context.max_weight_texture;
+            let max_weight_view =
+                max_weight_output.create_view(&wgpu::TextureViewDescriptor::default());
 
-        let mut colormap_encoder =
-            render_context
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some("Colormap Render Encoder"),
-                });
+            let mut max_weight_encoder =
+                render_context
+                    .device
+                    .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                        label: Some("Max Weight Render Encoder"),
+                    });
 
-        if let Some(geometry) = self.geometry.as_ref() {
-            let zoom = render_context.camera_context.camera.zoom;
-            let mut active_outline_layer = &geometry.outline_layers[0];
-            match zoom {
-                6.0..7.5 => {
-                    active_outline_layer = &geometry.outline_layers[1];
-                }
-                0.0..6.0 => {
-                    active_outline_layer = &geometry.outline_layers[2];
-                }
-                _ => (),
+            if let Some(geometry) = self.geometry.as_ref() {
+                let mut max_weight_render_pass =
+                    max_weight_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Max Weight Render Pass"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: &max_weight_view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color {
+                                    r: 0.0,
+                                    g: 0.0,
+                                    b: 0.0,
+                                    a: 0.0,
+                                }),
+                                store: wgpu::StoreOp::Store,
+                            },
+                        })],
+                        depth_stencil_attachment: None,
+                        occlusion_query_set: None,
+                        timestamp_writes: None,
+                    });
+
+                max_weight_render_pass.set_pipeline(&render_context.max_weight_render_pipeline);
+                max_weight_render_pass.set_bind_group(
+                    0,
+                    &render_context.blend_texture_context.bind_group,
+                    &[],
+                );
+                max_weight_render_pass
+                    .set_vertex_buffer(0, geometry.rectangle_layer.vertex_buffer.slice(..));
+                max_weight_render_pass.set_index_buffer(
+                    geometry.rectangle_layer.index_buffer.slice(..),
+                    wgpu::IndexFormat::Uint16,
+                );
+
+                max_weight_render_pass.draw_indexed(
+                    0..geometry.rectangle_layer.num_indices,
+                    0,
+                    0..1,
+                );
             }
 
-            let mut color_render_pass =
-                colormap_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: Some("Colormap Render Pass"),
-                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                        view: &color_view,
-                        resolve_target: None,
-                        ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(wgpu::Color {
-                                r: 0.02,
-                                g: 0.02,
-                                b: 0.02,
-                                a: 1.0,
-                            }),
-                            store: wgpu::StoreOp::Store,
-                        },
-                    })],
-                    depth_stencil_attachment: None,
-                    occlusion_query_set: None,
-                    timestamp_writes: None,
-                });
-
-            color_render_pass.set_pipeline(&render_context.outline_render_pipeline);
-
-            color_render_pass.set_bind_group(
-                0,
-                &render_context.camera_context.camera_bind_group,
-                &[],
+            max_weight_encoder.copy_texture_to_buffer(
+                wgpu::ImageCopyTexture {
+                    texture: &render_context.max_weight_texture,
+                    mip_level: 0,
+                    origin: Origin3d { x: 0, y: 0, z: 0 },
+                    aspect: wgpu::TextureAspect::All,
+                },
+                wgpu::ImageCopyBuffer {
+                    buffer: &render_context.max_weight_buffer,
+                    layout: wgpu::ImageDataLayout {
+                        offset: 0,
+                        bytes_per_row: Some(4 * render_context.max_weight_texture.width()),
+                        rows_per_image: None,
+                    },
+                },
+                Extent3d {
+                    width: render_context.max_weight_texture.width(),
+                    height: render_context.max_weight_texture.height(),
+                    depth_or_array_layers: 1,
+                },
             );
 
-            color_render_pass.set_vertex_buffer(0, active_outline_layer.vertex_buffer.slice(..));
-            color_render_pass.set_index_buffer(
-                active_outline_layer.index_buffer.slice(..),
-                wgpu::IndexFormat::Uint32,
-            );
-
-            color_render_pass.draw_indexed(0..active_outline_layer.num_indices, 0, 0..1);
-
-            color_render_pass.set_pipeline(&render_context.colormap_render_pipeline);
-            color_render_pass.set_bind_group(
-                0,
-                &render_context.colormap_texture_context.bind_group,
-                &[],
-            );
-            color_render_pass.set_bind_group(
-                1,
-                &render_context.blend_texture_context.bind_group,
-                &[],
-            );
-            color_render_pass.set_vertex_buffer(0, geometry.color_layer.vertex_buffer.slice(..));
-            color_render_pass.set_index_buffer(
-                geometry.color_layer.index_buffer.slice(..),
-                wgpu::IndexFormat::Uint16,
-            );
-            color_render_pass.draw_indexed(0..geometry.color_layer.num_indices, 0, 0..1);
+            render_context
+                .queue
+                .submit(std::iter::once(max_weight_encoder.finish()));
         }
+        ////////////////////////////
+        // Colormap Render Pass //
+        ////////////////////////////
+        else {
+            let colormap_output = render_context.surface.get_current_texture()?;
+            let color_view = colormap_output
+                .texture
+                .create_view(&wgpu::TextureViewDescriptor::default());
 
-        render_context
-            .queue
-            .submit(std::iter::once(colormap_encoder.finish()));
-        colormap_output.present();
+            let mut colormap_encoder =
+                render_context
+                    .device
+                    .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                        label: Some("Colormap Render Encoder"),
+                    });
+
+            if let Some(geometry) = self.geometry.as_ref() {
+                let zoom = render_context.camera_context.camera.zoom;
+                let mut active_outline_layer = &geometry.outline_layers[0];
+                match zoom {
+                    6.0..7.5 => {
+                        active_outline_layer = &geometry.outline_layers[1];
+                    }
+                    0.0..6.0 => {
+                        active_outline_layer = &geometry.outline_layers[2];
+                    }
+                    _ => (),
+                }
+
+                let mut color_render_pass =
+                    colormap_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Colormap Render Pass"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: &color_view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color {
+                                    r: 0.02,
+                                    g: 0.02,
+                                    b: 0.02,
+                                    a: 1.0,
+                                }),
+                                store: wgpu::StoreOp::Store,
+                            },
+                        })],
+                        depth_stencil_attachment: None,
+                        occlusion_query_set: None,
+                        timestamp_writes: None,
+                    });
+
+                color_render_pass.set_pipeline(&render_context.outline_render_pipeline);
+
+                color_render_pass.set_bind_group(
+                    0,
+                    &render_context.camera_context.camera_bind_group,
+                    &[],
+                );
+
+                color_render_pass
+                    .set_vertex_buffer(0, active_outline_layer.vertex_buffer.slice(..));
+                color_render_pass.set_index_buffer(
+                    active_outline_layer.index_buffer.slice(..),
+                    wgpu::IndexFormat::Uint32,
+                );
+
+                color_render_pass.draw_indexed(0..active_outline_layer.num_indices, 0, 0..1);
+
+                color_render_pass.set_pipeline(&render_context.colormap_render_pipeline);
+                color_render_pass.set_bind_group(
+                    0,
+                    &render_context.colormap_texture_context.bind_group,
+                    &[],
+                );
+                color_render_pass.set_bind_group(
+                    1,
+                    &render_context.blend_texture_context.bind_group,
+                    &[],
+                );
+                color_render_pass
+                    .set_vertex_buffer(0, geometry.rectangle_layer.vertex_buffer.slice(..));
+                color_render_pass.set_index_buffer(
+                    geometry.rectangle_layer.index_buffer.slice(..),
+                    wgpu::IndexFormat::Uint16,
+                );
+                color_render_pass.draw_indexed(0..geometry.rectangle_layer.num_indices, 0, 0..1);
+            }
+
+            render_context
+                .queue
+                .submit(std::iter::once(colormap_encoder.finish()));
+            colormap_output.present();
+        }
 
         Ok(())
     }
