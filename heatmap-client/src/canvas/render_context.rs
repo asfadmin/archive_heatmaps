@@ -24,9 +24,7 @@ pub struct RenderContext<'a> {
     pub camera_context: CameraContext,
     pub blend_texture_context: TextureContext,
     pub colormap_texture_context: TextureContext,
-    pub max_weight_texture: wgpu::Texture,
-    pub max_weight_buffer: wgpu::Buffer,
-    pub max_weight: Option<u32>,
+    pub max_weight_context: MaxWeightContext,
 }
 
 /// Create a new state
@@ -297,7 +295,7 @@ pub async fn generate_render_context<'a>(
                 entry_point: "fs_main",
                 compilation_options: Default::default(),
                 targets: &[Some(wgpu::ColorTargetState {
-                    format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                    format: wgpu::TextureFormat::Rgba32Float,
                     blend: None,
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
@@ -320,7 +318,11 @@ pub async fn generate_render_context<'a>(
             multiview: None,
         });
 
-    let max_weight = None;
+    let max_weight_context = MaxWeightContext {
+        texture: max_weight_texture,
+        buffer: max_weight_buffer,
+        state: MaxWeightState::Empty,
+    };
 
     // StateMessage is sent to the event loop with the contained variables
     let message = RenderContext {
@@ -337,11 +339,22 @@ pub async fn generate_render_context<'a>(
         camera_context,
         blend_texture_context,
         colormap_texture_context,
-        max_weight_texture,
-        max_weight_buffer,
-        max_weight,
+        max_weight_context,
     };
 
     web_sys::console::log_1(&"Done Generating State".into());
     let _ = event_loop_proxy.send_event(UserMessage::StateMessage(message));
+}
+
+pub struct MaxWeightContext {
+    pub texture: wgpu::Texture,
+    pub buffer: wgpu::Buffer,
+    pub state: MaxWeightState,
+}
+
+#[derive(PartialEq)]
+pub enum MaxWeightState {
+    Empty,
+    InProgress,
+    Completed(u32),
 }

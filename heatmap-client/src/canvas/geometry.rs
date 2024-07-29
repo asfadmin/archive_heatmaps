@@ -122,7 +122,7 @@ pub fn generate_max_weight_buffer(
     device: &wgpu::Device,
     size: winit::dpi::PhysicalSize<u32>,
 ) -> wgpu::Buffer {
-    let temp_contents = vec![0 as u8; (4 * size.width * size.height) as usize];
+    let temp_contents = vec![0 as u8; (4 * 4 * size.width * size.height) as usize];
 
     let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Max Weight Buffer"),

@@ -28,7 +28,7 @@ var blended_samp: sampler;
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0)vec4<f32> {
     
-    let color = textureSample(blended_tex, blended_samp, in.tex_coords);
+    var color = textureSample(blended_tex, blended_samp, in.tex_coords);
 
     return color;
 }

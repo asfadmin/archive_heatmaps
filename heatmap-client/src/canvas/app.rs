@@ -1,6 +1,7 @@
 // Contains event loop logic for the window containing the wgpu surface
 
 use std::cell::RefCell;
+
 use std::rc::Rc;
 
 use leptos::html::ToHtmlElement;
@@ -14,7 +15,7 @@ use winit::{
 };
 
 use super::geometry::Geometry;
-use super::render_context::RenderContext;
+use super::render_context::{MaxWeightState, RenderContext};
 use super::state::{InitStage, State};
 use crate::ingest::load::BufferStorage;
 
@@ -143,6 +144,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     init_stage: InitStage::Complete,
                     geometry: None,
                     input_state: self.state.input_state.clone(),
+                    event_loop_proxy: Some(self.event_loop_proxy.clone()),
                 };
 
                 // Resize configures the surface based on current canvas size
@@ -171,6 +173,31 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
 
                 web_sys::console::log_1(&"Done Generating Buffers".into());
             }
+
+            UserMessage::BufferMapped => {
+                let render_context = self.state.render_context.as_mut().expect("Failed to get render context in UserMessage::BufferMapped");
+
+                let raw_bytes: Vec<u8> = (&*render_context.max_weight_context.buffer.slice(..).get_mapped_range()).into();
+                let mut red_data: Vec<f32> = Vec::new();
+
+                let mut i = 0;
+                while i < raw_bytes.len() {
+                    red_data.push(f32::from_be_bytes([raw_bytes[i + 3], raw_bytes[i + 2], raw_bytes[i + 1], raw_bytes[i]]));
+                    i += 16;
+                }
+
+                let mut max = 0.0;
+
+                for value in red_data.iter() {
+                    if value > &max {
+                        max = *value;
+                    }
+                }
+
+                web_sys::console::log_1(&format!("Max: {:?}\nTex Data: {:?}", max, red_data).into());
+
+                render_context.max_weight_context.state = MaxWeightState::Completed(0);
+            }
         }
     }
 }
@@ -179,6 +206,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
 pub enum UserMessage<'a> {
     StateMessage(RenderContext<'a>),
     IncomingData(Vec<BufferStorage>, Vec<BufferStorage>),
+    BufferMapped,
 }
 
 /// Stores the canvas as an html element
