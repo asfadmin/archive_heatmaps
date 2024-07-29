@@ -1,4 +1,4 @@
-use wgpu::{util::DeviceExt, Buffer};
+use wgpu::util::DeviceExt;
 
 use super::render_context::RenderContext;
 use crate::ingest::load::BufferStorage;
@@ -20,7 +20,6 @@ const RECTANGLE_VERTICES: &[Vertex] = &[
 ];
 
 const RECTANGLE_INDICES: &[u16] = &[0, 2, 3, 0, 2, 1];
-
 
 pub struct BufferContext {
     pub buffer: wgpu::Buffer,
@@ -128,40 +127,39 @@ pub fn generate_max_weight_buffer(
     device: &wgpu::Device,
     size: winit::dpi::PhysicalSize<u32>,
 ) -> wgpu::Buffer {
-    let temp_contents = vec![0 as u8; (4 * 4 * size.width * size.height) as usize];
+    let temp_contents = vec![0_u8; (4 * 4 * size.width * size.height) as usize];
 
     let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Max Weight Buffer"),
-        contents: &temp_contents.as_slice(),
+        contents: temp_contents.as_slice(),
         usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
     });
 
     vertex_buffer
 }
 
-pub fn generate_uniform_buffer(
-    device: &wgpu::Device,
-) -> BufferContext {
-    let uniform_buffer = device.create_buffer( &wgpu::BufferDescriptor {
+pub fn generate_uniform_buffer(device: &wgpu::Device) -> BufferContext {
+    let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("Uniform Buffer"),
         size: 16,
         usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
 
-    let uniform_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        label: Some("Uniform Bind Group Layout"),
-        entries: &[wgpu::BindGroupLayoutEntry {
-            binding: 0,
-            visibility: wgpu::ShaderStages::FRAGMENT,
-            ty: wgpu::BindingType::Buffer { 
-                ty: wgpu::BufferBindingType::Uniform, 
-                has_dynamic_offset: false, 
-                min_binding_size: None
-             },
-            count: None,
-        }],
-    });
+    let uniform_bind_group_layout =
+        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Uniform Bind Group Layout"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        });
 
     let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("Uniform Bind Group"),
@@ -169,7 +167,7 @@ pub fn generate_uniform_buffer(
         entries: &[wgpu::BindGroupEntry {
             binding: 0,
             resource: uniform_buffer.as_entire_binding(),
-        }]
+        }],
     });
 
     BufferContext {

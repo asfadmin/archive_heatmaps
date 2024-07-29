@@ -3,8 +3,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-
-use cgmath::num_traits::ToBytes;
 use leptos::html::ToHtmlElement;
 use winit::platform::web::WindowExtWebSys;
 use winit::{
@@ -172,20 +170,39 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     outline_data,
                 ));
 
-                self.state.render_context.as_mut().expect("Failed to get render context in Incoming Data").max_weight_context.state = MaxWeightState::Empty;
+                self.state
+                    .render_context
+                    .as_mut()
+                    .expect("Failed to get render context in Incoming Data")
+                    .max_weight_context
+                    .state = MaxWeightState::Empty;
 
                 web_sys::console::log_1(&"Done Generating Buffers".into());
             }
 
             UserMessage::BufferMapped => {
-                let render_context = self.state.render_context.as_mut().expect("Failed to get render context in UserMessage::BufferMapped");
+                let render_context = self
+                    .state
+                    .render_context
+                    .as_mut()
+                    .expect("Failed to get render context in UserMessage::BufferMapped");
 
-                let raw_bytes: Vec<u8> = (&*render_context.max_weight_context.buffer.slice(..).get_mapped_range()).into();
+                let raw_bytes: Vec<u8> = (&*render_context
+                    .max_weight_context
+                    .buffer
+                    .slice(..)
+                    .get_mapped_range())
+                    .into();
                 let mut red_data: Vec<f32> = Vec::new();
 
                 let mut i = 0;
                 while i < raw_bytes.len() {
-                    red_data.push(f32::from_be_bytes([raw_bytes[i + 3], raw_bytes[i + 2], raw_bytes[i + 1], raw_bytes[i]]));
+                    red_data.push(f32::from_be_bytes([
+                        raw_bytes[i + 3],
+                        raw_bytes[i + 2],
+                        raw_bytes[i + 1],
+                        raw_bytes[i],
+                    ]));
                     i += 16;
                 }
 
@@ -208,8 +225,9 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
 
                 render_context.queue.write_buffer(
                     &render_context.max_weight_context.uniform_buffer.buffer,
-                     0, 
-                     &uniform_data.as_slice());
+                    0,
+                    uniform_data.as_slice(),
+                );
 
                 render_context.queue.submit([]);
 

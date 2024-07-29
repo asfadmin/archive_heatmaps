@@ -5,7 +5,9 @@ use winit::{dpi::PhysicalSize, event_loop::EventLoopProxy};
 
 use super::app::UserMessage;
 use super::camera::CameraContext;
-use super::geometry::{generate_max_weight_buffer, generate_uniform_buffer, BlendVertex, BufferContext, Vertex};
+use super::geometry::{
+    generate_max_weight_buffer, generate_uniform_buffer, BlendVertex, BufferContext, Vertex,
+};
 use super::texture::{
     generate_blend_texture, generate_colormap_texture, generate_max_weight_texture, TextureContext,
 };

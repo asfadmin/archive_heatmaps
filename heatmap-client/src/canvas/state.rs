@@ -3,16 +3,15 @@
 
 use std::rc::Rc;
 
-use wgpu::{Extent3d, ImageCopyBufferBase, ImageCopyTextureBase, Origin3d};
-use winit::event_loop::EventLoopProxy;
+use wgpu::{Extent3d, Origin3d};
 use winit::event::WindowEvent;
+use winit::event_loop::EventLoopProxy;
 use winit::window::Window;
 
-
+use super::app::UserMessage;
 use super::camera::CameraEvent;
 use super::geometry::{generate_max_weight_buffer, Geometry};
 use super::input::InputState;
-use super::app::UserMessage;
 use super::render_context::{MaxWeightState, RenderContext};
 use super::texture::{generate_blend_texture, generate_max_weight_texture};
 
@@ -100,7 +99,6 @@ impl<'a> State<'a> {
             .expect("ERROR: Failed to get render context in render");
 
         if let Some(geometry) = self.geometry.as_ref() {
-
             ///////////////////////
             // Blend Render Pass //
             ///////////////////////
@@ -171,7 +169,6 @@ impl<'a> State<'a> {
 
                 blend_render_pass.draw_indexed(0..active_blend_layer.num_indices, 0, 0..1);
             }
-            
 
             render_context
                 .queue
@@ -239,12 +236,11 @@ impl<'a> State<'a> {
                     .submit(std::iter::once(max_weight_encoder.finish()));
 
                 let mut copy_encoder =
-                render_context
-                    .device
-                    .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                        label: Some("Copy Encoder"),
-                    });
-            
+                    render_context
+                        .device
+                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                            label: Some("Copy Encoder"),
+                        });
 
                 copy_encoder.copy_texture_to_buffer(
                     wgpu::ImageCopyTexture {
@@ -257,7 +253,9 @@ impl<'a> State<'a> {
                         buffer: &render_context.max_weight_context.buffer,
                         layout: wgpu::ImageDataLayout {
                             offset: 0,
-                            bytes_per_row: Some(4 * 4 * render_context.max_weight_context.texture.width()),
+                            bytes_per_row: Some(
+                                4 * 4 * render_context.max_weight_context.texture.width(),
+                            ),
                             rows_per_image: None,
                         },
                     },
@@ -272,12 +270,19 @@ impl<'a> State<'a> {
                     .queue
                     .submit(std::iter::once(copy_encoder.finish()));
 
-                let event_loop_proxy_clone = self.event_loop_proxy.as_ref().expect("Failed to get event loop proxy when mapping max weight buffer to cpu").clone();
+                let event_loop_proxy_clone = self
+                    .event_loop_proxy
+                    .as_ref()
+                    .expect("Failed to get event loop proxy when mapping max weight buffer to cpu")
+                    .clone();
 
-                render_context.max_weight_context.buffer.slice(..).map_async(wgpu::MapMode::Read, move |_| { 
-                    web_sys::console::log_1(&format!("Callback has been called, sending buffer mapped signal").into());
-                    let _ = event_loop_proxy_clone.send_event(UserMessage::BufferMapped); 
-                });
+                render_context
+                    .max_weight_context
+                    .buffer
+                    .slice(..)
+                    .map_async(wgpu::MapMode::Read, move |_| {
+                        let _ = event_loop_proxy_clone.send_event(UserMessage::BufferMapped);
+                    });
 
                 render_context.max_weight_context.state = MaxWeightState::InProgress;
             }
@@ -361,7 +366,7 @@ impl<'a> State<'a> {
                     );
                     color_render_pass.set_bind_group(
                         2,
-                        &render_context.max_weight_context.uniform_buffer.bind_group, 
+                        &render_context.max_weight_context.uniform_buffer.bind_group,
                         &[],
                     );
                     color_render_pass
@@ -370,7 +375,11 @@ impl<'a> State<'a> {
                         geometry.rectangle_layer.index_buffer.slice(..),
                         wgpu::IndexFormat::Uint16,
                     );
-                    color_render_pass.draw_indexed(0..geometry.rectangle_layer.num_indices, 0, 0..1);
+                    color_render_pass.draw_indexed(
+                        0..geometry.rectangle_layer.num_indices,
+                        0,
+                        0..1,
+                    );
                 }
 
                 render_context

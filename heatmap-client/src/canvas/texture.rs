@@ -193,7 +193,7 @@ pub fn generate_max_weight_texture(
         depth_or_array_layers: 1,
     };
 
-    let texture = device.create_texture(&wgpu::TextureDescriptor {
+    device.create_texture(&wgpu::TextureDescriptor {
         size: texture_size,
         mip_level_count: 1,
         sample_count: 1,
@@ -202,7 +202,5 @@ pub fn generate_max_weight_texture(
         usage: wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::RENDER_ATTACHMENT,
         label: Some("Max Weight Texture"),
         view_formats: &[],
-    });
-
-    texture
+    })
 }
