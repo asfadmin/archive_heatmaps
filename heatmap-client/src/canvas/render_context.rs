@@ -5,7 +5,7 @@ use winit::{dpi::PhysicalSize, event_loop::EventLoopProxy};
 
 use super::app::UserMessage;
 use super::camera::CameraContext;
-use super::geometry::{generate_max_weight_buffer, BlendVertex, Vertex};
+use super::geometry::{generate_max_weight_buffer, generate_uniform_buffer, BlendVertex, BufferContext, Vertex};
 use super::texture::{
     generate_blend_texture, generate_colormap_texture, generate_max_weight_texture, TextureContext,
 };
@@ -114,6 +114,7 @@ pub async fn generate_render_context<'a>(
     let max_weight_texture = generate_max_weight_texture(&device, size);
 
     let max_weight_buffer = generate_max_weight_buffer(&device, size);
+    let max_weight_uniform_buffer = generate_uniform_buffer(&device);
 
     ////////////////////////////
     // Set up render pipeline //
@@ -183,6 +184,7 @@ pub async fn generate_render_context<'a>(
             bind_group_layouts: &[
                 &colormap_texture_context.bind_group_layout,
                 &blend_texture_context.bind_group_layout,
+                &max_weight_uniform_buffer.bind_group_layout,
             ],
             push_constant_ranges: &[],
         });
@@ -322,6 +324,7 @@ pub async fn generate_render_context<'a>(
         texture: max_weight_texture,
         buffer: max_weight_buffer,
         state: MaxWeightState::Empty,
+        uniform_buffer: max_weight_uniform_buffer,
     };
 
     // StateMessage is sent to the event loop with the contained variables
@@ -350,11 +353,12 @@ pub struct MaxWeightContext {
     pub texture: wgpu::Texture,
     pub buffer: wgpu::Buffer,
     pub state: MaxWeightState,
+    pub uniform_buffer: BufferContext,
 }
 
 #[derive(PartialEq)]
 pub enum MaxWeightState {
     Empty,
     InProgress,
-    Completed(u32),
+    Completed,
 }

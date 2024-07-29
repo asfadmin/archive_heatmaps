@@ -284,7 +284,7 @@ impl<'a> State<'a> {
             ////////////////////////////
             // Colormap Render Pass //
             ////////////////////////////
-            else {
+            else if render_context.max_weight_context.state == MaxWeightState::Completed {
                 let colormap_output = render_context.surface.get_current_texture()?;
                 let color_view = colormap_output
                     .texture
@@ -357,6 +357,11 @@ impl<'a> State<'a> {
                     color_render_pass.set_bind_group(
                         1,
                         &render_context.blend_texture_context.bind_group,
+                        &[],
+                    );
+                    color_render_pass.set_bind_group(
+                        2,
+                        &render_context.max_weight_context.uniform_buffer.bind_group, 
                         &[],
                     );
                     color_render_pass

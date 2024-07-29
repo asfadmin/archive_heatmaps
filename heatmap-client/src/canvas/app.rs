@@ -1,9 +1,10 @@
 // Contains event loop logic for the window containing the wgpu surface
 
 use std::cell::RefCell;
-
 use std::rc::Rc;
 
+
+use cgmath::num_traits::ToBytes;
 use leptos::html::ToHtmlElement;
 use winit::platform::web::WindowExtWebSys;
 use winit::{
@@ -171,6 +172,8 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     outline_data,
                 ));
 
+                self.state.render_context.as_mut().expect("Failed to get render context in Incoming Data").max_weight_context.state = MaxWeightState::Empty;
+
                 web_sys::console::log_1(&"Done Generating Buffers".into());
             }
 
@@ -194,9 +197,25 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     }
                 }
 
-                web_sys::console::log_1(&format!("Max: {:?}\nTex Data: {:?}", max, red_data).into());
+                web_sys::console::log_1(&format!("Max: {:?}", max).into());
 
-                render_context.max_weight_context.state = MaxWeightState::Completed(0);
+                let mut uniform_data: Vec<u8> = max.to_le_bytes().into();
+
+                // Uniform Buffer must be 16 byte aligned
+                while uniform_data.len() % 16 != 0 {
+                    uniform_data.push(0);
+                }
+
+                render_context.queue.write_buffer(
+                    &render_context.max_weight_context.uniform_buffer.buffer,
+                     0, 
+                     &uniform_data.as_slice());
+
+                render_context.queue.submit([]);
+
+                render_context.max_weight_context.state = MaxWeightState::Completed;
+
+                render_context.max_weight_context.buffer.unmap();
             }
         }
     }

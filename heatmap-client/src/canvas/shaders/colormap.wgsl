@@ -27,6 +27,9 @@ var blended_tex: texture_2d<f32>;
 @group(1) @binding(1)
 var blended_samp: sampler;
 
+@group(2)@binding(0)
+var<uniform> max_weight: vec4<f32>;
+
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
@@ -37,11 +40,14 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     }
 
     let tex_dim = textureDimensions(colormap_tex);
-    let map_coord = clamp(weight * 10, 0.0, f32(tex_dim - 1));
+
+    let ratio = (weight * 1.1)/(max_weight.x) * f32(tex_dim);
+
+    let map_coord = clamp(ratio, 0.0, f32(tex_dim - 1 ));
 
     var color = textureLoad(colormap_tex, u32(map_coord), 0);
 
-    color.a = clamp(pow(f32(weight), 2.0)/400.0, 0.2, 1.0);
+    color.a = clamp(pow(f32(weight), 2.0)/400.0, 0.4, 1.0);
 
     return vec4<f32>(color);
 }
