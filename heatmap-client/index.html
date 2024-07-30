@@ -11,7 +11,32 @@
         height: 100%; */
         display: block;
       }
+
+
+      input[type="checkbox"] {
+        /* Add if not using autoprefixer */
+        -webkit-appearance: none;
+        appearance: none;
+        /* For iOS < 15 to remove gradient background */
+        background-color: #fff;
+        /* Not removed via appearance */
+        margin: 0;
+        margin-left: 1mm;
+        margin-right: 1mm;
+        
+        font: inherit;
+        width: 0.75em;
+        height: 0.75em;
+        border-radius: 20%;
+      }
+
+      input[type="checkbox"]:checked {
+        background-color: #fc9167;
+      }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
   </head>
   <body></body>
 </html>
