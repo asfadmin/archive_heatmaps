@@ -10,10 +10,10 @@ use winit::window::Window;
 
 use super::app::UserMessage;
 use super::camera::{Camera, CameraEvent};
-use super::geometry::{generate_max_weight_buffer, Geometry};
+use super::geometry::Geometry;
 use super::input::InputState;
 use super::render_context::{MaxWeightState, RenderContext};
-use super::texture::{generate_blend_texture, generate_max_weight_texture};
+use super::texture::generate_blend_texture;
 
 /// Tracks wether state is finished setting up
 #[derive(Default, PartialEq, Eq)]
@@ -76,19 +76,6 @@ impl<'a> State<'a> {
 
             render_context.blend_texture_context =
                 generate_blend_texture(&render_context.device, new_size);
-
-            render_context.max_weight_context.texture =
-                generate_max_weight_texture(&render_context.device, new_size);
-
-            render_context.max_weight_context.buffer = generate_max_weight_buffer(
-                &render_context.device,
-                winit::dpi::PhysicalSize::<u32> {
-                    width: render_context.max_weight_context.texture.width(),
-                    height: render_context.max_weight_context.texture.height(),
-                },
-            );
-
-            render_context.max_weight_context.state = MaxWeightState::Empty;
         }
     }
 

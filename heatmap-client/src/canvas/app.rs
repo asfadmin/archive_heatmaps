@@ -13,9 +13,10 @@ use winit::{
     window::{Window, WindowId},
 };
 
-use super::geometry::Geometry;
+use super::geometry::{generate_max_weight_buffer, Geometry};
 use super::render_context::{MaxWeightState, RenderContext};
 use super::state::{InitStage, State};
+use super::texture::generate_max_weight_texture;
 use crate::ingest::load::BufferStorage;
 
 pub struct App<'a> {
@@ -161,22 +162,30 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
 
             UserMessage::IncomingData(data, outline_data) => {
                 web_sys::console::log_1(&"Generating Buffers...".into());
+                let render_context = self
+                    .state
+                    .render_context
+                    .as_mut()
+                    .expect("Failed to get render context in Incoming Data event");
 
                 self.state.geometry = Some(Geometry::generate_buffers(
-                    self.state
-                        .render_context
-                        .as_ref()
-                        .expect("Error: Failed to get render context during Incoming data event"),
+                    render_context,
                     data,
                     outline_data,
                 ));
 
-                self.state
-                    .render_context
-                    .as_mut()
-                    .expect("Failed to get render context in Incoming Data")
-                    .max_weight_context
-                    .state = MaxWeightState::Empty;
+                render_context.max_weight_context.texture =
+                    generate_max_weight_texture(&render_context.device, render_context.size);
+
+                render_context.max_weight_context.buffer = generate_max_weight_buffer(
+                    &render_context.device,
+                    winit::dpi::PhysicalSize::<u32> {
+                        width: render_context.max_weight_context.texture.width(),
+                        height: render_context.max_weight_context.texture.height(),
+                    },
+                );
+
+                render_context.max_weight_context.state = MaxWeightState::Empty;
 
                 web_sys::console::log_1(&"Done Generating Buffers".into());
             }
