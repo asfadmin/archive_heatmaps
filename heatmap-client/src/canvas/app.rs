@@ -144,6 +144,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     geometry: None,
                     input_state: self.state.input_state.clone(),
                     event_loop_proxy: Some(self.event_loop_proxy.clone()),
+                    camera_storage: None,
                 };
 
                 // Resize configures the surface based on current canvas size

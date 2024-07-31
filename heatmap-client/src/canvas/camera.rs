@@ -1,3 +1,4 @@
+use cgmath::Vector2;
 use wgpu::util::DeviceExt;
 
 use super::input::InputState;
@@ -8,6 +9,7 @@ pub enum CameraEvent {
     Translate(cgmath::Vector2<f64>),
     AspectRatio(f64),
     Zoom(f64, cgmath::Vector2<f64>),
+    EntireView,
 }
 
 pub struct CameraContext {
@@ -104,8 +106,6 @@ impl CameraContext {
                 self.update_camera(CameraEvent::AspectRatio(aspect));
                 self.camera.width = width as f64;
                 self.camera.height = height as f64;
-
-                web_sys::console::log_1(&format!("{:?}, {:?}", width, height).into());
             }
 
             CameraEvent::AspectRatio(aspect) => {
@@ -117,14 +117,22 @@ impl CameraContext {
 
                 self.camera.zoom += zoom;
 
-                web_sys::console::log_1(&format!("Zoom: {:?}", self.camera.zoom).into());
-
                 pos = self.mouse_coordinate_convert(pos);
                 self.update_camera(CameraEvent::Translate(pos - pos * scale_factor));
             }
 
             CameraEvent::Translate(pos) => {
                 self.camera.position += pos;
+            }
+
+            CameraEvent::EntireView => {
+                self.camera.position = Vector2::new(-180.0, 90.0);
+
+                self.camera.zoom = 5.0;
+
+                self.update_camera(CameraEvent::Resize(1800, 900));
+
+                self.rebuild_view_matrix();
             }
         }
     }
@@ -142,6 +150,7 @@ impl CameraContext {
     }
 }
 
+#[derive(Clone)]
 pub struct Camera {
     pub aspect: f64,
     pub width: f64,

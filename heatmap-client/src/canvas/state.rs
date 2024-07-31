@@ -9,7 +9,7 @@ use winit::event_loop::EventLoopProxy;
 use winit::window::Window;
 
 use super::app::UserMessage;
-use super::camera::CameraEvent;
+use super::camera::{Camera, CameraEvent};
 use super::geometry::{generate_max_weight_buffer, Geometry};
 use super::input::InputState;
 use super::render_context::{MaxWeightState, RenderContext};
@@ -32,6 +32,7 @@ pub struct State<'a> {
     pub input_state: InputState,
     pub init_stage: InitStage,
     pub event_loop_proxy: Option<EventLoopProxy<UserMessage<'static>>>,
+    pub camera_storage: Option<Camera>,
 }
 
 impl<'a> State<'a> {
@@ -117,6 +118,21 @@ impl<'a> State<'a> {
                 render_context
                     .camera_context
                     .run_camera_logic(&mut self.input_state);
+
+                if render_context.max_weight_context.state == MaxWeightState::Empty {
+                    self.camera_storage = Some(render_context.camera_context.camera.clone());
+
+                    render_context
+                        .camera_context
+                        .update_camera(CameraEvent::EntireView);
+                } else if self.camera_storage.is_some() {
+                    render_context.camera_context.camera = self
+                        .camera_storage
+                        .as_ref()
+                        .expect("Failed to get camera storage")
+                        .clone();
+                    self.camera_storage = None;
+                }
 
                 render_context
                     .camera_context
