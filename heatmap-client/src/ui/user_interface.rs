@@ -3,33 +3,29 @@ extern crate heatmap_api;
 use chrono::naive::NaiveDate;
 use leptos::wasm_bindgen::JsCast;
 use leptos::*;
-use stylers::style_str;
 
 #[component]
 pub fn UserInterface(set_filter: WriteSignal<heatmap_api::Filter>) -> impl IntoView {
-    let base_date = NaiveDate::from_ymd_opt(1, 1, 1).expect("Failed to create Naive");
-
-    let min_date: i64 = NaiveDate::from_ymd_opt(2021, 1, 2)
+    let min_date = NaiveDate::from_ymd_opt(2021, 1, 2)
         .expect("Failed to parse left hand side when finding min_date")
-        .signed_duration_since(base_date)
-        .num_days();
+        .format("%Y-%m-%d")
+        .to_string();
 
-    let max_date: i64 = NaiveDate::from_ymd_opt(2021, 2, 2)
+    let max_date = NaiveDate::from_ymd_opt(2021, 2, 2)
         .expect("Failed to parse left hand side when finding max_date")
-        .signed_duration_since(base_date)
-        .num_days();
+        .format("%Y-%m-%d")
+        .to_string();
 
-    let (start_date, set_start_date) = create_signal(min_date);
-    let (end_date, set_end_date) = create_signal(max_date);
+    let (start_date, _set_start_date) = create_signal(min_date);
+    let start_date_element: NodeRef<html::Input> = create_node_ref();
+    let (end_date, _set_end_date) = create_signal(max_date);
+    let end_date_element: NodeRef<html::Input> = create_node_ref();
 
     let doc = document();
 
     // Might be worth reworking this, we are mixing web_sys and leptos here but weve done the same elsewhere so we could also just roll with it
     // This closure is run when the submit button is pressed, it formats a filter string and sets a signal
-    let on_submit = move |ev: leptos::ev::SubmitEvent| {
-        // Stop page from reloading
-        ev.prevent_default();
-
+    let on_update = move |_: web_sys::Event| {
         let mut product_type = Vec::new();
 
         // If there is a checked button in granule_type append its value to the filter_string
@@ -78,14 +74,14 @@ pub fn UserInterface(set_filter: WriteSignal<heatmap_api::Filter>) -> impl IntoV
         }
 
         // Convert slider values into Dates
-        let start_date = NaiveDate::from_num_days_from_ce_opt(start_date() as i32)
-            .expect("Failed to parse start date")
-            .format("%Y-%m-%d")
-            .to_string();
-        let end_date = NaiveDate::from_num_days_from_ce_opt(end_date() as i32)
-            .expect("Failed to parse end date")
-            .format("%Y-%m-%d")
-            .to_string();
+        let start_date = start_date_element()
+            .expect("failed to get start date value")
+            .value();
+        let end_date = end_date_element()
+            .expect("failed to get end_date value")
+            .value();
+
+        web_sys::console::log_1(&start_date.clone().into());
 
         set_filter(heatmap_api::Filter {
             product_type,
@@ -95,97 +91,119 @@ pub fn UserInterface(set_filter: WriteSignal<heatmap_api::Filter>) -> impl IntoV
         })
     };
 
-    let (class_name, style_val) = style_str!("UserInterface",
-        div.user_interface {
-            position:absolute;
-            z-index:1;
-        }
-
-        .text {
-            color: white;
-        }
-
-        #platform_types {
-            position: relative;
-            top: -50px;
-            left: 65px;
-        }
-    );
-
-    view! { class=class_name,
-        <style>{style_val}</style>
+    view! {
         <div class="user_interface">
-            <form on:submit=on_submit>
-                <div id="product_types">
-                    <input type="checkbox" id="grd" name="granule_type" value=0 checked/>
-                    <label class="text" for="grd">
-                        "GRD"
-                    </label>
-                    <br/>
-                    <input type="checkbox" id="slc" name="granule_type" value=1 checked/>
-                    <label class="text" for="slc">
-                        "SLC"
-                    </label>
-                    <br/>
-                    <input type="checkbox" id="ocn" name="granule_type" value=2 checked/>
-                    <label class="text" for="ocn">
-                        "OCN"
-                    </label>
-                </div>
+            <form id="form">
+                <div id="checkboxes">
+                    <div id="product_types">
+                        <p>Products</p>
+                        <input
+                            on:input=on_update.clone()
+                            class="checkbox"
+                            type="checkbox"
+                            id="grd"
+                            name="granule_type"
+                            value=0
+                            checked
+                        />
+                        <label class="text" for="grd">
+                            "GRD"
+                        </label>
+                        <br/>
+                        <input
+                            on:input=on_update.clone()
+                            class="checkbox"
+                            type="checkbox"
+                            id="slc"
+                            name="granule_type"
+                            value=1
+                            checked
+                        />
+                        <label class="text" for="slc">
+                            "SLC"
+                        </label>
+                        <br/>
+                        <input
+                            on:input=on_update.clone()
+                            class="checkbox"
+                            type="checkbox"
+                            id="ocn"
+                            name="granule_type"
+                            value=2
+                            checked
+                        />
+                        <label class="text" for="ocn">
+                            "OCN"
+                        </label>
+                    </div>
 
-                <div id="platform_types">
-                    <input type="checkbox" id="s1-a" name="sat_selection" value=0 checked/>
-                    <label class="text" for="s1-a">
-                        "S1A"
-                    </label>
-                    <br/>
-                    <input type="checkbox" id="s1-b" name="sat_selection" value=1 checked/>
-                    <label class="text" for="s1-b">
-                        "S1B"
-                    </label>
-                    <br/>
+                    <div id="platform_types">
+                        <p>Platforms</p>
+                        <input
+                            on:input=on_update.clone()
+                            class="checkbox"
+                            type="checkbox"
+                            id="s1-a"
+                            name="sat_selection"
+                            value=0
+                            checked
+                        />
+                        <label class="text" for="s1-a">
+                            "S1A"
+                        </label>
+                        <br/>
+                        <input
+                            on:input=on_update.clone()
+                            class="checkbox"
+                            type="checkbox"
+                            id="s1-b"
+                            name="sat_selection"
+                            value=1
+                            checked
+                        />
+                        <label class="text" for="s1-b">
+                            "S1B"
+                        </label>
+                        <br/>
+                    </div>
                 </div>
 
                 <div id="date_range">
-                    <input
-                        type="range"
-                        prop:value=start_date
-                        on:change=move |ev| {
-                            let val = event_target_value(&ev)
-                                .parse::<i64>()
-                                .expect("Failed to parse an i64 from event value start slider");
-                            if val > end_date() {
-                                set_start_date(end_date())
-                            } else {
-                                set_start_date(val)
-                            }
-                        }
-
-                        min=min_date
-                        max=max_date
-                    />
-                    <input
-                        type="range"
-                        prop:value=end_date
-                        on:change=move |ev| {
-                            let val = event_target_value(&ev)
-                                .parse::<i64>()
-                                .expect("Failed to parse an i64 from event value in end_slider");
-                            if val < start_date() {
-                                set_end_date(start_date())
-                            } else {
-                                set_end_date(val)
-                            }
-                        }
-
-                        min=min_date
-                        max=max_date
-                    />
-                    <p class="text">"Start Date: " {start_date}</p>
-                    <p class="text">"End Date: " {end_date}</p>
+                    <table>
+                        <tr>
+                            <td>
+                                <label class="text" for="start_date">
+                                    Start Date
+                                </label>
+                            </td>
+                            <td>
+                                <input
+                                    type="date"
+                                    class="datepicker"
+                                    node_ref=start_date_element
+                                    prop:value=start_date
+                                    on:change=on_update.clone()
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <label class="text" for="end_date">
+                                    End Date
+                                </label>
+                            </td>
+                            <td>
+                                <input
+                                    type="date"
+                                    class="datepicker"
+                                    node_ref=end_date_element
+                                    prop:value=end_date
+                                    on:change=on_update.clone()
+                                />
+                            </td>
+                        </tr>
+                    </table>
                 </div>
-
-                <input class="submit_button" type="submit" value="Submit"/>
             </form>
         </div>
     }

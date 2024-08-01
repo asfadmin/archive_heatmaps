@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use leptos::html::ToHtmlElement;
+use leptos::SignalSet;
 use winit::platform::web::WindowExtWebSys;
 use winit::{
     application::ApplicationHandler,
@@ -188,6 +189,8 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                 render_context.max_weight_context.state = MaxWeightState::Empty;
 
                 web_sys::console::log_1(&"Done Generating Buffers".into());
+
+                self.external_state.borrow_mut().set_ready.set(true);
             }
 
             UserMessage::BufferMapped => {
@@ -259,7 +262,7 @@ pub enum UserMessage<'a> {
 }
 
 /// Stores the canvas as an html element
-#[derive(Default)]
 pub struct ExternalState {
     pub canvas: Option<leptos::HtmlElement<leptos::html::AnyElement>>,
+    pub set_ready: leptos::WriteSignal<bool>,
 }

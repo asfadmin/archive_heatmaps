@@ -27,7 +27,6 @@ web-sys = { version = "0.3.69", features = ["Document", "Window", "Element"] }
 wgpu = { version = "0.20.1", features = ["webgl"] }
 winit = "0.30.3"
 heatmap-api = { path = "../heatmap-api" }
-stylers = "0.3.2"
 geo = "0.28.0"
 
 [lints.clippy]
