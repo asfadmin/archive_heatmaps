@@ -16,9 +16,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Cargo Target
-        run: cargo target add wasm32-unknown-unknown
+        run: rustup target add wasm32-unknown-unknown
       - name: Cargo Toolchain
-        run: cargo toolchain add nightly
+        run: rustup toolchain add nightly
       - name: Cargo Clippy
         run: cargo clippy
   formatting:
