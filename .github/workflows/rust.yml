@@ -10,17 +10,17 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  clippy:
-        name: Clippy
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v3
-            - uses: dtolnay/rust-toolchain@stable
-              with:
-                  components: clippy
-            - uses: auguwu/clippy-action@1.4.0
-              with:
-                  token: ${{secrets.GITHUB_TOKEN}}
+  check:
+    name: cargo clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cargo Target
+        run: cargo target add wasm32-unknown-unknown
+      - name: Cargo Toolchain
+        run: cargo toolchain add nightly
+      - name: Cargo Clippy
+        run: cargo clippy
   formatting:
     name: cargo fmt
     runs-on: ubuntu-latest
