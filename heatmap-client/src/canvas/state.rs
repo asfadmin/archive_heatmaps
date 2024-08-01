@@ -309,10 +309,10 @@ impl<'a> State<'a> {
                     let zoom = render_context.camera_context.camera.zoom;
                     let mut active_outline_layer = &geometry.outline_layers[0];
                     match zoom {
-                        6.0..7.5 => {
+                        15.0..30.0 => {
                             active_outline_layer = &geometry.outline_layers[1];
                         }
-                        0.0..6.0 => {
+                        0.0..15.0 => {
                             active_outline_layer = &geometry.outline_layers[2];
                         }
                         _ => (),

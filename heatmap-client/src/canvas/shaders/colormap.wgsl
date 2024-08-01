@@ -47,7 +47,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     var color = textureLoad(colormap_tex, u32(map_coord), 0);
 
-    color.a = clamp(pow(f32(weight), 2.0)/400.0, 0.4, 1.0);
+    color.a = clamp(pow(f32(weight), 2.0)/400.0, 0.2, 1.0);
 
     return vec4<f32>(color);
 }

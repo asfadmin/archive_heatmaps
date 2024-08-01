@@ -98,7 +98,7 @@ fn mesh_data(data_exterior: Data) -> Vec<BufferStorage> {
         .collect();
 
     let mut level = 0.0;
-    while level <= 1.0 {
+    while level <= 0.4 {
         let mut weights = VecDeque::from(weights.clone());
         let mut total_vertices: Vec<BlendVertex> = Vec::new();
         let mut indices: Vec<u32> = Vec::new();
@@ -148,7 +148,7 @@ fn mesh_data(data_exterior: Data) -> Vec<BufferStorage> {
             num_indices,
         });
 
-        level += 0.5;
+        level += 0.2;
     }
     lods
 }
