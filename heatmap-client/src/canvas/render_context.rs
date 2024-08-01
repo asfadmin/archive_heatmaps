@@ -5,8 +5,12 @@ use winit::{dpi::PhysicalSize, event_loop::EventLoopProxy};
 
 use super::app::UserMessage;
 use super::camera::CameraContext;
-use super::geometry::Vertex;
-use super::texture::{generate_blend_texture, generate_colormap_texture, TextureContext};
+use super::geometry::{
+    generate_max_weight_buffer, generate_uniform_buffer, BlendVertex, BufferContext, Vertex,
+};
+use super::texture::{
+    generate_blend_texture, generate_colormap_texture, generate_max_weight_texture, TextureContext,
+};
 
 pub struct RenderContext<'a> {
     pub surface: wgpu::Surface<'a>,
@@ -18,9 +22,11 @@ pub struct RenderContext<'a> {
     pub blend_render_pipeline: wgpu::RenderPipeline,
     pub colormap_render_pipeline: wgpu::RenderPipeline,
     pub outline_render_pipeline: wgpu::RenderPipeline,
+    pub max_weight_render_pipeline: wgpu::RenderPipeline,
     pub camera_context: CameraContext,
     pub blend_texture_context: TextureContext,
     pub colormap_texture_context: TextureContext,
+    pub max_weight_context: MaxWeightContext,
 }
 
 /// Create a new state
@@ -107,6 +113,10 @@ pub async fn generate_render_context<'a>(
 
     let blend_texture_context = generate_blend_texture(&device, size);
     let colormap_texture_context = generate_colormap_texture(&device, &queue);
+    let max_weight_texture = generate_max_weight_texture(&device, size);
+
+    let max_weight_buffer = generate_max_weight_buffer(&device, size);
+    let max_weight_uniform_buffer = generate_uniform_buffer(&device);
 
     ////////////////////////////
     // Set up render pipeline //
@@ -126,7 +136,7 @@ pub async fn generate_render_context<'a>(
         vertex: wgpu::VertexState {
             module: &blend_shader,
             entry_point: "vs_main",
-            buffers: &[Vertex::desc()],
+            buffers: &[BlendVertex::desc()],
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
@@ -147,7 +157,7 @@ pub async fn generate_render_context<'a>(
                         operation: wgpu::BlendOperation::Add,
                     },
                 }),
-                write_mask: wgpu::ColorWrites::ALL,
+                write_mask: wgpu::ColorWrites::RED,
             })],
         }),
         primitive: wgpu::PrimitiveState {
@@ -176,6 +186,7 @@ pub async fn generate_render_context<'a>(
             bind_group_layouts: &[
                 &colormap_texture_context.bind_group_layout,
                 &blend_texture_context.bind_group_layout,
+                &max_weight_uniform_buffer.bind_group_layout,
             ],
             push_constant_ranges: &[],
         });
@@ -232,7 +243,7 @@ pub async fn generate_render_context<'a>(
         vertex: wgpu::VertexState {
             module: &outline_shader,
             entry_point: "vs_main",
-            buffers: &[Vertex::desc()],
+            buffers: &[BlendVertex::desc()],
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
@@ -263,6 +274,61 @@ pub async fn generate_render_context<'a>(
         multiview: None,
     });
 
+    let max_weight_shader =
+        device.create_shader_module(wgpu::include_wgsl!("shaders/max_weight.wgsl"));
+
+    let max_weight_render_pipeline_layout =
+        device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("Max Weight Render Pipeline Layout"),
+            bind_group_layouts: &[&blend_texture_context.bind_group_layout],
+            push_constant_ranges: &[],
+        });
+
+    let max_weight_render_pipeline =
+        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Max Weight Render Pipeline"),
+            layout: Some(&max_weight_render_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &max_weight_shader,
+                entry_point: "vs_main",
+                buffers: &[Vertex::desc()],
+                compilation_options: Default::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &max_weight_shader,
+                entry_point: "fs_main",
+                compilation_options: Default::default(),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: wgpu::TextureFormat::Rgba32Float,
+                    blend: None,
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Cw,
+                cull_mode: None,
+                polygon_mode: wgpu::PolygonMode::Fill,
+                unclipped_depth: false,
+                conservative: false,
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
+            multiview: None,
+        });
+
+    let max_weight_context = MaxWeightContext {
+        texture: max_weight_texture,
+        buffer: max_weight_buffer,
+        state: MaxWeightState::Empty,
+        uniform_buffer: max_weight_uniform_buffer,
+    };
+
     // StateMessage is sent to the event loop with the contained variables
     let message = RenderContext {
         surface,
@@ -274,11 +340,27 @@ pub async fn generate_render_context<'a>(
         blend_render_pipeline,
         colormap_render_pipeline,
         outline_render_pipeline,
+        max_weight_render_pipeline,
         camera_context,
         blend_texture_context,
         colormap_texture_context,
+        max_weight_context,
     };
 
     web_sys::console::log_1(&"Done Generating State".into());
     let _ = event_loop_proxy.send_event(UserMessage::StateMessage(message));
+}
+
+pub struct MaxWeightContext {
+    pub texture: wgpu::Texture,
+    pub buffer: wgpu::Buffer,
+    pub state: MaxWeightState,
+    pub uniform_buffer: BufferContext,
+}
+
+#[derive(PartialEq)]
+pub enum MaxWeightState {
+    Empty,
+    InProgress,
+    Completed,
 }

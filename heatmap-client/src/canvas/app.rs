@@ -13,9 +13,10 @@ use winit::{
     window::{Window, WindowId},
 };
 
-use super::geometry::Geometry;
-use super::render_context::RenderContext;
+use super::geometry::{generate_max_weight_buffer, Geometry};
+use super::render_context::{MaxWeightState, RenderContext};
 use super::state::{InitStage, State};
+use super::texture::generate_max_weight_texture;
 use crate::ingest::load::BufferStorage;
 
 pub struct App<'a> {
@@ -143,6 +144,8 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     init_stage: InitStage::Complete,
                     geometry: None,
                     input_state: self.state.input_state.clone(),
+                    event_loop_proxy: Some(self.event_loop_proxy.clone()),
+                    camera_storage: None,
                 };
 
                 // Resize configures the surface based on current canvas size
@@ -159,17 +162,90 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
 
             UserMessage::IncomingData(data, outline_data) => {
                 web_sys::console::log_1(&"Generating Buffers...".into());
+                let render_context = self
+                    .state
+                    .render_context
+                    .as_mut()
+                    .expect("Failed to get render context in Incoming Data event");
 
                 self.state.geometry = Some(Geometry::generate_buffers(
-                    self.state
-                        .render_context
-                        .as_ref()
-                        .expect("Error: Failed to get render context during Incoming data event"),
+                    render_context,
                     data,
                     outline_data,
                 ));
 
+                render_context.max_weight_context.texture =
+                    generate_max_weight_texture(&render_context.device, render_context.size);
+
+                render_context.max_weight_context.buffer = generate_max_weight_buffer(
+                    &render_context.device,
+                    winit::dpi::PhysicalSize::<u32> {
+                        width: render_context.max_weight_context.texture.width(),
+                        height: render_context.max_weight_context.texture.height(),
+                    },
+                );
+
+                render_context.max_weight_context.state = MaxWeightState::Empty;
+
                 web_sys::console::log_1(&"Done Generating Buffers".into());
+            }
+
+            UserMessage::BufferMapped => {
+                let render_context = self
+                    .state
+                    .render_context
+                    .as_mut()
+                    .expect("Failed to get render context in UserMessage::BufferMapped");
+
+                let raw_bytes: Vec<u8> = (&*render_context
+                    .max_weight_context
+                    .buffer
+                    .slice(..)
+                    .get_mapped_range())
+                    .into();
+                let mut red_data: Vec<f32> = Vec::new();
+
+                let mut raw_iter = raw_bytes.iter();
+
+                while let Ok(raw) = raw_iter.next_chunk::<4>() {
+                    red_data.push(f32::from_le_bytes([*raw[0], *raw[1], *raw[2], *raw[3]]));
+
+                    match raw_iter.advance_by(4 * 3) {
+                        Ok(_) => {}
+                        Err(_) => {
+                            panic!("Rgba32Float texture was malformed, size not a multiple of 16")
+                        }
+                    }
+                }
+
+                let mut max = 0.0;
+
+                for value in red_data.iter() {
+                    if value > &max {
+                        max = *value;
+                    }
+                }
+
+                web_sys::console::log_1(&format!("Max: {:?}", max).into());
+
+                let mut uniform_data: Vec<u8> = max.to_le_bytes().into();
+
+                // Uniform Buffer must be 16 byte aligned
+                while uniform_data.len() % 16 != 0 {
+                    uniform_data.push(0);
+                }
+
+                render_context.queue.write_buffer(
+                    &render_context.max_weight_context.uniform_buffer.buffer,
+                    0,
+                    uniform_data.as_slice(),
+                );
+
+                render_context.queue.submit([]);
+
+                render_context.max_weight_context.state = MaxWeightState::Completed;
+
+                render_context.max_weight_context.buffer.unmap();
             }
         }
     }
@@ -179,6 +255,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
 pub enum UserMessage<'a> {
     StateMessage(RenderContext<'a>),
     IncomingData(Vec<BufferStorage>, Vec<BufferStorage>),
+    BufferMapped,
 }
 
 /// Stores the canvas as an html element

@@ -8,7 +8,7 @@ use winit::event_loop::EventLoopProxy;
 
 use super::request::request;
 use crate::canvas::app::UserMessage;
-use crate::canvas::geometry::Vertex;
+use crate::canvas::geometry::BlendVertex;
 
 enum Data {
     Outline(OutlineResponse),
@@ -17,7 +17,7 @@ enum Data {
 
 #[derive(Clone)]
 pub struct BufferStorage {
-    pub vertices: Vec<Vertex>,
+    pub vertices: Vec<BlendVertex>,
     pub indices: Vec<u32>,
     pub num_indices: u32,
 }
@@ -100,7 +100,7 @@ fn mesh_data(data_exterior: Data) -> Vec<BufferStorage> {
     let mut level = 0.0;
     while level <= 0.4 {
         let mut weights = VecDeque::from(weights.clone());
-        let mut total_vertices: Vec<Vertex> = Vec::new();
+        let mut total_vertices: Vec<BlendVertex> = Vec::new();
         let mut indices: Vec<u32> = Vec::new();
 
         for poly in polygons.iter_mut() {
@@ -124,7 +124,7 @@ fn mesh_data(data_exterior: Data) -> Vec<BufferStorage> {
                 .expect("Weights was not equal to the number of polygons");
             let mut i = 0;
             while i < triangles_raw.vertices.len() {
-                total_vertices.push(Vertex {
+                total_vertices.push(BlendVertex {
                     position: [
                         triangles_raw.vertices[i] as f32,
                         triangles_raw.vertices[i + 1] as f32,
