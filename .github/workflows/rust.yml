@@ -1,0 +1,33 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    container: rust:slim
+    steps:
+      - uses: olix0r/cargo-action-fmt/setup@v2
+      - uses: actions/checkout@v2
+      - name: Cargo Check
+        run: cargo check -q --message-format=json | cargo-action-fmt
+      - name: Cargo Clippy
+        run: cargo clippy -q --message-format=json | cargo-action-fmt
+  formatting:
+    name: cargo fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Ensure rustfmt is installed and setup problem matcher
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: rustfmt
+      - name: Rustfmt Check
+        uses: actions-rust-lang/rustfmt@v1
