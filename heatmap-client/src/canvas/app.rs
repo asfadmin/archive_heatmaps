@@ -205,15 +205,17 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     .into();
                 let mut red_data: Vec<f32> = Vec::new();
 
-                let mut i = 0;
-                while i < raw_bytes.len() {
-                    red_data.push(f32::from_be_bytes([
-                        raw_bytes[i + 3],
-                        raw_bytes[i + 2],
-                        raw_bytes[i + 1],
-                        raw_bytes[i],
-                    ]));
-                    i += 16;
+                let mut raw_iter = raw_bytes.iter();
+
+                while let Ok(raw) = raw_iter.next_chunk::<4>() {
+                    red_data.push(f32::from_le_bytes([*raw[0], *raw[1], *raw[2], *raw[3]]));
+
+                    match raw_iter.advance_by(4 * 3) {
+                        Ok(_) => {}
+                        Err(_) => {
+                            panic!("Rgba32Float texture was malformed, size not a multiple of 16")
+                        }
+                    }
                 }
 
                 let mut max = 0.0;

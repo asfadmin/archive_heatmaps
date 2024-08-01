@@ -1,4 +1,7 @@
 #![feature(let_chains)]
+#![feature(iter_next_chunk)]
+#![feature(iter_advance_by)]
+
 use canvas::Canvas;
 use chrono::NaiveDate;
 use leptos::*;
