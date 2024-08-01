@@ -10,16 +10,17 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  docs:
-    runs-on: ubuntu-latest
-    container: rust:slim
-    steps:
-      - uses: olix0r/cargo-action-fmt/setup@v2
-      - uses: actions/checkout@v2
-      - name: Cargo Check
-        run: cargo check -q --message-format=json | cargo-action-fmt
-      - name: Cargo Clippy
-        run: cargo clippy -q --message-format=json | cargo-action-fmt
+  clippy:
+        name: Clippy
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+            - uses: dtolnay/rust-toolchain@stable
+              with:
+                  components: clippy
+            - uses: auguwu/clippy-action@1.4.0
+              with:
+                  token: ${{secrets.GITHUB_TOKEN}}
   formatting:
     name: cargo fmt
     runs-on: ubuntu-latest
