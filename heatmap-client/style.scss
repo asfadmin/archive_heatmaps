@@ -1,0 +1,102 @@
+* {
+    color: white;
+    text-align: left;
+    font-family: inter, sans;
+    font-size: 12pt;
+    background: #303030;
+}
+
+
+canvas {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  z-index: 0;
+  /* width: 100%;
+  height: 100%; */
+  display: block;
+}
+
+input[type="checkbox"] {
+  /* Add if not using autoprefixer */
+  -webkit-appearance: none;
+  appearance: none;
+  /* For iOS < 15 to remove gradient background */
+  background-color: #fff;
+  /* Not removed via appearance */
+  margin: 0;
+  margin-left: 1mm;
+  margin-right: 1mm;
+  
+  font: inherit;
+  width: 0.75em;
+  height: 0.75em;
+  border-radius: 20%;
+}
+
+input[type="checkbox"]:checked {
+  background-color: #fc9167;
+}
+
+.user_interface {
+    position: absolute;
+    z-index: 1;
+    padding: 5mm;
+    border-radius: 5mm;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+#form {
+    display: flex;
+    flex-direction: column;
+    gap: 5mm;
+}
+
+.datepicker {
+    color: white;
+    border: none;
+}
+.checkbox {
+    color: white;
+    border: none;
+}
+p {
+    margin: 1mm;
+}
+td {
+    padding-right: 1mm;
+}
+#checkboxes {
+    display: flex;
+    justify-content: space-around;
+}
+
+#loader { 
+    position: absolute;
+    top: 50%;  /* position the top  edge of the element at the middle of the parent */
+    left: 50%; /* position the left edge of the element at the middle of the parent */
+
+    transform: translate(-50%, -50%);
+
+    z-index: 1;
+}
+
+
+.loader {
+    width: 48px;
+    height: 48px;
+    border: 5px solid #FFF;
+    border-bottom-color: #fc9167;
+    border-radius: 50%;
+    display: inline-block;
+    box-sizing: border-box;
+    animation: rotation 1s linear infinite;
+}
+@keyframes rotation {
+0% {
+    transform: rotate(0deg);
+}
+100% {
+    transform: rotate(360deg);
+}
+} 

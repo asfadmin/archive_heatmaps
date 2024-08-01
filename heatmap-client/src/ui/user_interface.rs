@@ -3,7 +3,6 @@ extern crate heatmap_api;
 use chrono::naive::NaiveDate;
 use leptos::wasm_bindgen::JsCast;
 use leptos::*;
-use stylers::style_str;
 
 #[component]
 pub fn UserInterface(set_filter: WriteSignal<heatmap_api::Filter>) -> impl IntoView {
@@ -92,55 +91,7 @@ pub fn UserInterface(set_filter: WriteSignal<heatmap_api::Filter>) -> impl IntoV
         })
     };
 
-    let (class_name, style_val) = style_str!("UserInterface",
-        div.user_interface {
-            position: absolute;
-            z-index: 1;
-            padding: "5mm";
-            border-radius: "5mm";
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        #form {
-            display: flex;
-            flex-direction: column;
-            gap: "5mm";
-        }
-
-        * {
-            color: white;
-            text-align: left;
-            font-family: "inter, sans";
-            font-size: "12pt";
-            background: #303030;
-        }
-
-        .datepicker {
-            color: white;
-            border: none;
-        }
-
-        .checkbox {
-            color: white;
-            border: none;
-        }
-
-        p {
-            margin: "1mm";
-        }
-
-        td {
-            padding-right: "1mm";
-        }
-
-        #checkboxes {
-            display: flex;
-            justify-content: space-around;
-        }
-    );
-
-    view! { class=class_name,
-        <style>{style_val}</style>
+    view! {
         <div class="user_interface">
             <form id="form">
                 <div id="checkboxes">

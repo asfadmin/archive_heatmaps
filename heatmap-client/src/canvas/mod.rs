@@ -19,7 +19,6 @@ use std::rc::Rc;
 use app::{App, ExternalState, UserMessage};
 use leptos::*;
 use state::State;
-use stylers::style_str;
 use winit::event_loop::EventLoop;
 use winit::platform::web::EventLoopExtWebSys;
 
@@ -37,8 +36,13 @@ pub fn Canvas() -> impl IntoView {
         .build()
         .expect("ERROR: Failed to create event loop");
 
+    let (ready, set_ready) = create_signal(false);
+
     // The canvas element will be stored here once it has been created
-    let external_state = Rc::new(RefCell::new(ExternalState::default()));
+    let external_state = Rc::new(RefCell::new(ExternalState {
+        set_ready,
+        canvas: None,
+    }));
 
     let app = App {
         external_state: external_state.clone(),
@@ -62,18 +66,12 @@ pub fn Canvas() -> impl IntoView {
 
     create_effect(move |_| data_loader.load_data(filter()));
 
-    let (class_name, style_val) = style_str! {"Canvas",
-        .wgpu_surface {
-            position: absolute;
-            top: 0px;
-            left: 0px;
-            z-index: 0;
-        }
-    };
-
-    // Compiler is dumb, these are necessary braces
-    view! { class=class_name,
-        <style>{style_val}</style>
+    view! {
+        <Show when=move || { !ready() }>
+            <div id="loader">
+                <span class="loader"></span>
+            </div>
+        </Show>
         {canvas}
     }
 }
