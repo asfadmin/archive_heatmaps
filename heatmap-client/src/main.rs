@@ -15,6 +15,7 @@ mod ui;
 fn main() {
     console_error_panic_hook::set_once();
 
+    // Default filter, used on startup
     let (filter, set_filter) = create_signal(heatmap_api::Filter {
         product_type: vec![
             heatmap_api::ProductTypes::GroundRangeDetected,
@@ -34,7 +35,6 @@ fn main() {
             .format("%Y-%m-%d")
             .to_string(),
     });
-
     provide_context(filter);
 
     let app = view! {
