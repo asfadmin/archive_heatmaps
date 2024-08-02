@@ -62,12 +62,7 @@ pub fn Canvas() -> impl IntoView {
         .expect("ERROR: Failed to get external state")
         .attr("class", "wgpu_surface");
 
-    let (active_requests, set_active_requests) = create_signal(0);
-    let data_loader = DataLoader {
-        event_loop_proxy,
-        active_requests,
-        set_active_requests,
-    };
+    let data_loader = DataLoader::new(event_loop_proxy);
 
     create_effect(move |_| data_loader.load_data(filter()));
 

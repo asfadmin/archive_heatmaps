@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 use geo::geometry::{Coord, LineString, Polygon};
 use geo::{coord, Simplify, TriangulateEarcut};
 use heatmap_api::{HeatmapData, OutlineResponse};
-use leptos::{SignalGetUntracked, SignalUpdate};
+use leptos::{create_signal, SignalGetUntracked, SignalUpdate};
 use winit::event_loop::EventLoopProxy;
 
 use super::request::request;
@@ -30,6 +30,15 @@ pub struct DataLoader {
 }
 
 impl DataLoader {
+    pub fn new(event_loop_proxy: EventLoopProxy<UserMessage<'static>>) -> Self {
+        let (active_requests, set_active_requests) = create_signal(0);
+
+        DataLoader {
+            event_loop_proxy,
+            active_requests,
+            set_active_requests,
+        }
+    }
     pub fn load_data(&self, filter: heatmap_api::Filter) {
         self.set_active_requests.update(|n| *n += 1);
         leptos::spawn_local(load_data_async(
