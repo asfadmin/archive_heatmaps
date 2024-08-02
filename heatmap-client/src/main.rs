@@ -26,11 +26,11 @@ fn main() {
             heatmap_api::PlatformType::Sentinel1A,
             heatmap_api::PlatformType::Sentinel1B,
         ],
-        start_date: NaiveDate::from_ymd_opt(2021, 1, 1)
+        start_date: NaiveDate::from_ymd_opt(2000, 1, 1)
             .expect("Failed to create start date when creating filter signal")
             .format("%Y-%m-%d")
             .to_string(),
-        end_date: NaiveDate::from_ymd_opt(2021, 2, 1)
+        end_date: NaiveDate::from_ymd_opt(2025, 2, 1)
             .expect("Failed to create end date when creating filter signal")
             .format("%Y-%m-%d")
             .to_string(),

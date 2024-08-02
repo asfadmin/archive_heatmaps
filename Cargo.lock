@@ -2272,6 +2272,7 @@ dependencies = [
  "heatmap-api",
  "log",
  "pin-project",
+ "rayon",
  "redis",
  "rust-embed",
  "serde",

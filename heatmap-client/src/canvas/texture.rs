@@ -86,7 +86,7 @@ pub fn generate_blend_texture(
 
 pub fn generate_colormap_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> TextureContext {
     // Def of colormap, should make this fancier in the future, currently a placeholder
-    let colormap_bytes = include_bytes!("../../assets/magma.png");
+    let colormap_bytes = include_bytes!("../../assets/magma_filtered_alt.png");
     let colormap_image = image::load_from_memory(colormap_bytes)
         .expect("ERROR: Failed to generate image from colormap_bytes");
     let colormap_rgba = colormap_image.to_rgba8();
