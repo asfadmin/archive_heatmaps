@@ -2244,7 +2244,6 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "stylers",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
@@ -3061,12 +3060,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "levenshtein"
-version = "1.0.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db13adb97ab515a3691f56e4dbab09283d0b86cb45abd991d8634a9d6f501760"
-
-[[package]]
 name = "libc"
 version = "0.2.155"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3149,9 +3142,6 @@ name = "litrs"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4ce301924b7887e9d637144fdade93f9dfff9b60981d4ac161db09720d39aa5"
-dependencies = [
- "proc-macro2",
-]
 
 [[package]]
 name = "local-channel"
@@ -5064,18 +5054,6 @@ name = "strsim"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
-
-[[package]]
-name = "stylers"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03e306edf4b3cb5cff4b2e21b8895ed9e70fbd1bbb3a8dfb7e4cc245a763a955"
-dependencies = [
- "levenshtein",
- "litrs",
- "proc-macro2",
- "quote",
-]
 
 [[package]]
 name = "subtle"

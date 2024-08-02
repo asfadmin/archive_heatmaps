@@ -4,6 +4,7 @@ use std::collections::VecDeque;
 use geo::geometry::{Coord, LineString, Polygon};
 use geo::{coord, Simplify, TriangulateEarcut};
 use heatmap_api::{HeatmapData, OutlineResponse};
+use leptos::{create_signal, SignalGetUntracked, SignalUpdate};
 use winit::event_loop::EventLoopProxy;
 
 use super::request::request;
@@ -24,43 +25,68 @@ pub struct BufferStorage {
 
 pub struct DataLoader {
     pub event_loop_proxy: EventLoopProxy<UserMessage<'static>>,
+    pub active_requests: leptos::ReadSignal<u32>,
+    pub set_active_requests: leptos::WriteSignal<u32>,
 }
 
 impl DataLoader {
+    pub fn new(event_loop_proxy: EventLoopProxy<UserMessage<'static>>) -> Self {
+        let (active_requests, set_active_requests) = create_signal(0);
+
+        DataLoader {
+            event_loop_proxy,
+            active_requests,
+            set_active_requests,
+        }
+    }
     pub fn load_data(&self, filter: heatmap_api::Filter) {
-        leptos::spawn_local(load_data_async(self.event_loop_proxy.clone(), filter));
+        self.set_active_requests.update(|n| *n += 1);
+        leptos::spawn_local(load_data_async(
+            self.event_loop_proxy.clone(),
+            filter,
+            self.active_requests,
+            self.set_active_requests,
+        ));
     }
 }
 
 async fn load_data_async(
     event_loop_proxy: EventLoopProxy<UserMessage<'static>>,
     filter: heatmap_api::Filter,
+    active_requests: leptos::ReadSignal<u32>,
+    set_active_requests: leptos::WriteSignal<u32>,
 ) {
     // Request data from the server
     let (data, outline_data) = request(filter).await;
 
-    // Convert the data into a triangular mesh
-    web_sys::console::log_1(&"Meshing data...".into());
-    let meshed_data = mesh_data(Data::Heatmap(data));
-    let meshed_outline_data = mesh_data(Data::Outline(outline_data));
-    web_sys::console::log_3(
-        &"Meshed Data: \n".into(),
-        &format!(
-            "Vertices: {:?}",
-            meshed_data.first().expect("Empty meshed data").vertices
-        )
-        .into(),
-        &format!(
-            "Indices: {:?}",
-            meshed_data.first().expect("no indices").indices
-        )
-        .into(),
+    web_sys::console::log_1(
+        &format!("Active Requests: {:?}", active_requests.get_untracked()).into(),
     );
+    // Convert the data into a triangular mesh
+    if active_requests.get_untracked() == 1 {
+        web_sys::console::log_1(&"Meshing data...".into());
+        let meshed_data = mesh_data(Data::Heatmap(data));
+        let meshed_outline_data = mesh_data(Data::Outline(outline_data));
+        web_sys::console::log_3(
+            &"Meshed Data: \n".into(),
+            &format!(
+                "Vertices: {:?}",
+                meshed_data.first().expect("Empty meshed data").vertices
+            )
+            .into(),
+            &format!(
+                "Indices: {:?}",
+                meshed_data.first().expect("no indices").indices
+            )
+            .into(),
+        );
 
-    // Send the triangular mesh to the event loop
-    web_sys::console::log_1(&"Sending Mesh to event loop".into());
-    let _ =
-        event_loop_proxy.send_event(UserMessage::IncomingData(meshed_data, meshed_outline_data));
+        // Send the triangular mesh to the event loop
+        web_sys::console::log_1(&"Sending Mesh to event loop".into());
+        let _ = event_loop_proxy
+            .send_event(UserMessage::IncomingData(meshed_data, meshed_outline_data));
+    }
+    set_active_requests.update(|n| *n -= 1);
 }
 
 fn mesh_data(data_exterior: Data) -> Vec<BufferStorage> {
