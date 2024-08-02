@@ -11,14 +11,13 @@ pub struct Granule {
     pub ancestors: Vec<Ancestor>,
 }
 
-impl TryFrom<&Feature> for Granule {
+impl TryFrom<Feature> for Granule {
     type Error = Box<dyn std::error::Error>;
 
-    fn try_from(feature: &Feature) -> Result<Granule, Self::Error> {
-        let mut ancestors: Vec<&serde_json::Map<String, serde_json::Value>> = Vec::new();
+    fn try_from(feature: Feature) -> Result<Granule, Self::Error> {
+        let mut ancestors: Vec<serde_json::Map<String, serde_json::Value>> = Vec::new();
         if let Some(ancestors_properties) = feature
             .properties
-            .as_ref()
             .ok_or("feature has no properties associated with it")?
             .get("ancestors")
         {
@@ -26,7 +25,12 @@ impl TryFrom<&Feature> for Granule {
                 .as_array()
                 .expect("failed to convert to array")
                 .iter()
-                .map(|feature| feature.as_object().expect("failed to map ancestors"))
+                .map(|feature| {
+                    feature
+                        .as_object()
+                        .expect("failed to map ancestors")
+                        .clone()
+                })
                 .collect();
         }
 
@@ -60,7 +64,7 @@ impl TryFrom<&Feature> for Granule {
             polygons,
             ancestors: ancestors
                 .iter()
-                .map(|feature| (*feature).try_into().expect("failed to map ancestors"))
+                .map(|feature| feature.try_into().expect("failed to map ancestors"))
                 .collect(),
         })
     }
@@ -128,13 +132,14 @@ impl TryFrom<&serde_json::Map<String, serde_json::Value>> for Ancestor {
 
 impl Granule {
     pub fn from_feature_collection(
-        feature_collection: FeatureCollection,
+        mut feature_collection: FeatureCollection,
     ) -> Result<Vec<Granule>, Box<dyn std::error::Error>> {
-        feature_collection
-            .features
-            .iter()
-            .map(Self::try_from)
-            .collect()
+        let mut granule: Vec<Result<Granule, _>> = Vec::new();
+        while let Some(feature) = feature_collection.features.pop() {
+            granule.push(Self::try_from(feature));
+        }
+
+        granule.into_iter().collect()
     }
 
     pub fn get_polygons(&self) -> Vec<Vec<(f64, f64)>> {

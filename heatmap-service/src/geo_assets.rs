@@ -1,4 +1,4 @@
-use geojson::{FeatureCollection, GeoJson};
+use geojson::GeoJson;
 
 use crate::assets::Assets;
 use crate::config::Config;
