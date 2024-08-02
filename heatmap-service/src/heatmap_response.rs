@@ -1,8 +1,9 @@
 use chrono::NaiveDate;
 use geojson::FeatureCollection;
+use heatmap_api::{granule::Granule, Filter};
 use serde::{Deserialize, Serialize};
 
-use crate::{granule::Granule, heatmap_data::HeatmapData};
+use crate::heatmap_data::HeatmapData;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct HeatmapResponse {

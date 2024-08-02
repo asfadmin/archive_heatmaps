@@ -16,7 +16,6 @@ mod dataset;
 mod error;
 mod geo_assets;
 mod geo_json_path;
-mod granule;
 mod heatmap_data;
 mod heatmap_response;
 mod middleware;

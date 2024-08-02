@@ -1,9 +1,10 @@
 use chrono::NaiveDateTime;
 use geo::Polygon;
 use geojson::{Feature, FeatureCollection};
-use heatmap_api::{DataSensor, PlatformType, ProductTypes};
 use log::warn;
 use serde::Serialize;
+
+use super::{DataSensor, PlatformType, ProductTypes};
 
 #[derive(Debug, Serialize, Clone)]
 pub struct Granule {

@@ -1,4 +1,9 @@
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
+
+use crate::granule::{Ancestor, Granule};
+
+pub mod granule;
 
 pub trait ToPartialString {
     fn _to_partial_string(&self) -> String;
@@ -96,4 +101,25 @@ pub struct OutlineData {
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct OutlineResponse {
     pub data: OutlineData,
+}
+
+pub fn filter(filter: Filter, mut granules: Vec<Granule>) {
+    let data_type = filter.product_type;
+    let platform_type = filter.platform_type;
+    let start_date = NaiveDate::parse_from_str(&filter.start_date, "%Y-%m-%d")
+        .expect("Faile to parse start_date");
+    let end_date =
+        NaiveDate::parse_from_str(&filter.end_date, "%Y-%m-%d").expect("Faile to parse end_date");
+
+    for granule in granules.iter_mut() {
+        // Retain only those ancestors who fall within the filter
+        granule.ancestors.retain(|ancestor| {
+            let granule_date = ancestor.start_time.date();
+
+            data_type.contains(&ancestor.product_type)
+                && platform_type.contains(&ancestor.platform_type)
+                && granule_date >= start_date
+                && granule_date <= end_date
+        });
+    }
 }

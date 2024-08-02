@@ -1,6 +1,5 @@
+use heatmap_api::granule::Granule;
 use serde::{Deserialize, Serialize};
-
-use crate::granule::Granule;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct HeatmapData {
