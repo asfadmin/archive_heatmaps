@@ -1,5 +1,5 @@
 use chrono::NaiveDate;
-use geojson::FeatureCollection;
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{granule::Granule, heatmap_data::HeatmapData};
@@ -20,17 +20,22 @@ impl HeatmapResponse {
         let end_date = NaiveDate::parse_from_str(&filter.end_date, "%Y-%m-%d")
             .expect("Faile to parse end_date");
 
-        for granule in granules.iter_mut() {
-            // Retain only those ancestors who fall within the filter
-            granule.ancestors.retain(|ancestor| {
-                let granule_date = ancestor.start_time.date();
+        granules = granules
+            .par_iter_mut()
+            .map(|granule| {
+                // Retain only those ancestors who fall within the filter
+                granule.ancestors.retain(|ancestor| {
+                    let granule_date = ancestor.start_time.date();
 
-                data_type.contains(&ancestor.product_type)
-                    && platform_type.contains(&ancestor.platform_type)
-                    && granule_date >= start_date
-                    && granule_date <= end_date
-            });
-        }
+                    data_type.contains(&ancestor.product_type)
+                        && platform_type.contains(&ancestor.platform_type)
+                        && granule_date >= start_date
+                        && granule_date <= end_date
+                });
+
+                granule.clone()
+            })
+            .collect();
 
         granules.retain(|granule| !granule.ancestors.is_empty());
 
