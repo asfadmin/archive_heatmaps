@@ -10,11 +10,8 @@ pub struct HeatmapResponse {
 }
 
 impl HeatmapResponse {
-    pub fn from_geojson(
-        filter: heatmap_api::Filter,
-        feature_collection: &FeatureCollection,
-    ) -> Self {
-        let mut granules = Granule::from_feature_collection(feature_collection).unwrap();
+    pub fn from_geojson(filter: heatmap_api::Filter, granules: &[Granule]) -> Self {
+        let mut granules = granules.to_owned();
 
         let data_type = filter.product_type;
         let platform_type = filter.platform_type;
@@ -37,7 +34,7 @@ impl HeatmapResponse {
 
         granules.retain(|granule| !granule.ancestors.is_empty());
 
-        Self::from_granules(granules.clone())
+        Self::from_granules(granules)
     }
 
     fn from_granules(granules: Vec<Granule>) -> Self {

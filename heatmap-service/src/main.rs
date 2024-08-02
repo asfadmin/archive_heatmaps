@@ -23,7 +23,6 @@ mod middleware;
 mod outline_response;
 mod query;
 mod redis;
-mod tests;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -47,9 +46,9 @@ async fn main() -> std::io::Result<()> {
 
     config.redis = None;
 
-    let geo_assets = GeoAssets::from_config(config.clone());
-
     let bind_address = config.server_address.clone();
+
+    let geo_assets = GeoAssets::from_config(config.clone());
 
     HttpServer::new(move || {
         let mut app = App::new()
