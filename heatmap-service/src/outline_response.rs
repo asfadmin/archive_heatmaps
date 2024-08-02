@@ -10,7 +10,7 @@ pub struct OutlineData {
 }
 
 impl OutlineData {
-    pub fn from_granules(granules: Vec<Granule>) -> Self {
+    pub fn from_granules(granules: &Vec<Granule>) -> Self {
         let mut positions = Vec::new();
 
         for granule in granules.iter() {
@@ -31,13 +31,11 @@ pub struct OutlineResponse {
 }
 
 impl OutlineResponse {
-    pub fn from_geojson(feature_collection: &FeatureCollection) -> Self {
-        let granules = Granule::from_feature_collection(feature_collection).unwrap();
-
+    pub fn from_geojson(granules: &Vec<Granule>) -> Self {
         Self::from_granules(granules)
     }
 
-    fn from_granules(granules: Vec<Granule>) -> Self {
+    fn from_granules(granules: &Vec<Granule>) -> Self {
         Self {
             data: OutlineData::from_granules(granules),
         }

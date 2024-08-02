@@ -15,24 +15,18 @@ impl TryFrom<&Feature> for Granule {
     type Error = Box<dyn std::error::Error>;
 
     fn try_from(feature: &Feature) -> Result<Granule, Self::Error> {
-        let mut ancestors: Vec<serde_json::Map<String, serde_json::Value>> = Vec::new();
+        let mut ancestors: Vec<&serde_json::Map<String, serde_json::Value>> = Vec::new();
         if let Some(ancestors_properties) = feature
             .properties
-            .clone()
+            .as_ref()
             .ok_or("feature has no properties associated with it")?
             .get("ancestors")
         {
             ancestors = ancestors_properties
-                .clone()
                 .as_array()
                 .expect("failed to convert to array")
                 .iter()
-                .map(|feature| {
-                    feature
-                        .as_object()
-                        .expect("failed to map ancestors")
-                        .clone()
-                })
+                .map(|feature| feature.as_object().expect("failed to map ancestors"))
                 .collect();
         }
 
@@ -66,7 +60,7 @@ impl TryFrom<&Feature> for Granule {
             polygons,
             ancestors: ancestors
                 .iter()
-                .map(|feature| feature.try_into().expect("failed to map ancestors"))
+                .map(|feature| (*feature).try_into().expect("failed to map ancestors"))
                 .collect(),
         })
     }
@@ -134,7 +128,7 @@ impl TryFrom<&serde_json::Map<String, serde_json::Value>> for Ancestor {
 
 impl Granule {
     pub fn from_feature_collection(
-        feature_collection: &FeatureCollection,
+        feature_collection: FeatureCollection,
     ) -> Result<Vec<Granule>, Box<dyn std::error::Error>> {
         feature_collection
             .features
