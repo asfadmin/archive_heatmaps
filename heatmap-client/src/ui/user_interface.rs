@@ -6,12 +6,12 @@ use leptos::*;
 
 #[component]
 pub fn UserInterface(set_filter: WriteSignal<heatmap_api::Filter>) -> impl IntoView {
-    let min_date = NaiveDate::from_ymd_opt(2000, 1, 2)
+    let min_date = NaiveDate::from_ymd_opt(2019, 1, 1)
         .expect("Failed to parse left hand side when finding min_date")
         .format("%Y-%m-%d")
         .to_string();
 
-    let max_date = NaiveDate::from_ymd_opt(2025, 2, 2)
+    let max_date = NaiveDate::from_ymd_opt(2024, 4, 21)
         .expect("Failed to parse left hand side when finding max_date")
         .format("%Y-%m-%d")
         .to_string();
