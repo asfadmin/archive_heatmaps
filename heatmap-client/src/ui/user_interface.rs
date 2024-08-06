@@ -23,8 +23,7 @@ pub fn UserInterface(set_filter: WriteSignal<heatmap_api::Filter>) -> impl IntoV
 
     let doc = document();
 
-    // Might be worth reworking this, we are mixing web_sys and leptos here but weve done the same elsewhere so we could also just roll with it
-    // This closure is run when the submit button is pressed, it formats a filter string and sets a signal
+    // Run when an element of the UI changes, updates the filter signal
     let on_update = move |_: web_sys::Event| {
         let mut product_type = Vec::new();
 
@@ -73,15 +72,13 @@ pub fn UserInterface(set_filter: WriteSignal<heatmap_api::Filter>) -> impl IntoV
             }
         }
 
-        // Convert slider values into Dates
+        // Gets the selected start and end dates
         let start_date = start_date_element()
             .expect("failed to get start date value")
             .value();
         let end_date = end_date_element()
             .expect("failed to get end_date value")
             .value();
-
-        web_sys::console::log_1(&start_date.clone().into());
 
         set_filter(heatmap_api::Filter {
             product_type,

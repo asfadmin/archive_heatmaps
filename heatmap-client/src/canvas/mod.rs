@@ -24,7 +24,7 @@ use winit::platform::web::EventLoopExtWebSys;
 
 use crate::ingest::load::DataLoader;
 
-/// Component to display a wgsl shader
+/// Component to display a heatmap generated using wgpu and wgsl shaders
 #[component]
 pub fn Canvas() -> impl IntoView {
     // Signal from the UI containing the filter
@@ -36,6 +36,7 @@ pub fn Canvas() -> impl IntoView {
         .build()
         .expect("ERROR: Failed to create event loop");
 
+    // Determines if the loading bar is displayed or not, false is displayed, true is hidden
     let (ready, set_ready) = create_signal(false);
 
     // The canvas element will be stored here once it has been created
@@ -55,6 +56,7 @@ pub fn Canvas() -> impl IntoView {
     // Start the event loop
     event_loop.spawn_app(app);
 
+    // Get a reference to the canvas and add a css class to it
     let canvas = external_state
         .borrow()
         .canvas
@@ -62,8 +64,10 @@ pub fn Canvas() -> impl IntoView {
         .expect("ERROR: Failed to get external state")
         .attr("class", "wgpu_surface");
 
+    // Struct responsible for making requests to the service for new data
     let data_loader = DataLoader::new(event_loop_proxy, set_ready);
 
+    // Anytime the filter signal changes the data loader now calls load data with the new signal
     create_effect(move |_| data_loader.load_data(filter()));
 
     view! {

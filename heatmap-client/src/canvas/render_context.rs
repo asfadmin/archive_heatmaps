@@ -12,6 +12,7 @@ use super::texture::{
     generate_blend_texture, generate_colormap_texture, generate_max_weight_texture, TextureContext,
 };
 
+// Stores all the things we need to set up wgpu and run render passes,
 pub struct RenderContext<'a> {
     pub surface: wgpu::Surface<'a>,
     pub device: wgpu::Device,
@@ -29,11 +30,12 @@ pub struct RenderContext<'a> {
     pub max_weight_context: MaxWeightContext,
 }
 
-/// Create a new state
+/// Create a new RenderContext
 pub async fn generate_render_context<'a>(
     window: Rc<Window>,
     event_loop_proxy: EventLoopProxy<UserMessage<'_>>,
 ) {
+    // Default starting size, gets changed as soon as WindowEvent::Resize is fired
     let size = PhysicalSize::new(800, 800);
 
     ////////////////////
@@ -109,18 +111,25 @@ pub async fn generate_render_context<'a>(
         view_formats: vec![],
     };
 
+    ////////////////////////////////////////////
+    // Set up resources used in Render Passes //
+    ////////////////////////////////////////////
+
+    // Used to modify the displayed viewport, ie zoom and pan
     let camera_context = CameraContext::generate_camera_context(&device, &config);
 
+    // Used to convert polygons into heatmap
     let blend_texture_context = generate_blend_texture(&device, size);
     let colormap_texture_context = generate_colormap_texture(&device, &queue);
-    let max_weight_texture = generate_max_weight_texture(&device, size);
 
+    // Used to calculate the maximum weight for a data set
+    let max_weight_texture = generate_max_weight_texture(&device, size);
     let max_weight_buffer = generate_max_weight_buffer(&device, size);
     let max_weight_uniform_buffer = generate_uniform_buffer(&device);
 
-    ////////////////////////////
-    // Set up render pipeline //
-    ////////////////////////////
+    //////////////////////////////////
+    // Set up blend render pipeline //
+    //////////////////////////////////
     let blend_shader = device.create_shader_module(wgpu::include_wgsl!("shaders/blend.wgsl"));
 
     let blend_render_pipeline_layout =
@@ -178,6 +187,9 @@ pub async fn generate_render_context<'a>(
         multiview: None,
     });
 
+    /////////////////////////////////////
+    // Set up colormap render pipeline //
+    /////////////////////////////////////
     let colormap_shader = device.create_shader_module(wgpu::include_wgsl!("shaders/colormap.wgsl"));
 
     let colormap_render_pipeline_layout =
@@ -228,6 +240,10 @@ pub async fn generate_render_context<'a>(
         multiview: None,
     });
 
+    ////////////////////////////////////
+    // Set up Outline render pipeline //
+    ////////////////////////////////////
+
     let outline_shader = device.create_shader_module(wgpu::include_wgsl!("shaders/outline.wgsl"));
 
     let outline_render_pipeline_layout =
@@ -274,6 +290,9 @@ pub async fn generate_render_context<'a>(
         multiview: None,
     });
 
+    ///////////////////////////////////////
+    // Set up max weight render pipeline //
+    ///////////////////////////////////////
     let max_weight_shader =
         device.create_shader_module(wgpu::include_wgsl!("shaders/max_weight.wgsl"));
 
@@ -348,9 +367,12 @@ pub async fn generate_render_context<'a>(
     };
 
     web_sys::console::log_1(&"Done Generating State".into());
+    // Because this is a wasm application we cannot block on async calls so we instead send a message
+    //    back to the application handler when this function completes
     let _ = event_loop_proxy.send_event(UserMessage::StateMessage(message));
 }
 
+/// Contains resources neccessary to calculate the maximum weight of a set of data
 pub struct MaxWeightContext {
     pub texture: wgpu::Texture,
     pub buffer: wgpu::Buffer,

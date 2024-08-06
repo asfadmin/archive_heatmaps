@@ -3,7 +3,7 @@ use wgpu::util::DeviceExt;
 use super::render_context::RenderContext;
 use crate::ingest::load::BufferStorage;
 
-// To-do: Make this based on the size of the surface
+// Used to render the blended texture onto
 const RECTANGLE_VERTICES: &[Vertex] = &[
     Vertex {
         position: [-180.0, -90.0, 0.0],
@@ -21,17 +21,21 @@ const RECTANGLE_VERTICES: &[Vertex] = &[
 
 const RECTANGLE_INDICES: &[u16] = &[0, 2, 3, 0, 2, 1];
 
+// All the things needed to bind a buffer to a render pass
 pub struct BufferContext {
     pub buffer: wgpu::Buffer,
     pub bind_group_layout: wgpu::BindGroupLayout,
     pub bind_group: wgpu::BindGroup,
 }
+
+// All the things needed to draw a vertex buffer using indices
 pub struct BufferLayer {
     pub vertex_buffer: wgpu::Buffer,
     pub index_buffer: wgpu::Buffer,
     pub num_indices: u32,
 }
 
+// All the geometry that is used in the blend render pass to create a colormap texture
 pub struct Geometry {
     pub lod_layers: Vec<BufferLayer>,
     pub rectangle_layer: BufferLayer,
@@ -85,6 +89,7 @@ impl Geometry {
     }
 }
 
+// Stores each Level of Detail into its own BufferLayer to be used in the blend render pass
 fn gen_lod_layers(
     render_context: &RenderContext,
     buffer_data: Vec<BufferStorage>,
@@ -123,6 +128,8 @@ fn gen_lod_layers(
     lod_layers
 }
 
+// A uniform buffer that a texture can be copied to and can be mapped to the cpu
+//    used to calculate the max weight
 pub fn generate_max_weight_buffer(
     device: &wgpu::Device,
     size: winit::dpi::PhysicalSize<u32>,
@@ -138,6 +145,7 @@ pub fn generate_max_weight_buffer(
     vertex_buffer
 }
 
+// Used to store the camera_uniform
 pub fn generate_uniform_buffer(device: &wgpu::Device) -> BufferContext {
     let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("Uniform Buffer"),
@@ -176,7 +184,7 @@ pub fn generate_uniform_buffer(device: &wgpu::Device) -> BufferContext {
         bind_group: uniform_bind_group,
     }
 }
-/// A vertex passed into the wgsl shader
+/// A vertex passed into blend.wgsl
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct BlendVertex {
@@ -206,6 +214,7 @@ impl BlendVertex {
     }
 }
 
+// A vertex used in colormap.wgsl and max_weight.wgsl
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {

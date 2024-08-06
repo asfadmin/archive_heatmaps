@@ -27,10 +27,13 @@ pub struct App<'a> {
 }
 
 // The application handler instance doesnt allow for error handling
+// The application handler responds to changes in the event loop, we send custom events here using
+//    an event_loop_proxy
 
 impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
+    // This is run on initial startup, creates a window and stores it in the state, also stores
+    //     the windows canvas in external state
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        // Create the window and add it to state
         self.state.window = Some(Rc::new(
             event_loop
                 .create_window(
@@ -40,6 +43,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                 .expect("ERROR: Failed to create window"),
         ));
 
+        // Convert web_sys HtmlCanvasElement into a leptos HtmlElement<AnyElement>
         self.external_state.borrow_mut().canvas = self
             .state
             .window
@@ -110,7 +114,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
             }
 
             WindowEvent::Resized(physical_size) => {
-                // Initialize setup of state when resized is first called
+                // Initialize setup of state when resized is first called, otherwise call state.resize
                 if self.state.init_stage == InitStage::Incomplete {
                     web_sys::console::log_1(&"Generating state...".into());
                     leptos::spawn_local(super::render_context::generate_render_context(
@@ -127,6 +131,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                 }
             }
 
+            // Any other event will be handled by the user input handler
             _ => {
                 self.state.handle_input_event(event);
             }
@@ -161,6 +166,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                 );
             }
 
+            // There is incoming data from the service, we need to place this new data into buffers to render
             UserMessage::IncomingData(data, outline_data) => {
                 web_sys::console::log_1(&"Generating Buffers...".into());
                 let render_context = self
@@ -190,9 +196,13 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
 
                 web_sys::console::log_1(&"Done Generating Buffers".into());
 
+                // Turn off the loading wheel
                 self.external_state.borrow_mut().set_ready.set(true);
             }
 
+            // This is part of getting the max weight of a set of data, to get data from the GPU
+            //    you have to map a buffer to the CPU, this is done asynchronously so we fire off
+            //    a custom event on mapping completion
             UserMessage::BufferMapped => {
                 let render_context = self
                     .state
@@ -200,19 +210,22 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     .as_mut()
                     .expect("Failed to get render context in UserMessage::BufferMapped");
 
+                // We read the data contained in the buffer and convert it from &[u8] to Vec<u8>
                 let raw_bytes: Vec<u8> = (&*render_context
                     .max_weight_context
                     .buffer
                     .slice(..)
                     .get_mapped_range())
                     .into();
+
+                // The buffer is formated for f32 but we pulled a Vec<u8>, we must reform the Vec<f32> from the bytes
                 let mut red_data: Vec<f32> = Vec::new();
-
                 let mut raw_iter = raw_bytes.iter();
-
                 while let Ok(raw) = raw_iter.next_chunk::<4>() {
+                    // Read one channel into a f32
                     red_data.push(f32::from_le_bytes([*raw[0], *raw[1], *raw[2], *raw[3]]));
 
+                    // The texture we stored in the buffer was rgba32Float but only had red data so we skip the g, b, a channels
                     match raw_iter.advance_by(4 * 3) {
                         Ok(_) => {}
                         Err(_) => {
@@ -221,6 +234,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     }
                 }
 
+                // Find the max value in the Vec<f32> we just created
                 let mut max = 0.0;
 
                 for value in red_data.iter() {
@@ -231,9 +245,11 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
 
                 web_sys::console::log_1(&format!("Max: {:?}", max).into());
 
+                // We now update the uniform buffer with our max weight
+                //    so that we can read the max value in the colormap render pass
                 let mut uniform_data: Vec<u8> = max.to_le_bytes().into();
 
-                // Uniform Buffer must be 16 byte aligned
+                // Uniform Buffer must be 16 byte aligned so we pad it with 0's
                 while uniform_data.len() % 16 != 0 {
                     uniform_data.push(0);
                 }
