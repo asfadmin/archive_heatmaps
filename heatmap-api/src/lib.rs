@@ -4,6 +4,7 @@ pub trait ToPartialString {
     fn _to_partial_string(&self) -> String;
 }
 
+// Enums defining possible filter options
 #[derive(Deserialize, Serialize, Clone, Copy, Debug, PartialEq)]
 pub enum ProductTypes {
     #[serde(rename = "GRD")]
@@ -58,6 +59,7 @@ impl DataSensor {
     }
 }
 
+// The filter passed from client to server on a request for data
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Filter {
     pub product_type: Vec<ProductTypes>,
@@ -66,9 +68,17 @@ pub struct Filter {
     pub end_date: String,
 }
 
+// Client sends this to server
 #[derive(Deserialize, Serialize)]
 pub struct HeatmapQuery {
     pub filter: Filter,
+}
+
+// Server sends this back to client after a query,
+// contains the granule data
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
+pub struct HeatmapResponse {
+    pub data: HeatmapData,
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
@@ -82,18 +92,14 @@ pub struct InteriorData {
     pub weights: Vec<u64>,
 }
 
+// Server sends this back to client after a query,
+// contains world outline data
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
-pub struct HeatmapResponse {
-    pub data: HeatmapData,
+pub struct OutlineResponse {
+    pub data: OutlineData,
 }
-
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct OutlineData {
     pub length: i32,
     pub positions: Vec<Vec<(f64, f64)>>,
-}
-
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
-pub struct OutlineResponse {
-    pub data: OutlineData,
 }

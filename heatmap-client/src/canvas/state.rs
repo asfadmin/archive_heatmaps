@@ -15,7 +15,7 @@ use super::input::InputState;
 use super::render_context::{MaxWeightState, RenderContext};
 use super::texture::generate_blend_texture;
 
-/// Tracks wether state is finished setting up
+/// Tracks whether state is finished setting up
 #[derive(Default, PartialEq, Eq)]
 pub enum InitStage {
     #[default]
@@ -36,7 +36,7 @@ pub struct State<'a> {
 }
 
 impl<'a> State<'a> {
-    // handles input events
+    // Process any user input on the heatmap
     pub fn handle_input_event(&mut self, event: WindowEvent) {
         self.input_state.eat_event(event);
     }
@@ -74,6 +74,7 @@ impl<'a> State<'a> {
                 .surface
                 .configure(&render_context.device, &render_context.config);
 
+            // Blend texture must be the same size as the window to preserve resolution
             render_context.blend_texture_context =
                 generate_blend_texture(&render_context.device, new_size);
         }
@@ -86,6 +87,7 @@ impl<'a> State<'a> {
             .as_mut()
             .expect("ERROR: Failed to get render context in render");
 
+        // Ensure we have data to render
         if let Some(geometry) = self.geometry.as_ref() {
             ///////////////////////
             // Blend Render Pass //
@@ -106,13 +108,17 @@ impl<'a> State<'a> {
                     .camera_context
                     .run_camera_logic(&mut self.input_state);
 
+                // If we have not calculated the max weight set the camera to cover the entire screen
+                //     and save the old camera
                 if render_context.max_weight_context.state == MaxWeightState::Empty {
                     self.camera_storage = Some(render_context.camera_context.camera.clone());
 
                     render_context
                         .camera_context
                         .update_camera(CameraEvent::EntireView);
-                } else if self.camera_storage.is_some() {
+                }
+                // If we have a camera saved set the current camera to the old camera and remove it from storage
+                else if self.camera_storage.is_some() {
                     render_context.camera_context.camera = self
                         .camera_storage
                         .as_ref()
@@ -125,6 +131,7 @@ impl<'a> State<'a> {
                     .camera_context
                     .write_camera_buffer(render_context);
 
+                // Select the Level of Detail to use for the satellite granules based on the zoom
                 let zoom = render_context.camera_context.camera.zoom;
                 let mut active_blend_layer = &geometry.lod_layers[0];
                 match zoom {
@@ -137,6 +144,7 @@ impl<'a> State<'a> {
                     _ => (),
                 }
 
+                // Configure render pass and set pipeline, bind groups, vertex buffer, and index buffer
                 let mut blend_render_pass =
                     blend_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: Some("Blend Render Pass"),
@@ -173,6 +181,7 @@ impl<'a> State<'a> {
                 blend_render_pass.draw_indexed(0..active_blend_layer.num_indices, 0, 0..1);
             }
 
+            // Execute the configured render pass
             render_context
                 .queue
                 .submit(std::iter::once(blend_encoder.finish()));
@@ -181,6 +190,7 @@ impl<'a> State<'a> {
             // Max Weight Render Pass //
             ////////////////////////////
 
+            // If we have not begun computing a max weight do so now
             if render_context.max_weight_context.state == MaxWeightState::Empty {
                 let max_weight_output = &render_context.max_weight_context.texture;
                 let max_weight_view =
@@ -192,6 +202,8 @@ impl<'a> State<'a> {
                         .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                             label: Some("Max Weight Render Encoder"),
                         });
+
+                // Configure the render pass to render the blend texture to a rgba32Float texture
                 {
                     let mut max_weight_render_pass =
                         max_weight_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -245,6 +257,7 @@ impl<'a> State<'a> {
                             label: Some("Copy Encoder"),
                         });
 
+                // Copy the rgba32Float texture into a buffer
                 copy_encoder.copy_texture_to_buffer(
                     wgpu::ImageCopyTexture {
                         texture: &render_context.max_weight_context.texture,
@@ -279,6 +292,8 @@ impl<'a> State<'a> {
                     .expect("Failed to get event loop proxy when mapping max weight buffer to cpu")
                     .clone();
 
+                // Begin mapping the buffer we just copied the texture into to the CPU,
+                //    send a signal to the event loop upon completion
                 render_context
                     .max_weight_context
                     .buffer
@@ -292,7 +307,10 @@ impl<'a> State<'a> {
             ////////////////////////////
             // Colormap Render Pass //
             ////////////////////////////
+
+            // If we have computed a max weight proceed with rendering the heatmap
             else if render_context.max_weight_context.state == MaxWeightState::Completed {
+                // We will draw to the surface of the window, this is displayed in the HtmlElement
                 let colormap_output = render_context.surface.get_current_texture()?;
                 let color_view = colormap_output
                     .texture
@@ -305,6 +323,7 @@ impl<'a> State<'a> {
                             label: Some("Colormap Render Encoder"),
                         });
 
+                // Select the level of detail for the world outline
                 if let Some(geometry) = self.geometry.as_ref() {
                     let zoom = render_context.camera_context.camera.zoom;
                     let mut active_outline_layer = &geometry.outline_layers[0];
@@ -339,6 +358,7 @@ impl<'a> State<'a> {
                             timestamp_writes: None,
                         });
 
+                    // Render the outline of the world
                     color_render_pass.set_pipeline(&render_context.outline_render_pipeline);
 
                     color_render_pass.set_bind_group(
@@ -356,6 +376,7 @@ impl<'a> State<'a> {
 
                     color_render_pass.draw_indexed(0..active_outline_layer.num_indices, 0, 0..1);
 
+                    // Render the heatmap over the world outline, uses the blend texture we generated in the first render pass
                     color_render_pass.set_pipeline(&render_context.colormap_render_pipeline);
                     color_render_pass.set_bind_group(
                         0,

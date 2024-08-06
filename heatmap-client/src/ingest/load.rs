@@ -23,6 +23,7 @@ pub struct BufferStorage {
     pub num_indices: u32,
 }
 
+// Struct that is responsible for submitting requests to the service for new data
 pub struct DataLoader {
     pub event_loop_proxy: EventLoopProxy<UserMessage<'static>>,
     pub active_requests: leptos::ReadSignal<u32>,
@@ -44,6 +45,8 @@ impl DataLoader {
             set_ready,
         }
     }
+
+    // Updates signals and starts the process of requesting new data based on filter
     pub fn load_data(&self, filter: heatmap_api::Filter) {
         self.set_active_requests.update(|n| *n += 1);
         self.set_ready.set(false);
@@ -74,19 +77,6 @@ async fn load_data_async(
         web_sys::console::log_1(&"Meshing data...".into());
         let meshed_data = mesh_data(Data::Heatmap(data));
         let meshed_outline_data = mesh_data(Data::Outline(outline_data));
-        web_sys::console::log_3(
-            &"Meshed Data: \n".into(),
-            &format!(
-                "Vertices: {:?}",
-                meshed_data.first().expect("Empty meshed data").vertices
-            )
-            .into(),
-            &format!(
-                "Indices: {:?}",
-                meshed_data.first().expect("no indices").indices
-            )
-            .into(),
-        );
 
         // Send the triangular mesh to the event loop
         web_sys::console::log_1(&"Sending Mesh to event loop".into());
@@ -96,6 +86,9 @@ async fn load_data_async(
     set_active_requests.update(|n| *n -= 1);
 }
 
+/// Converts the passed data into a triangular mesh using the earcutting algorithm,
+///     this is done for a varying level of detail to allow for LODs, polygon simplification
+///     is done using the Ramer-Douglas-Peucker algorithm
 fn mesh_data(data_exterior: Data) -> Vec<BufferStorage> {
     let positions: Vec<Vec<(f64, f64)>>;
     let weights: Vec<u64>;

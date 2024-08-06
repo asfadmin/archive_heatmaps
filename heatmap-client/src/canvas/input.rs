@@ -19,12 +19,14 @@ pub struct InputState {
 }
 
 impl InputState {
+    // Returns the amount of change in scroll delta since last function call
     pub fn consume_scroll_delta(&mut self) -> f64 {
         let delta = self.mouse_scroll_delta;
         self.mouse_scroll_delta = 0.0;
         delta
     }
 
+    // Returns the amount of change in cursor position since last function call
     pub fn consume_drag_delta(&mut self) -> PhysicalPosition<f64> {
         let delta = self.mouse_drag_delta;
         self.mouse_drag_delta = PhysicalPosition::new(0.0, 0.0);
@@ -39,10 +41,12 @@ impl InputState {
         self.mouse_buttons.contains(&button)
     }
 
+    // Performs the specified action for the given window event
     pub fn eat_event(&mut self, event: WindowEvent) {
         use WindowEvent::*;
 
         match event {
+            // Update drag delta based on the change in cursor position
             CursorMoved {
                 device_id: _,
                 position,
@@ -54,6 +58,7 @@ impl InputState {
                 self.cursor_position = position;
             }
 
+            // Add/remove a mouse button press from the list of currently pressed buttons
             MouseInput {
                 device_id: _,
                 state,
@@ -72,6 +77,7 @@ impl InputState {
                 }
             }
 
+            // Track the change in the mouse wheel scroll
             MouseWheel {
                 device_id: _,
                 delta,
@@ -90,6 +96,7 @@ impl InputState {
                 }
             }
 
+            // Add/Remove the keyboard key from the list of pressed keys
             KeyboardInput {
                 device_id: _,
                 event,

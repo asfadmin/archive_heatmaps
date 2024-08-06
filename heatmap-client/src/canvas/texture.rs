@@ -7,6 +7,7 @@ pub struct TextureContext {
     pub bind_group: wgpu::BindGroup,
 }
 
+/// Generate a texture that the blend render pass can render to and the colormap render pass can read from
 pub fn generate_blend_texture(
     device: &wgpu::Device,
     size: winit::dpi::PhysicalSize<u32>,
@@ -17,6 +18,7 @@ pub fn generate_blend_texture(
         depth_or_array_layers: 1,
     };
 
+    // Create a 2D R16Float texture with appropriate usages
     let blend_texture = device.create_texture(&wgpu::TextureDescriptor {
         size: blend_texture_size,
         mip_level_count: 1,
@@ -28,6 +30,7 @@ pub fn generate_blend_texture(
         view_formats: &[],
     });
 
+    // Set up a sampler for the texture we just created
     let blend_texture_view = blend_texture.create_view(&wgpu::TextureViewDescriptor::default());
     let blend_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
         address_mode_u: wgpu::AddressMode::ClampToEdge,
@@ -39,6 +42,7 @@ pub fn generate_blend_texture(
         ..Default::default()
     });
 
+    // Set up the bind group for the above texture and sampler
     let blend_bind_group_layout =
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[
@@ -84,8 +88,9 @@ pub fn generate_blend_texture(
     }
 }
 
+/// Generates a 1D texture with the colormap the heatmap will use
 pub fn generate_colormap_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> TextureContext {
-    // Def of colormap, should make this fancier in the future, currently a placeholder
+    // Read in the colormap texture from a .png
     let colormap_bytes = include_bytes!("../../assets/magma_filtered_alt.png");
     let colormap_image = image::load_from_memory(colormap_bytes)
         .expect("ERROR: Failed to generate image from colormap_bytes");
@@ -109,6 +114,7 @@ pub fn generate_colormap_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> 
         view_formats: &[],
     });
 
+    // Fill in the texture with the data from the .png we read above
     queue.write_texture(
         wgpu::ImageCopyTexture {
             texture: &texture,
@@ -125,51 +131,28 @@ pub fn generate_colormap_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> 
         texture_size,
     );
 
-    let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-    let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-        address_mode_u: wgpu::AddressMode::ClampToEdge,
-        address_mode_v: wgpu::AddressMode::ClampToEdge,
-        address_mode_w: wgpu::AddressMode::ClampToEdge,
-        mag_filter: wgpu::FilterMode::Linear,
-        min_filter: wgpu::FilterMode::Nearest,
-        mipmap_filter: wgpu::FilterMode::Nearest,
-        ..Default::default()
-    });
-
+    // Set up a bind group for the texture
     let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        entries: &[
-            wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Texture {
-                    sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                    view_dimension: wgpu::TextureViewDimension::D1,
-                    multisampled: false,
-                },
-                count: None,
+        entries: &[wgpu::BindGroupLayoutEntry {
+            binding: 0,
+            visibility: wgpu::ShaderStages::FRAGMENT,
+            ty: wgpu::BindingType::Texture {
+                sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                view_dimension: wgpu::TextureViewDimension::D1,
+                multisampled: false,
             },
-            wgpu::BindGroupLayoutEntry {
-                binding: 1,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                count: None,
-            },
-        ],
+            count: None,
+        }],
         label: Some("colormap_bind_group_layout"),
     });
 
+    let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         layout: &bind_group_layout,
-        entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: wgpu::BindingResource::TextureView(&texture_view),
-            },
-            wgpu::BindGroupEntry {
-                binding: 1,
-                resource: wgpu::BindingResource::Sampler(&sampler),
-            },
-        ],
+        entries: &[wgpu::BindGroupEntry {
+            binding: 0,
+            resource: wgpu::BindingResource::TextureView(&texture_view),
+        }],
         label: Some("colormap_bind_group"),
     });
 
@@ -180,6 +163,8 @@ pub fn generate_colormap_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> 
     }
 }
 
+/// A texture capable of being copied to a buffer, we render the blend texture onto this texture when
+///     calculating the max weight
 pub fn generate_max_weight_texture(
     device: &wgpu::Device,
     size: winit::dpi::PhysicalSize<u32>,

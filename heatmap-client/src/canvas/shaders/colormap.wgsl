@@ -19,8 +19,6 @@ fn vs_main(
 
 @group(0) @binding(0)
 var colormap_tex: texture_1d<f32>;
-@group(0) @binding(1)
-var colormap_samp: sampler;
 
 @group(1) @binding(0)
 var blended_tex: texture_2d<f32>;

@@ -12,6 +12,7 @@ pub enum CameraEvent {
     EntireView,
 }
 
+// This is the camera that modifies the viewport that the renderpasses render
 pub struct CameraContext {
     pub camera: Camera,
     pub camera_uniform: CameraUniform,
@@ -25,6 +26,7 @@ impl CameraContext {
         device: &wgpu::Device,
         config: &wgpu::SurfaceConfiguration,
     ) -> Self {
+        // Create a default camera
         let camera = Camera {
             aspect: config.width as f64 / config.height as f64,
             width: config.width as f64,
@@ -33,9 +35,13 @@ impl CameraContext {
             zoom: 1.0,
         };
 
+        // To access the camera from the inside a render pass we create a camera_uniform which is just a matrix!
         let mut camera_uniform = CameraUniform::new();
+
+        // Does some cool Matrix Math to create the view projection matrix!
         camera_uniform.update_view_proj(&camera);
 
+        // We have to store the camera in a uniform buffer so we can access it inside a render pass
         let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Camera Buffer"),
             contents: bytemuck::cast_slice(&[camera_uniform]),
@@ -76,16 +82,18 @@ impl CameraContext {
     }
 
     pub fn run_camera_logic(&mut self, input_state: &mut InputState) {
+        // Updates the zoom of the camera
         self.update_camera(CameraEvent::Zoom(
             input_state.consume_scroll_delta() * self.camera.zoom * 0.001,
             (input_state.cursor_position.x, input_state.cursor_position.y).into(),
         ));
-
+        // Updates the position of the camera
         let drag_delta = input_state.consume_drag_delta();
         self.update_camera(CameraEvent::Translate(
             self.mouse_coordinate_convert((drag_delta.x, drag_delta.y).into()),
         ));
 
+        // Have to recalculate the view projection matrix for these changes to take effect
         self.rebuild_view_matrix();
     }
 
@@ -112,6 +120,7 @@ impl CameraContext {
                 self.camera.aspect = aspect;
             }
 
+            // Zooms the camera in and out, ensures the camera stays within the bounds of the heatmap
             CameraEvent::Zoom(mut zoom, mut pos) => {
                 let camera_size =
                     cgmath::Vector2::<f64>::new(self.camera.width, self.camera.height)
@@ -136,6 +145,7 @@ impl CameraContext {
                 self.update_camera(CameraEvent::Translate(pos - pos * scale_factor));
             }
 
+            // Moves the camera around, ensures the camera stays within bounds of the heatmap
             CameraEvent::Translate(mut pos) => {
                 let camera_upper_bounds: cgmath::Vector2<f64> = self.camera.position
                     + pos
@@ -169,6 +179,7 @@ impl CameraContext {
                 self.camera.position += pos;
             }
 
+            // Displays the entire heatmap, used to calculate max weight and export to png
             CameraEvent::EntireView => {
                 self.camera.position = Vector2::new(-180.0, 90.0);
 
@@ -185,6 +196,7 @@ impl CameraContext {
         self.camera_uniform.update_view_proj(&self.camera);
     }
 
+    // Store the contents of camera_uniform in the buffer
     pub fn write_camera_buffer(&self, render_context: &RenderContext) {
         render_context.queue.write_buffer(
             &self.camera_buffer,
@@ -204,6 +216,7 @@ pub struct Camera {
 }
 
 impl Camera {
+    // This is the cool matrix math that makes this whole thing actually work!
     pub fn build_view_projection_matrix(&self) -> cgmath::Matrix4<f64> {
         let view = cgmath::Matrix4::from_scale(self.zoom)
             * cgmath::Matrix4::from_translation(-self.position.extend(0.0));
