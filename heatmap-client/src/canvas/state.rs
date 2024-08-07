@@ -3,6 +3,7 @@
 
 use std::rc::Rc;
 
+use leptos::{SignalGetUntracked, SignalSetUntracked};
 use wgpu::{Extent3d, Origin3d};
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoopProxy;
@@ -33,6 +34,7 @@ pub struct State<'a> {
     pub init_stage: InitStage,
     pub event_loop_proxy: Option<EventLoopProxy<UserMessage<'static>>>,
     pub camera_storage: Option<Camera>,
+    pub export_signal: Option<SignalContext<bool>>,
 }
 
 impl<'a> State<'a> {
@@ -192,7 +194,7 @@ impl<'a> State<'a> {
 
             // If we have not begun computing a max weight do so now
             if render_context.max_weight_context.state == MaxWeightState::Empty {
-                let max_weight_output = &render_context.max_weight_context.texture;
+                let max_weight_output = &render_context.copy_context.texture;
                 let max_weight_view =
                     max_weight_output.create_view(&wgpu::TextureViewDescriptor::default());
 
@@ -260,24 +262,24 @@ impl<'a> State<'a> {
                 // Copy the rgba32Float texture into a buffer
                 copy_encoder.copy_texture_to_buffer(
                     wgpu::ImageCopyTexture {
-                        texture: &render_context.max_weight_context.texture,
+                        texture: &render_context.copy_context.texture,
                         mip_level: 0,
                         origin: Origin3d { x: 0, y: 0, z: 0 },
                         aspect: wgpu::TextureAspect::All,
                     },
                     wgpu::ImageCopyBuffer {
-                        buffer: &render_context.max_weight_context.buffer,
+                        buffer: &render_context.copy_context.buffer,
                         layout: wgpu::ImageDataLayout {
                             offset: 0,
                             bytes_per_row: Some(
-                                4 * 4 * render_context.max_weight_context.texture.width(),
+                                4 * 4 * render_context.copy_context.texture.width(),
                             ),
                             rows_per_image: None,
                         },
                     },
                     Extent3d {
-                        width: render_context.max_weight_context.texture.width(),
-                        height: render_context.max_weight_context.texture.height(),
+                        width: render_context.copy_context.texture.width(),
+                        height: render_context.copy_context.texture.height(),
                         depth_or_array_layers: 1,
                     },
                 );
@@ -294,13 +296,12 @@ impl<'a> State<'a> {
 
                 // Begin mapping the buffer we just copied the texture into to the CPU,
                 //    send a signal to the event loop upon completion
-                render_context
-                    .max_weight_context
-                    .buffer
-                    .slice(..)
-                    .map_async(wgpu::MapMode::Read, move |_| {
-                        let _ = event_loop_proxy_clone.send_event(UserMessage::BufferMapped);
-                    });
+                render_context.copy_context.buffer.slice(..).map_async(
+                    wgpu::MapMode::Read,
+                    move |_| {
+                        let _ = event_loop_proxy_clone.send_event(UserMessage::MaxWeightMapped);
+                    },
+                );
 
                 render_context.max_weight_context.state = MaxWeightState::InProgress;
             }
@@ -310,11 +311,26 @@ impl<'a> State<'a> {
 
             // If we have computed a max weight proceed with rendering the heatmap
             else if render_context.max_weight_context.state == MaxWeightState::Completed {
-                // We will draw to the surface of the window, this is displayed in the HtmlElement
-                let colormap_output = render_context.surface.get_current_texture()?;
-                let color_view = colormap_output
-                    .texture
-                    .create_view(&wgpu::TextureViewDescriptor::default());
+                let color_view: wgpu::TextureView;
+                let mut colormap_output: Option<wgpu::SurfaceTexture> = None;
+
+                if let Some(export_sig) = &self.export_signal
+                    && export_sig.read.get_untracked()
+                {
+                    color_view = render_context
+                        .export_context
+                        .texture
+                        .create_view(&wgpu::TextureViewDescriptor::default());
+                    web_sys::console::log_1(&"Button Pushed".into());
+                } else {
+                    // We will draw to the surface of the window, this is displayed in the HtmlElement
+                    colormap_output = Some(render_context.surface.get_current_texture()?);
+                    color_view = colormap_output
+                        .as_ref()
+                        .expect("Failed to get colormap_output")
+                        .texture
+                        .create_view(&wgpu::TextureViewDescriptor::default());
+                }
 
                 let mut colormap_encoder =
                     render_context
@@ -409,10 +425,137 @@ impl<'a> State<'a> {
                 render_context
                     .queue
                     .submit(std::iter::once(colormap_encoder.finish()));
-                colormap_output.present();
+
+                // If we are exporting to a png we have one more render pass before we can map the texture to the CPU
+                if let Some(export_sig) = &self.export_signal
+                    && export_sig.read.get_untracked()
+                    && !render_context.copy_context.buffer_mapped
+                {
+                    export_sig.write.set_untracked(false);
+
+                    let export_output = &render_context.copy_context.texture;
+                    let export_view =
+                        export_output.create_view(&wgpu::TextureViewDescriptor::default());
+
+                    let mut export_encoder = render_context.device.create_command_encoder(
+                        &wgpu::CommandEncoderDescriptor {
+                            label: Some("Export Render Encoder"),
+                        },
+                    );
+
+                    // Configure the render pass to render the blend texture to a rgba32Float texture
+                    {
+                        let mut export_render_pass =
+                            export_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                label: Some("Export Render Pass"),
+                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                    view: &export_view,
+                                    resolve_target: None,
+                                    ops: wgpu::Operations {
+                                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                                            r: 0.0,
+                                            g: 0.0,
+                                            b: 0.0,
+                                            a: 0.0,
+                                        }),
+                                        store: wgpu::StoreOp::Store,
+                                    },
+                                })],
+                                depth_stencil_attachment: None,
+                                occlusion_query_set: None,
+                                timestamp_writes: None,
+                            });
+
+                        export_render_pass.set_pipeline(&render_context.export_render_pipeline);
+                        export_render_pass.set_bind_group(
+                            0,
+                            &render_context.export_context.bind_group,
+                            &[],
+                        );
+                        export_render_pass
+                            .set_vertex_buffer(0, geometry.rectangle_layer.vertex_buffer.slice(..));
+                        export_render_pass.set_index_buffer(
+                            geometry.rectangle_layer.index_buffer.slice(..),
+                            wgpu::IndexFormat::Uint16,
+                        );
+
+                        export_render_pass.draw_indexed(
+                            0..geometry.rectangle_layer.num_indices,
+                            0,
+                            0..1,
+                        );
+                    }
+
+                    render_context
+                        .queue
+                        .submit(std::iter::once(export_encoder.finish()));
+
+                    let mut copy_encoder = render_context.device.create_command_encoder(
+                        &wgpu::CommandEncoderDescriptor {
+                            label: Some("Export Copy Encoder"),
+                        },
+                    );
+
+                    // Copy the rgba32Float texture into a buffer
+                    copy_encoder.copy_texture_to_buffer(
+                        wgpu::ImageCopyTexture {
+                            texture: &render_context.copy_context.texture,
+                            mip_level: 0,
+                            origin: Origin3d { x: 0, y: 0, z: 0 },
+                            aspect: wgpu::TextureAspect::All,
+                        },
+                        wgpu::ImageCopyBuffer {
+                            buffer: &render_context.copy_context.buffer,
+                            layout: wgpu::ImageDataLayout {
+                                offset: 0,
+                                bytes_per_row: Some(
+                                    4 * 4 * render_context.copy_context.texture.width(),
+                                ),
+                                rows_per_image: None,
+                            },
+                        },
+                        Extent3d {
+                            width: render_context.copy_context.texture.width(),
+                            height: render_context.copy_context.texture.height(),
+                            depth_or_array_layers: 1,
+                        },
+                    );
+
+                    render_context
+                        .queue
+                        .submit(std::iter::once(copy_encoder.finish()));
+
+                    let event_loop_proxy_clone = self
+                        .event_loop_proxy
+                        .as_ref()
+                        .expect(
+                            "Failed to get event loop proxy when mapping max weight buffer to cpu",
+                        )
+                        .clone();
+
+                    // Begin mapping the buffer we just copied the texture into to the CPU,
+                    //    send a signal to the event loop upon completion
+                    render_context.copy_context.buffer_mapped = true;
+
+                    render_context.copy_context.buffer.slice(..).map_async(
+                        wgpu::MapMode::Read,
+                        move |_| {
+                            let _ = event_loop_proxy_clone.send_event(UserMessage::ExportMapped);
+                        },
+                    );
+                }
+                if let Some(output) = colormap_output {
+                    output.present();
+                }
             }
         }
 
         Ok(())
     }
+}
+
+#[derive(Clone)]
+pub struct SignalContext<T: 'static> {
+    pub read: leptos::ReadSignal<T>,
+    pub write: leptos::WriteSignal<T>,
 }

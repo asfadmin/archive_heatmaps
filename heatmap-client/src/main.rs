@@ -37,10 +37,13 @@ fn main() {
     });
     provide_context(filter);
 
+    let (export, set_export) = create_signal(false);
+    provide_context(export);
+
     let app = view! {
         <div>
-            <UserInterface set_filter/>
-            <Canvas/>
+            <UserInterface set_filter set_export/>
+            <Canvas set_export/>
         </div>
     };
 

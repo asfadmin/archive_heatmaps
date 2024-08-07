@@ -14,10 +14,10 @@ use winit::{
     window::{Window, WindowId},
 };
 
-use super::geometry::{generate_max_weight_buffer, Geometry};
+use super::geometry::{generate_copy_buffer, Geometry};
 use super::render_context::{MaxWeightState, RenderContext};
 use super::state::{InitStage, State};
-use super::texture::generate_max_weight_texture;
+use super::texture::generate_copy_texture;
 use crate::ingest::load::BufferStorage;
 
 pub struct App<'a> {
@@ -152,6 +152,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     input_state: self.state.input_state.clone(),
                     event_loop_proxy: Some(self.event_loop_proxy.clone()),
                     camera_storage: None,
+                    export_signal: self.state.export_signal.clone(),
                 };
 
                 // Resize configures the surface based on current canvas size
@@ -181,14 +182,14 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     outline_data,
                 ));
 
-                render_context.max_weight_context.texture =
-                    generate_max_weight_texture(&render_context.device, render_context.size);
+                render_context.copy_context.texture =
+                    generate_copy_texture(&render_context.device, render_context.size);
 
-                render_context.max_weight_context.buffer = generate_max_weight_buffer(
+                render_context.copy_context.buffer = generate_copy_buffer(
                     &render_context.device,
                     winit::dpi::PhysicalSize::<u32> {
-                        width: render_context.max_weight_context.texture.width(),
-                        height: render_context.max_weight_context.texture.height(),
+                        width: render_context.copy_context.texture.width(),
+                        height: render_context.copy_context.texture.height(),
                     },
                 );
 
@@ -203,7 +204,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
             // This is part of getting the max weight of a set of data, to get data from the GPU
             //    you have to map a buffer to the CPU, this is done asynchronously so we fire off
             //    a custom event on mapping completion
-            UserMessage::BufferMapped => {
+            UserMessage::MaxWeightMapped => {
                 let render_context = self
                     .state
                     .render_context
@@ -212,7 +213,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
 
                 // We read the data contained in the buffer and convert it from &[u8] to Vec<u8>
                 let raw_bytes: Vec<u8> = (&*render_context
-                    .max_weight_context
+                    .copy_context
                     .buffer
                     .slice(..)
                     .get_mapped_range())
@@ -264,7 +265,47 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
 
                 render_context.max_weight_context.state = MaxWeightState::Completed;
 
-                render_context.max_weight_context.buffer.unmap();
+                render_context.copy_context.buffer.unmap();
+            }
+
+            UserMessage::ExportMapped => {
+                web_sys::console::log_1(&"In the export mapped event".into());
+
+                let render_context = self
+                    .state
+                    .render_context
+                    .as_mut()
+                    .expect("Failed to get render context in UserMessage::BufferMapped");
+
+                // We read the data contained in the buffer and convert it from &[u8] to Vec<u8>
+                let raw_bytes: Vec<u8> = (&*render_context
+                    .copy_context
+                    .buffer
+                    .slice(..)
+                    .get_mapped_range())
+                    .into();
+
+                // The buffer is formated for f32 but we pulled a Vec<u8>, we must reform the Vec<f32> from the bytes
+                let mut color_data: Vec<f32> = Vec::new();
+                let mut raw_iter = raw_bytes.iter();
+                while let Ok(raw) = raw_iter.next_chunk::<4>() {
+                    // Read one channel into a f32
+                    color_data.push(f32::from_le_bytes([*raw[0], *raw[1], *raw[2], *raw[3]]));
+                }
+
+                // Convert the raw image data into an ImageBuffer that can be saved
+                let img = image::Rgba32FImage::from_vec(
+                    render_context.size.width,
+                    render_context.size.height,
+                    color_data,
+                )
+                .expect("Failed to convert parsed floats into an Rgba<f32> ImageBuffer");
+
+                // Save the image
+                let _ = img.save("./heatmap_output.png");
+
+                render_context.copy_context.buffer.unmap();
+                render_context.copy_context.buffer_mapped = false;
             }
         }
     }
@@ -274,7 +315,8 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
 pub enum UserMessage<'a> {
     StateMessage(RenderContext<'a>),
     IncomingData(Vec<BufferStorage>, Vec<BufferStorage>),
-    BufferMapped,
+    MaxWeightMapped,
+    ExportMapped,
 }
 
 /// Stores the canvas as an html element

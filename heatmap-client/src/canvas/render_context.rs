@@ -6,10 +6,11 @@ use winit::{dpi::PhysicalSize, event_loop::EventLoopProxy};
 use super::app::UserMessage;
 use super::camera::CameraContext;
 use super::geometry::{
-    generate_max_weight_buffer, generate_uniform_buffer, BlendVertex, BufferContext, Vertex,
+    generate_copy_buffer, generate_uniform_buffer, BlendVertex, BufferContext, Vertex,
 };
 use super::texture::{
-    generate_blend_texture, generate_colormap_texture, generate_max_weight_texture, TextureContext,
+    generate_blend_texture, generate_colormap_texture, generate_copy_texture,
+    generate_export_texture, TextureContext,
 };
 
 // Stores all the things we need to set up wgpu and run render passes,
@@ -24,9 +25,12 @@ pub struct RenderContext<'a> {
     pub colormap_render_pipeline: wgpu::RenderPipeline,
     pub outline_render_pipeline: wgpu::RenderPipeline,
     pub max_weight_render_pipeline: wgpu::RenderPipeline,
+    pub export_render_pipeline: wgpu::RenderPipeline,
     pub camera_context: CameraContext,
     pub blend_texture_context: TextureContext,
     pub colormap_texture_context: TextureContext,
+    pub export_context: TextureContext,
+    pub copy_context: CopyContext,
     pub max_weight_context: MaxWeightContext,
 }
 
@@ -121,10 +125,19 @@ pub async fn generate_render_context<'a>(
     // Used to convert polygons into heatmap
     let blend_texture_context = generate_blend_texture(&device, size);
     let colormap_texture_context = generate_colormap_texture(&device, &queue);
+    let export_context = generate_export_texture(&device, size);
 
-    // Used to calculate the maximum weight for a data set
-    let max_weight_texture = generate_max_weight_texture(&device, size);
-    let max_weight_buffer = generate_max_weight_buffer(&device, size);
+    // Used to get data from GPU to CPU
+    let copy_texture = generate_copy_texture(&device, size);
+    let copy_buffer = generate_copy_buffer(&device, size);
+
+    let copy_context = CopyContext {
+        texture: copy_texture,
+        buffer: copy_buffer,
+        buffer_mapped: false,
+    };
+
+    // Used to pass calculated max weight into Render Pass
     let max_weight_uniform_buffer = generate_uniform_buffer(&device);
 
     //////////////////////////////////
@@ -341,9 +354,58 @@ pub async fn generate_render_context<'a>(
             multiview: None,
         });
 
+    ///////////////////////////////////
+    // Export to Png Render Pipeline //
+    ///////////////////////////////////
+
+    let export_to_png_shader =
+        device.create_shader_module(wgpu::include_wgsl!("shaders/export.wgsl"));
+
+    let export_render_pipeline_layout =
+        device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("Export Render Pipeline Layout"),
+            bind_group_layouts: &[&export_context.bind_group_layout],
+            push_constant_ranges: &[],
+        });
+
+    let export_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("Export Render Pipeline"),
+        layout: Some(&export_render_pipeline_layout),
+        vertex: wgpu::VertexState {
+            module: &export_to_png_shader,
+            entry_point: "vs_main",
+            buffers: &[Vertex::desc()],
+            compilation_options: Default::default(),
+        },
+        fragment: Some(wgpu::FragmentState {
+            module: &export_to_png_shader,
+            entry_point: "fs_main",
+            compilation_options: Default::default(),
+            targets: &[Some(wgpu::ColorTargetState {
+                format: wgpu::TextureFormat::Rgba32Float,
+                blend: None,
+                write_mask: wgpu::ColorWrites::ALL,
+            })],
+        }),
+        primitive: wgpu::PrimitiveState {
+            topology: wgpu::PrimitiveTopology::TriangleList,
+            strip_index_format: None,
+            front_face: wgpu::FrontFace::Cw,
+            cull_mode: None,
+            polygon_mode: wgpu::PolygonMode::Fill,
+            unclipped_depth: false,
+            conservative: false,
+        },
+        depth_stencil: None,
+        multisample: wgpu::MultisampleState {
+            count: 1,
+            mask: !0,
+            alpha_to_coverage_enabled: false,
+        },
+        multiview: None,
+    });
+
     let max_weight_context = MaxWeightContext {
-        texture: max_weight_texture,
-        buffer: max_weight_buffer,
         state: MaxWeightState::Empty,
         uniform_buffer: max_weight_uniform_buffer,
     };
@@ -360,9 +422,12 @@ pub async fn generate_render_context<'a>(
         colormap_render_pipeline,
         outline_render_pipeline,
         max_weight_render_pipeline,
+        export_render_pipeline,
         camera_context,
         blend_texture_context,
         colormap_texture_context,
+        export_context,
+        copy_context,
         max_weight_context,
     };
 
@@ -372,10 +437,13 @@ pub async fn generate_render_context<'a>(
     let _ = event_loop_proxy.send_event(UserMessage::StateMessage(message));
 }
 
-/// Contains resources neccessary to calculate the maximum weight of a set of data
-pub struct MaxWeightContext {
+pub struct CopyContext {
     pub texture: wgpu::Texture,
     pub buffer: wgpu::Buffer,
+    pub buffer_mapped: bool,
+}
+/// Contains resources neccessary to calculate the maximum weight of a set of data
+pub struct MaxWeightContext {
     pub state: MaxWeightState,
     pub uniform_buffer: BufferContext,
 }

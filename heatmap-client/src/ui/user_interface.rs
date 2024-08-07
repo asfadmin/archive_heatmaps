@@ -5,7 +5,10 @@ use leptos::wasm_bindgen::JsCast;
 use leptos::*;
 
 #[component]
-pub fn UserInterface(set_filter: WriteSignal<heatmap_api::Filter>) -> impl IntoView {
+pub fn UserInterface(
+    set_filter: WriteSignal<heatmap_api::Filter>,
+    set_export: WriteSignal<bool>,
+) -> impl IntoView {
     let min_date = NaiveDate::from_ymd_opt(2019, 1, 1)
         .expect("Failed to parse left hand side when finding min_date")
         .format("%Y-%m-%d")
@@ -22,6 +25,11 @@ pub fn UserInterface(set_filter: WriteSignal<heatmap_api::Filter>) -> impl IntoV
     let end_date_element: NodeRef<html::Input> = create_node_ref();
 
     let doc = document();
+
+    // Run when the 'Export to PNG' button is pressed
+    let export_png = move |_| {
+        set_export(true);
+    };
 
     // Run when an element of the UI changes, updates the filter signal
     let on_update = move |_: web_sys::Event| {
@@ -202,6 +210,11 @@ pub fn UserInterface(set_filter: WriteSignal<heatmap_api::Filter>) -> impl IntoV
                     </table>
                 </div>
             </form>
+            <div>
+                <button class="button" on:click = export_png>
+                    Export to PNG
+                </button>
+            </div>
         </div>
     }
 }
