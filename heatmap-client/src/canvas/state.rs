@@ -11,10 +11,10 @@ use winit::window::Window;
 
 use super::app::UserMessage;
 use super::camera::{Camera, CameraEvent};
-use super::geometry::Geometry;
+use super::geometry::{generate_copy_buffer, Geometry};
 use super::input::InputState;
-use super::render_context::{MaxWeightState, RenderContext};
-use super::texture::generate_blend_texture;
+use super::render_context::{CopyContext, MaxWeightState, RenderContext};
+use super::texture::{generate_blend_texture, generate_copy_texture};
 
 /// Tracks whether state is finished setting up
 #[derive(Default, PartialEq, Eq)]
@@ -34,7 +34,7 @@ pub struct State<'a> {
     pub init_stage: InitStage,
     pub event_loop_proxy: Option<EventLoopProxy<UserMessage<'static>>>,
     pub camera_storage: Option<Camera>,
-    pub export_signal: Option<SignalContext<bool>>,
+    pub export_context: Option<ExportContext>,
 }
 
 impl<'a> State<'a> {
@@ -76,9 +76,16 @@ impl<'a> State<'a> {
                 .surface
                 .configure(&render_context.device, &render_context.config);
 
-            // Blend texture must be the same size as the window to preserve resolution
+            // Textures must be the same size as the window to preserve resolution
             render_context.blend_texture_context =
                 generate_blend_texture(&render_context.device, new_size);
+
+            render_context.copy_context = CopyContext {
+                texture: generate_copy_texture(&render_context.device, new_size),
+                buffer: generate_copy_buffer(&render_context.device, new_size),
+                buffer_mapped: false,
+            };
+            web_sys::console::log_1(&format!("New Size: {:?}", new_size).into());
         }
     }
 
@@ -112,8 +119,16 @@ impl<'a> State<'a> {
 
                 // If we have not calculated the max weight set the camera to cover the entire screen
                 //     and save the old camera
-                if render_context.max_weight_context.state == MaxWeightState::Empty {
-                    self.camera_storage = Some(render_context.camera_context.camera.clone());
+                if render_context.max_weight_context.state == MaxWeightState::Empty
+                    || !self
+                        .export_context
+                        .as_ref()
+                        .expect("failed to get export context from state")
+                        .png_generated
+                {
+                    if self.camera_storage.is_none() {
+                        self.camera_storage = Some(render_context.camera_context.camera.clone());
+                    }
 
                     render_context
                         .camera_context
@@ -314,14 +329,14 @@ impl<'a> State<'a> {
                 let color_view: wgpu::TextureView;
                 let mut colormap_output: Option<wgpu::SurfaceTexture> = None;
 
-                if let Some(export_sig) = &self.export_signal
-                    && export_sig.read.get_untracked()
+                if let Some(export) = &self.export_context
+                    && !export.png_generated
                 {
                     color_view = render_context
                         .export_context
                         .texture
                         .create_view(&wgpu::TextureViewDescriptor::default());
-                    web_sys::console::log_1(&"Button Pushed".into());
+                    web_sys::console::log_1(&"Generating .png".into());
                 } else {
                     // We will draw to the surface of the window, this is displayed in the HtmlElement
                     colormap_output = Some(render_context.surface.get_current_texture()?);
@@ -426,13 +441,14 @@ impl<'a> State<'a> {
                     .queue
                     .submit(std::iter::once(colormap_encoder.finish()));
 
-                // If we are exporting to a png we have one more render pass before we can map the texture to the CPU
-                if let Some(export_sig) = &self.export_signal
-                    && export_sig.read.get_untracked()
+                ////////////////////////////
+                // Export PNG Render pass //
+                ////////////////////////////
+                if let Some(export) = self.export_context.as_mut()
+                    && !export.png_generated
                     && !render_context.copy_context.buffer_mapped
                 {
-                    export_sig.write.set_untracked(false);
-
+                    export.png_generated = true;
                     let export_output = &render_context.copy_context.texture;
                     let export_view =
                         export_output.create_view(&wgpu::TextureViewDescriptor::default());
@@ -443,7 +459,7 @@ impl<'a> State<'a> {
                         },
                     );
 
-                    // Configure the render pass to render the blend texture to a rgba32Float texture
+                    // Configure the render pass to render the export texture to a rgba32Float texture
                     {
                         let mut export_render_pass =
                             export_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -511,7 +527,7 @@ impl<'a> State<'a> {
                                 bytes_per_row: Some(
                                     4 * 4 * render_context.copy_context.texture.width(),
                                 ),
-                                rows_per_image: None,
+                                rows_per_image: Some(render_context.copy_context.texture.height()),
                             },
                         },
                         Extent3d {
@@ -519,6 +535,25 @@ impl<'a> State<'a> {
                             height: render_context.copy_context.texture.height(),
                             depth_or_array_layers: 1,
                         },
+                    );
+
+                    web_sys::console::log_1(
+                        &format!(
+                            "Copied {:?} bytes",
+                            (render_context.copy_context.texture.width()
+                                * render_context.copy_context.texture.height()
+                                * 4
+                                * 4)
+                        )
+                        .into(),
+                    );
+                    web_sys::console::log_1(
+                        &format!(
+                            "Copy Texture Dimensions: {:?} by {:?}",
+                            render_context.copy_context.texture.width(),
+                            render_context.copy_context.texture.height()
+                        )
+                        .into(),
                     );
 
                     render_context
@@ -544,6 +579,7 @@ impl<'a> State<'a> {
                         },
                     );
                 }
+
                 if let Some(output) = colormap_output {
                     output.present();
                 }
@@ -554,8 +590,9 @@ impl<'a> State<'a> {
     }
 }
 
+/// Contains a tracker for the state of png generation and the image that was generated
 #[derive(Clone)]
-pub struct SignalContext<T: 'static> {
-    pub read: leptos::ReadSignal<T>,
-    pub write: leptos::WriteSignal<T>,
+pub struct ExportContext {
+    pub png_generated: bool,
+    pub img: leptos::WriteSignal<Option<image::Rgba32FImage>>,
 }

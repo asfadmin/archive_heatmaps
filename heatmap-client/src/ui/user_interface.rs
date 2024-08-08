@@ -1,14 +1,14 @@
 extern crate heatmap_api;
 
 use chrono::naive::NaiveDate;
+use heatmap_api::Filter;
+use image::ImageEncoder;
 use leptos::wasm_bindgen::JsCast;
 use leptos::*;
+use wasm_bindgen::JsValue;
 
 #[component]
-pub fn UserInterface(
-    set_filter: WriteSignal<heatmap_api::Filter>,
-    set_export: WriteSignal<bool>,
-) -> impl IntoView {
+pub fn UserInterface(set_filter: leptos::WriteSignal<Filter>) -> impl IntoView {
     let min_date = NaiveDate::from_ymd_opt(2019, 1, 1)
         .expect("Failed to parse left hand side when finding min_date")
         .format("%Y-%m-%d")
@@ -26,10 +26,68 @@ pub fn UserInterface(
 
     let doc = document();
 
-    // Run when the 'Export to PNG' button is pressed
-    let export_png = move |_| {
-        set_export(true);
-    };
+    let img = use_context::<ReadSignal<Option<image::Rgba32FImage>>>()
+        .expect("Failed to get img read signal in user interface");
+
+    let (image_url, set_image_url) = create_signal("".to_owned());
+
+    // PNG ENCODER MAY BE THE WAY
+    create_effect(move |_| {
+        web_sys::console::log_1(&"Updating <img>".into());
+        if let Some(export_image) = img.get() {
+            // Convert the Rgba image into a flat JS Array to create a web_sys File
+            let image_png: Vec<u8> = Vec::new();
+            let png_encoder = image::codecs::png::PngEncoder::new(image_png);
+            let image_data: Vec<u8> = export_image
+                .clone()
+                .into_raw()
+                .iter()
+                .map(|x| x.to_ne_bytes())
+                .flatten()
+                .collect();
+
+            match png_encoder.write_image(
+                &image_data.as_slice(),
+                export_image.width(),
+                export_image.height(),
+                image::ExtendedColorType::Rgba32F,
+            ) {
+                Ok(res) => web_sys::console::log_1(&format!("Img: {:?}", res).into()),
+                Err(e) => {
+                    use std::error::Error;
+
+                    web_sys::console::log_1(
+                        &format!(
+                            "ERROR: {:?}",
+                            e.source().expect("Failed to find error source")
+                        )
+                        .into(),
+                    )
+                }
+            }
+
+            let js_array = js_sys::Array::new();
+            let _: Vec<_> = export_image
+                .into_raw()
+                .iter()
+                .enumerate()
+                .map(|(index, value)| js_array.set(index as u32, JsValue::from(*value)))
+                .collect();
+
+            let file_result = web_sys::File::new_with_u8_array_sequence(&js_array, "heatmap.png");
+
+            if let Ok(file) = file_result {
+                let url = web_sys::Url::create_object_url_with_blob(&file)
+                    .expect("Failed to create URL for image");
+                set_image_url(url);
+            } else if let Err(e) = file_result {
+                web_sys::console::log_1(&format!("{:?}", e).into())
+            }
+        } else {
+            web_sys::console::log_1(&"img.get() returned None".into())
+        }
+        web_sys::console::log_1(&"Updated <img>".into());
+    });
 
     // Run when an element of the UI changes, updates the filter signal
     let on_update = move |_: web_sys::Event| {
@@ -211,9 +269,13 @@ pub fn UserInterface(
                 </div>
             </form>
             <div>
-                <button class="button" on:click = export_png>
+                <a
+                    class="button"
+                    href=move || {image_url()}
+                    download="heatmap.png"
+                >
                     Export to PNG
-                </button>
+                </a>
             </div>
         </div>
     }

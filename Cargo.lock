@@ -2238,6 +2238,7 @@ dependencies = [
  "geo",
  "heatmap-api",
  "image",
+ "js-sys",
  "leptos",
  "leptosfmt",
  "log",

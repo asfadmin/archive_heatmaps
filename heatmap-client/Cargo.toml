@@ -28,6 +28,7 @@ wgpu = { version = "0.20.1", features = ["webgl"] }
 winit = "0.30.3"
 heatmap-api = { path = "../heatmap-api" }
 geo = "0.28.0"
+js-sys = "0.3.69"
 
 [lints.clippy]
 unwrap_used = "warn"

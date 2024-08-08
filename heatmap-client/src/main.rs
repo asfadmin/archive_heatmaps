@@ -37,13 +37,13 @@ fn main() {
     });
     provide_context(filter);
 
-    let (export, set_export) = create_signal(false);
-    provide_context(export);
+    let (img, set_img) = create_signal(None::<image::Rgba32FImage>);
+    provide_context(img);
 
     let app = view! {
         <div>
-            <UserInterface set_filter set_export/>
-            <Canvas set_export/>
+            <UserInterface set_filter/>
+            <Canvas set_img/>
         </div>
     };
 

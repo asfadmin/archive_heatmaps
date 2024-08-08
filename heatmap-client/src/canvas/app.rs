@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use leptos::html::ToHtmlElement;
-use leptos::SignalSet;
+use leptos::{SignalSet, SignalSetUntracked};
 use winit::platform::web::WindowExtWebSys;
 use winit::{
     application::ApplicationHandler,
@@ -16,7 +16,7 @@ use winit::{
 
 use super::geometry::{generate_copy_buffer, Geometry};
 use super::render_context::{MaxWeightState, RenderContext};
-use super::state::{InitStage, State};
+use super::state::{ExportContext, InitStage, State};
 use super::texture::generate_copy_texture;
 use crate::ingest::load::BufferStorage;
 
@@ -152,7 +152,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     input_state: self.state.input_state.clone(),
                     event_loop_proxy: Some(self.event_loop_proxy.clone()),
                     camera_storage: None,
-                    export_signal: self.state.export_signal.clone(),
+                    export_context: self.state.export_context.clone(),
                 };
 
                 // Resize configures the surface based on current canvas size
@@ -194,6 +194,10 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                 );
 
                 render_context.max_weight_context.state = MaxWeightState::Empty;
+                if let Some(export) = self.state.export_context.as_mut() {
+                    export.png_generated = false;
+                    export.img.set_untracked(None)
+                }
 
                 web_sys::console::log_1(&"Done Generating Buffers".into());
 
@@ -269,8 +273,6 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
             }
 
             UserMessage::ExportMapped => {
-                web_sys::console::log_1(&"In the export mapped event".into());
-
                 let render_context = self
                     .state
                     .render_context
@@ -293,19 +295,28 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     color_data.push(f32::from_le_bytes([*raw[0], *raw[1], *raw[2], *raw[3]]));
                 }
 
-                // Convert the raw image data into an ImageBuffer that can be saved
-                let img = image::Rgba32FImage::from_vec(
-                    render_context.size.width,
-                    render_context.size.height,
+                // Convert the raw image data into an ImageBuffer that can be saved, must use copy texture width here,
+                //     Copy Texture is 256 byte aligned so copy_texture.width() is larger than displayed size and so
+                //     are the contents of our buffer
+                let imag = image::Rgba32FImage::from_vec(
+                    render_context.copy_context.texture.width(),
+                    render_context.copy_context.texture.height(),
                     color_data,
                 )
                 .expect("Failed to convert parsed floats into an Rgba<f32> ImageBuffer");
 
-                // Save the image
-                let _ = img.save("./heatmap_output.png");
+                // Save the image to state, this lets us download it if the user presses the export button
+                self.state
+                    .export_context
+                    .as_ref()
+                    .expect("Failed to get export_context to write image to")
+                    .img
+                    .set(Some(imag));
 
                 render_context.copy_context.buffer.unmap();
                 render_context.copy_context.buffer_mapped = false;
+
+                web_sys::console::log_1(&".png Generated".into());
             }
         }
     }
