@@ -2242,6 +2242,7 @@ dependencies = [
  "leptos",
  "leptosfmt",
  "log",
+ "png",
  "reqwest",
  "serde",
  "serde_json",

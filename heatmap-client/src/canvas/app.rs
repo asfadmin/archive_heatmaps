@@ -295,6 +295,8 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     color_data.push(f32::from_le_bytes([*raw[0], *raw[1], *raw[2], *raw[3]]));
                 }
 
+                web_sys::console::log_1(&format!("Freshley decoded: {:?}", color_data).into());
+
                 // Convert the raw image data into an ImageBuffer that can be saved, must use copy texture width here,
                 //     Copy Texture is 256 byte aligned so copy_texture.width() is larger than displayed size and so
                 //     are the contents of our buffer

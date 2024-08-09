@@ -6,6 +6,10 @@ use image::ImageEncoder;
 use leptos::wasm_bindgen::JsCast;
 use leptos::*;
 use wasm_bindgen::JsValue;
+use winit::platform::web;
+use std::io::BufWriter;
+use std::fs::File;
+use std::rc::Rc;
 
 #[component]
 pub fn UserInterface(set_filter: leptos::WriteSignal<Filter>) -> impl IntoView {
@@ -33,56 +37,58 @@ pub fn UserInterface(set_filter: leptos::WriteSignal<Filter>) -> impl IntoView {
 
     // PNG ENCODER MAY BE THE WAY
     create_effect(move |_| {
+
+        
+
+
+
+
+
+
         web_sys::console::log_1(&"Updating <img>".into());
         if let Some(export_image) = img.get() {
-            // Convert the Rgba image into a flat JS Array to create a web_sys File
-            let image_png: Vec<u8> = Vec::new();
-            let png_encoder = image::codecs::png::PngEncoder::new(image_png);
-            let image_data: Vec<u8> = export_image
-                .clone()
-                .into_raw()
-                .iter()
-                .map(|x| x.to_ne_bytes())
-                .flatten()
-                .collect();
 
-            match png_encoder.write_image(
-                &image_data.as_slice(),
-                export_image.width(),
-                export_image.height(),
-                image::ExtendedColorType::Rgba32F,
-            ) {
-                Ok(res) => web_sys::console::log_1(&format!("Img: {:?}", res).into()),
-                Err(e) => {
-                    use std::error::Error;
+            let image_png: &mut Rc<Vec<u8>> = &mut Rc::new(Vec::new());
 
-                    web_sys::console::log_1(
-                        &format!(
-                            "ERROR: {:?}",
-                            e.source().expect("Failed to find error source")
-                        )
-                        .into(),
-                    )
-                }
+            let image_data: Vec<u8> = image::DynamicImage::from(export_image.clone())
+                .to_rgba8()
+                .into_raw();
+
+            web_sys::console::log_1(&format!("Image Data: {:?}", export_image).into());
+
+            {
+                let mut encoder = png::Encoder::new(
+                    Rc::get_mut(image_png).expect("Failed to get mut of Rc"), 
+                    export_image.width(), 
+                    export_image.height());
+                encoder.set_color(png::ColorType::Rgba);
+                encoder.set_depth(png::BitDepth::Eight);
+                
+                let mut writer = encoder
+                    .write_header()
+                    .expect("Failed to get mut of Rc");
+        
+                writer.write_image_data(&image_data.as_slice())
+                    .expect("Failed to write image data");
             }
 
-            let js_array = js_sys::Array::new();
-            let _: Vec<_> = export_image
-                .into_raw()
+            web_sys::console::log_1(&format!("Written image_png: {:?}", Rc::get_mut(image_png).expect("Failed to get contents of Rc")).into());
+
+            let js_array = js_sys::Uint8Array::new_with_length(Rc::get_mut(image_png).expect("Failed to get mut or Rc").len() as u32);
+            let _: Vec<_> = Rc::get_mut(image_png).expect("Failed to get mut Rc")
                 .iter()
                 .enumerate()
-                .map(|(index, value)| js_array.set(index as u32, JsValue::from(*value)))
+                .map(|(index, value)| {js_array.set_index(index as u32, *value)})
                 .collect();
 
-            let file_result = web_sys::File::new_with_u8_array_sequence(&js_array, "heatmap.png");
+            let file = web_sys::File::new_with_u8_array_sequence(&js_array, "heatmap.png")
+                .expect("Failed to create file");
 
-            if let Ok(file) = file_result {
-                let url = web_sys::Url::create_object_url_with_blob(&file)
+            web_sys::console::log_1(&file);
+
+            let url = web_sys::Url::create_object_url_with_blob(&file)
                     .expect("Failed to create URL for image");
-                set_image_url(url);
-            } else if let Err(e) = file_result {
-                web_sys::console::log_1(&format!("{:?}", e).into())
-            }
+            set_image_url(url);
         } else {
             web_sys::console::log_1(&"img.get() returned None".into())
         }
