@@ -3,7 +3,6 @@
 
 use std::rc::Rc;
 
-use leptos::{SignalGetUntracked, SignalSetUntracked};
 use wgpu::{Extent3d, Origin3d};
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoopProxy;

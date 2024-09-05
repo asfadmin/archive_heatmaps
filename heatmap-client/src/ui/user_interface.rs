@@ -1,15 +1,12 @@
 extern crate heatmap_api;
 
+use base64::Engine as _;
 use chrono::naive::NaiveDate;
 use heatmap_api::Filter;
+use image::codecs::png::PngEncoder;
 use image::ImageEncoder;
 use leptos::wasm_bindgen::JsCast;
 use leptos::*;
-use wasm_bindgen::JsValue;
-use winit::platform::web;
-use std::io::BufWriter;
-use std::fs::File;
-use std::rc::Rc;
 
 #[component]
 pub fn UserInterface(set_filter: leptos::WriteSignal<Filter>) -> impl IntoView {
@@ -35,60 +32,28 @@ pub fn UserInterface(set_filter: leptos::WriteSignal<Filter>) -> impl IntoView {
 
     let (image_url, set_image_url) = create_signal("".to_owned());
 
-    // PNG ENCODER MAY BE THE WAY
+    // Convert the raw bytes into a png image to be exported when the 'Export to PNG' button is pressed
     create_effect(move |_| {
-
-        
-
-
-
-
-
-
-        web_sys::console::log_1(&"Updating <img>".into());
+        web_sys::console::log_1(&"Updating <img>...".into());
         if let Some(export_image) = img.get() {
-
-            let image_png: &mut Rc<Vec<u8>> = &mut Rc::new(Vec::new());
-
-            let image_data: Vec<u8> = image::DynamicImage::from(export_image.clone())
+            let raw_image_data: Vec<u8> = image::DynamicImage::from(export_image.clone())
                 .to_rgba8()
                 .into_raw();
 
-            web_sys::console::log_1(&format!("Image Data: {:?}", export_image).into());
+            let mut png_encoded = Vec::<u8>::new();
+            let png_encoder = PngEncoder::new(&mut png_encoded);
+            let _result = png_encoder.write_image(
+                raw_image_data.as_slice(),
+                export_image.width(),
+                export_image.height(),
+                image::ExtendedColorType::Rgba8,
+            );
 
-            {
-                let mut encoder = png::Encoder::new(
-                    Rc::get_mut(image_png).expect("Failed to get mut of Rc"), 
-                    export_image.width(), 
-                    export_image.height());
-                encoder.set_color(png::ColorType::Rgba);
-                encoder.set_depth(png::BitDepth::Eight);
-                
-                let mut writer = encoder
-                    .write_header()
-                    .expect("Failed to get mut of Rc");
-        
-                writer.write_image_data(&image_data.as_slice())
-                    .expect("Failed to write image data");
-            }
+            let base64_encoded_png = base64::engine::general_purpose::STANDARD.encode(&png_encoded);
 
-            web_sys::console::log_1(&format!("Written image_png: {:?}", Rc::get_mut(image_png).expect("Failed to get contents of Rc")).into());
+            web_sys::console::log_1(&format!("PNG Bytes: {:X?}", base64_encoded_png).into());
 
-            let js_array = js_sys::Uint8Array::new_with_length(Rc::get_mut(image_png).expect("Failed to get mut or Rc").len() as u32);
-            let _: Vec<_> = Rc::get_mut(image_png).expect("Failed to get mut Rc")
-                .iter()
-                .enumerate()
-                .map(|(index, value)| {js_array.set_index(index as u32, *value)})
-                .collect();
-
-            let file = web_sys::File::new_with_u8_array_sequence(&js_array, "heatmap.png")
-                .expect("Failed to create file");
-
-            web_sys::console::log_1(&file);
-
-            let url = web_sys::Url::create_object_url_with_blob(&file)
-                    .expect("Failed to create URL for image");
-            set_image_url(url);
+            set_image_url.set(urlencoding::encode(&base64_encoded_png).to_string());
         } else {
             web_sys::console::log_1(&"img.get() returned None".into())
         }
@@ -277,7 +242,7 @@ pub fn UserInterface(set_filter: leptos::WriteSignal<Filter>) -> impl IntoView {
             <div>
                 <a
                     class="button"
-                    href=move || {image_url()}
+                    href=move || {"data:image/png;base64,".to_string() + &image_url()}
                     download="heatmap.png"
                 >
                     Export to PNG

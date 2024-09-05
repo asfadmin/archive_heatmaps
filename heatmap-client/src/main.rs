@@ -43,7 +43,7 @@ fn main() {
     let app = view! {
         <div>
             <UserInterface set_filter/>
-            <Canvas set_img set_img_url/>
+            <Canvas set_img/>
         </div>
     };
 

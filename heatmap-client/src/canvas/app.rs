@@ -16,7 +16,7 @@ use winit::{
 
 use super::geometry::{generate_copy_buffer, Geometry};
 use super::render_context::{MaxWeightState, RenderContext};
-use super::state::{ExportContext, InitStage, State};
+use super::state::{InitStage, State};
 use super::texture::generate_copy_texture;
 use crate::ingest::load::BufferStorage;
 
