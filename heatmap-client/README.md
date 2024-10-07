@@ -6,6 +6,10 @@ This code is responsible for the client side of the heatmap generation process.
     
     The GPU is leveraged to generate these heatmaps, a large portion of the code is getting wgpu to play nicley in wasm
 
+    Basic flow of control for initial startup is depicted below
+
+![heatmap_client_flow_of_control(4)(2)](https://github.com/user-attachments/assets/ec506a16-966f-4b1f-8a6a-a3d49d32461d)
+
 `./src/ingest` requests data from the server located in the heatmap-service directory
 
 `./src/ui` This contains the user interface that is overlayed onto the heatmap
