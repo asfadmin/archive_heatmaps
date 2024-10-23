@@ -88,10 +88,27 @@ pub fn generate_blend_texture(
     }
 }
 
-/// Generates a 1D texture with the colormap the heatmap will use
-pub fn generate_colormap_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> TextureContext {
-    // Read in the colormap texture from a .png
-    let colormap_bytes = include_bytes!("../../assets/magma_filtered_alt.png");
+/// Generates 2 1D texture with the colormaps the heatmap will use
+pub fn generate_colormaps(
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+) -> (TextureContext, TextureContext) {
+    let display_colormap_bytes = include_bytes!("../../assets/magma_filtered_alt.png");
+    let export_colormap_bytes = include_bytes!("../../assets/export_colormap.png");
+
+    (
+        generate_colormap_texture(device, queue, display_colormap_bytes),
+        generate_colormap_texture(device, queue, export_colormap_bytes),
+    )
+}
+
+/// Reads the passed bytes into a texture that can be bound to the colormap render pass
+fn generate_colormap_texture(
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+    colormap_bytes: &[u8],
+) -> TextureContext {
+    // Convert the passed bytes to an Image buffer
     let colormap_image = image::load_from_memory(colormap_bytes)
         .expect("ERROR: Failed to generate image from colormap_bytes");
     let colormap_rgba = colormap_image.to_rgba8();
@@ -103,6 +120,7 @@ pub fn generate_colormap_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> 
         height: dimensions.1,
         depth_or_array_layers: 1,
     };
+
     let texture = device.create_texture(&wgpu::TextureDescriptor {
         size: texture_size,
         mip_level_count: 1,

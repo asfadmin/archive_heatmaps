@@ -29,6 +29,11 @@ var blended_samp: sampler;
 fn fs_main(in: VertexOutput) -> @location(0)vec4<f32> {
     
     var color = textureSample(blended_tex, blended_samp, in.tex_coords);
+    
+    // Replace any black pixels with white
+    if (dot(color, vec4<f32>(1.0, 1.0, 1.0, 0.0)) < 0.1) {
+        return vec4<f32>(1.0, 1.0, 1.0, 1.0);
+    }
 
     return color;
 }

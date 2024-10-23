@@ -9,8 +9,8 @@ use super::geometry::{
     generate_copy_buffer, generate_uniform_buffer, BlendVertex, BufferContext, Vertex,
 };
 use super::texture::{
-    generate_blend_texture, generate_colormap_texture, generate_copy_texture,
-    generate_export_texture, TextureContext,
+    generate_blend_texture, generate_colormaps, generate_copy_texture, generate_export_texture,
+    TextureContext,
 };
 
 // Stores all the things we need to set up wgpu and run render passes,
@@ -28,7 +28,7 @@ pub struct RenderContext<'a> {
     pub export_render_pipeline: wgpu::RenderPipeline,
     pub camera_context: CameraContext,
     pub blend_texture_context: TextureContext,
-    pub colormap_texture_context: TextureContext,
+    pub colormap_texture_context: (TextureContext, TextureContext),
     pub export_context: TextureContext,
     pub copy_context: CopyContext,
     pub max_weight_context: MaxWeightContext,
@@ -124,7 +124,7 @@ pub async fn generate_render_context<'a>(
 
     // Used to convert polygons into heatmap
     let blend_texture_context = generate_blend_texture(&device, size);
-    let colormap_texture_context = generate_colormap_texture(&device, &queue);
+    let colormap_texture_context = generate_colormaps(&device, &queue);
     let export_context = generate_export_texture(&device, size);
 
     // Used to get data from GPU to CPU
@@ -205,11 +205,13 @@ pub async fn generate_render_context<'a>(
     /////////////////////////////////////
     let colormap_shader = device.create_shader_module(wgpu::include_wgsl!("shaders/colormap.wgsl"));
 
+    // Both colormaps have the same bind group layout but need different bind groups, bind group layout was duplicated as I thought it would be more confusing to add
+    // another context struct instead of duplicating a single field
     let colormap_render_pipeline_layout =
         device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Color Ramp Render Pipeline Layout"),
             bind_group_layouts: &[
-                &colormap_texture_context.bind_group_layout,
+                &colormap_texture_context.0.bind_group_layout,
                 &blend_texture_context.bind_group_layout,
                 &max_weight_uniform_buffer.bind_group_layout,
             ],
@@ -437,6 +439,7 @@ pub async fn generate_render_context<'a>(
     let _ = event_loop_proxy.send_event(UserMessage::StateMessage(message));
 }
 
+/// Contains a texture and buffer used to map a texture onto the CPU
 pub struct CopyContext {
     pub texture: wgpu::Texture,
     pub buffer: wgpu::Buffer,

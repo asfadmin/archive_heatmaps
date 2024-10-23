@@ -1,3 +1,7 @@
+/*
+    I believe this entire file is depricated, need to double check that it isnt in use somewhere though
+*/
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Clone, Copy)]

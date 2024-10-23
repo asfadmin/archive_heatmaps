@@ -152,6 +152,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     input_state: self.state.input_state.clone(),
                     event_loop_proxy: Some(self.event_loop_proxy.clone()),
                     camera_storage: None,
+                    size_storage: None,
                     export_context: self.state.export_context.clone(),
                 };
 
@@ -195,7 +196,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
 
                 render_context.max_weight_context.state = MaxWeightState::Empty;
                 if let Some(export) = self.state.export_context.as_mut() {
-                    export.png_generated = false;
+                    export.png_generated = InitStage::Incomplete;
                     export.img.set_untracked(None)
                 }
 

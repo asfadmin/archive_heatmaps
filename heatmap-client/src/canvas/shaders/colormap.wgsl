@@ -38,10 +38,11 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     }
 
     let tex_dim = textureDimensions(colormap_tex);
-
+    
+    // This equation originated entirley from messing around and finding what felt good
     let ratio = (weight * 1.1)/(max_weight.x) * f32(tex_dim);
 
-    let map_coord = clamp(ratio, 0.0, f32(tex_dim - 1 ));
+    let map_coord = clamp(ratio * 1.2, 0.0, f32(tex_dim - 1 ));
 
     var color = textureLoad(colormap_tex, u32(map_coord), 0);
 

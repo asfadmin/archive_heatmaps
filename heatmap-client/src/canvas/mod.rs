@@ -22,6 +22,7 @@ use state::{ExportContext, State};
 use winit::event_loop::EventLoop;
 use winit::platform::web::EventLoopExtWebSys;
 
+use crate::canvas::state::InitStage;
 use crate::ingest::load::DataLoader;
 
 /// Component to display a heatmap generated using wgpu and wgsl shaders
@@ -49,7 +50,7 @@ pub fn Canvas(set_img: leptos::WriteSignal<Option<image::Rgba32FImage>>) -> impl
         external_state: external_state.clone(),
         state: State {
             export_context: Some(ExportContext {
-                png_generated: false,
+                png_generated: InitStage::Incomplete,
                 img: set_img,
             }),
             ..Default::default()
