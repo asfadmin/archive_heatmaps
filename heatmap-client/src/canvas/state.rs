@@ -145,7 +145,6 @@ impl<'a> State<'a> {
             .as_mut()
             .expect("ERROR: Failed to get render context in render");
 
-        web_sys::console::log_1(&"We are about to start render passes".to_string().into());
         ///////////////////////
         // Blend Render Pass //
         ///////////////////////
@@ -308,7 +307,7 @@ impl<'a> State<'a> {
                         timestamp_writes: None,
                     });
 
-                max_weight_render_pass.set_pipeline(&render_context.max_weight_render_pipeline);
+                max_weight_render_pass.set_pipeline(&render_context.export_render_pipeline);
                 max_weight_render_pass.set_bind_group(
                     0,
                     &render_context.blend_texture_context.bind_group,

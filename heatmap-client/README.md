@@ -1,6 +1,6 @@
 # Heatmap Client
 
-This code is responsible for the client side of the heatmap generation process. 
+This code is responsible for the client side of the sattelite granule heatmap generation process. 
 
 Below is an example of the expected output:
 ![image](https://github.com/user-attachments/assets/3c5ba516-bef1-420a-ab6b-3f815cc3ee97)

@@ -6,6 +6,7 @@ pub mod app;
 mod camera;
 pub mod geometry;
 mod input;
+mod pipeline;
 mod render_context;
 mod state;
 mod texture;
