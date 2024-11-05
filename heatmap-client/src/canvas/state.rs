@@ -394,6 +394,7 @@ impl<'a> State<'a> {
             let color_view: wgpu::TextureView;
             let mut colormap_output: Option<wgpu::SurfaceTexture> = None;
             let active_colormap: &BindGroup;
+            let active_colormap_render_pipeline: &wgpu::RenderPipeline;
 
             // Draw to the export context texture if we have not generated a png yet
             if let Some(export) = &self.export_context
@@ -405,6 +406,7 @@ impl<'a> State<'a> {
                     .create_view(&wgpu::TextureViewDescriptor::default());
 
                 active_colormap = &render_context.colormap_texture_context.1.bind_group;
+                active_colormap_render_pipeline = &render_context.export_colormap_render_pipeline;
 
                 web_sys::console::log_1(&"Generating .png".into());
             } else {
@@ -417,6 +419,7 @@ impl<'a> State<'a> {
                     .create_view(&wgpu::TextureViewDescriptor::default());
 
                 active_colormap = &render_context.colormap_texture_context.0.bind_group;
+                active_colormap_render_pipeline = &render_context.display_colormap_render_pipeline;
             }
 
             let mut colormap_encoder =
@@ -480,7 +483,7 @@ impl<'a> State<'a> {
                 color_render_pass.draw_indexed(0..active_outline_layer.num_indices, 0, 0..1);
 
                 // Render the heatmap over the world outline, uses the blend texture we generated in the first render pass
-                color_render_pass.set_pipeline(&render_context.colormap_render_pipeline);
+                color_render_pass.set_pipeline(active_colormap_render_pipeline);
                 color_render_pass.set_bind_group(0, active_colormap, &[]);
                 color_render_pass.set_bind_group(
                     1,

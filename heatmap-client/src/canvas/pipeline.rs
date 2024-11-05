@@ -103,7 +103,7 @@ pub fn generate_display_colormap_pipeline(
             compilation_options: Default::default(),
             targets: &[Some(wgpu::ColorTargetState {
                 format: config.format,
-                blend: None, // Some(wgpu::BlendState::ALPHA_BLENDING),
+                blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                 write_mask: wgpu::ColorWrites::ALL,
             })],
         }),
@@ -126,11 +126,68 @@ pub fn generate_display_colormap_pipeline(
     })
 }
 
-/*
-pub fn generate_export_colormap_pipeline() -> wgpu::RenderPipeline {
+pub fn generate_export_colormap_pipeline(
+    device: &wgpu::Device,
+    bind_group_layouts: (
+        &wgpu::BindGroupLayout,
+        &wgpu::BindGroupLayout,
+        &wgpu::BindGroupLayout,
+    ),
+    config: &wgpu::SurfaceConfiguration,
+) -> wgpu::RenderPipeline {
+    let colormap_shader =
+        device.create_shader_module(wgpu::include_wgsl!("shaders/export_colormap.wgsl"));
 
+    // Both colormaps have the same bind group layout but need different bind groups, bind group layout was duplicated as I thought it would be more confusing to add
+    // another context struct instead of duplicating a single field
+    let colormap_render_pipeline_layout =
+        device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("Color Ramp Render Pipeline Layout"),
+            bind_group_layouts: &[
+                bind_group_layouts.0,
+                bind_group_layouts.1,
+                bind_group_layouts.2,
+            ],
+            push_constant_ranges: &[],
+        });
+
+    device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("Color Ramp Render Pipeline"),
+        layout: Some(&colormap_render_pipeline_layout),
+        vertex: wgpu::VertexState {
+            module: &colormap_shader,
+            entry_point: "vs_main",
+            buffers: &[Vertex::desc()],
+            compilation_options: Default::default(),
+        },
+        fragment: Some(wgpu::FragmentState {
+            module: &colormap_shader,
+            entry_point: "fs_main",
+            compilation_options: Default::default(),
+            targets: &[Some(wgpu::ColorTargetState {
+                format: config.format,
+                blend: None,
+                write_mask: wgpu::ColorWrites::ALL,
+            })],
+        }),
+        primitive: wgpu::PrimitiveState {
+            topology: wgpu::PrimitiveTopology::TriangleList,
+            strip_index_format: None,
+            front_face: wgpu::FrontFace::Cw,
+            cull_mode: None,
+            polygon_mode: wgpu::PolygonMode::Fill,
+            unclipped_depth: false,
+            conservative: false,
+        },
+        depth_stencil: None,
+        multisample: wgpu::MultisampleState {
+            count: 1,
+            mask: !0,
+            alpha_to_coverage_enabled: false,
+        },
+        multiview: None,
+    })
 }
-*/
 
 pub fn generate_outline_pipeline(
     device: &wgpu::Device,

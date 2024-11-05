@@ -5,12 +5,10 @@ use winit::{dpi::PhysicalSize, event_loop::EventLoopProxy};
 
 use super::app::UserMessage;
 use super::camera::CameraContext;
-use super::geometry::{
-    generate_copy_buffer, generate_uniform_buffer, BlendVertex, BufferContext, Vertex,
-};
+use super::geometry::{generate_copy_buffer, generate_uniform_buffer, BufferContext};
 use super::pipeline::{
-    generate_blend_pipeline, generate_display_colormap_pipeline, generate_export_pipeline,
-    generate_outline_pipeline,
+    generate_blend_pipeline, generate_display_colormap_pipeline, generate_export_colormap_pipeline,
+    generate_export_pipeline, generate_outline_pipeline,
 };
 use super::texture::{
     generate_blend_texture, generate_colormaps, generate_copy_texture, generate_export_texture,
@@ -26,7 +24,8 @@ pub struct RenderContext<'a> {
     pub size: winit::dpi::PhysicalSize<u32>,
     pub limits: wgpu::Limits,
     pub blend_render_pipeline: wgpu::RenderPipeline,
-    pub colormap_render_pipeline: wgpu::RenderPipeline,
+    pub display_colormap_render_pipeline: wgpu::RenderPipeline,
+    pub export_colormap_render_pipeline: wgpu::RenderPipeline,
     pub outline_render_pipeline: wgpu::RenderPipeline,
     pub export_render_pipeline: wgpu::RenderPipeline,
     pub camera_context: CameraContext,
@@ -151,7 +150,16 @@ pub async fn generate_render_context<'a>(
     /////////////////////////////
 
     let blend_render_pipeline = generate_blend_pipeline(&device, &camera_context);
-    let colormap_render_pipeline = generate_display_colormap_pipeline(
+    let display_colormap_render_pipeline = generate_display_colormap_pipeline(
+        &device,
+        (
+            &colormap_texture_context.0.bind_group_layout,
+            &blend_texture_context.bind_group_layout,
+            &max_weight_context.uniform_buffer.bind_group_layout,
+        ),
+        &config,
+    );
+    let export_colormap_render_pipeline = generate_export_colormap_pipeline(
         &device,
         (
             &colormap_texture_context.0.bind_group_layout,
@@ -173,7 +181,8 @@ pub async fn generate_render_context<'a>(
         size,
         limits,
         blend_render_pipeline,
-        colormap_render_pipeline,
+        display_colormap_render_pipeline,
+        export_colormap_render_pipeline,
         outline_render_pipeline,
         export_render_pipeline,
         camera_context,
