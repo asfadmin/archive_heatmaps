@@ -3,8 +3,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use leptos::html::ToHtmlElement;
-use leptos::{SignalSet, SignalSetUntracked};
+use leptos::html::{legend, template, ToHtmlElement};
+use leptos::{SignalGetUntracked, SignalSet, SignalSetUntracked};
 use winit::platform::web::WindowExtWebSys;
 use winit::{
     application::ApplicationHandler,
@@ -18,6 +18,7 @@ use super::geometry::{generate_copy_buffer, Geometry};
 use super::render_context::{MaxWeightState, RenderContext};
 use super::state::{InitStage, State};
 use super::texture::generate_copy_texture;
+use crate::canvas::png::generate_export_image;
 use crate::ingest::load::BufferStorage;
 
 pub struct App<'a> {
@@ -151,6 +152,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     geometry: None,
                     input_state: self.state.input_state.clone(),
                     event_loop_proxy: Some(self.event_loop_proxy.clone()),
+                    filter: self.state.filter,
                     camera_storage: None,
                     size_storage: None,
                     export_context: self.state.export_context.clone(),
@@ -269,6 +271,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                 render_context.queue.submit([]);
 
                 render_context.max_weight_context.state = MaxWeightState::Completed;
+                render_context.max_weight_context.value = Some(max);
 
                 render_context.copy_context.buffer.unmap();
             }
@@ -301,12 +304,26 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                 // Convert the raw image data into an ImageBuffer that can be saved, must use copy texture width here,
                 //     Copy Texture is 256 byte aligned so copy_texture.width() is larger than displayed size and so
                 //     are the contents of our buffer
-                let imag = image::Rgba32FImage::from_vec(
+                let colormap_img = image::Rgba32FImage::from_vec(
                     render_context.copy_context.texture.width(),
                     render_context.copy_context.texture.height(),
                     color_data,
                 )
                 .expect("Failed to convert parsed floats into an Rgba<f32> ImageBuffer");
+
+                let filter = self
+                    .state
+                    .filter
+                    .expect("Faile to get filter while generating png")
+                    .get_untracked();
+                let output_img = generate_export_image(
+                    &colormap_img,
+                    render_context
+                        .max_weight_context
+                        .value
+                        .expect("Failed to get max weight to generate output png"),
+                    filter,
+                );
 
                 // Save the image to state, this lets us download it if the user presses the export button
                 self.state
@@ -314,7 +331,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     .as_ref()
                     .expect("Failed to get export_context to write image to")
                     .img
-                    .set(Some(imag));
+                    .set(Some(output_img));
 
                 render_context.copy_context.buffer.unmap();
                 render_context.copy_context.buffer_mapped = false;

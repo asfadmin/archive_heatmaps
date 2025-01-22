@@ -3,6 +3,8 @@
 
 use std::rc::Rc;
 
+use heatmap_api::Filter;
+use leptos::ReadSignal;
 use wgpu::{BindGroup, Extent3d, Origin3d};
 use winit::dpi::PhysicalSize;
 use winit::event::WindowEvent;
@@ -34,6 +36,7 @@ pub struct State<'a> {
     pub input_state: InputState,
     pub init_stage: InitStage,
     pub event_loop_proxy: Option<EventLoopProxy<UserMessage<'static>>>,
+    pub filter: Option<ReadSignal<heatmap_api::Filter>>,
     pub camera_storage: Option<Camera>,
     pub size_storage: Option<PhysicalSize<u32>>,
     pub export_context: Option<ExportContext>,

@@ -7,6 +7,7 @@ mod camera;
 pub mod geometry;
 mod input;
 mod pipeline;
+mod png;
 mod render_context;
 mod state;
 mod texture;
@@ -54,6 +55,7 @@ pub fn Canvas(set_img: leptos::WriteSignal<Option<image::Rgba32FImage>>) -> impl
                 png_generated: InitStage::Incomplete,
                 img: set_img,
             }),
+            filter: Some(filter),
             ..Default::default()
         },
         event_loop_proxy: event_loop.create_proxy(),

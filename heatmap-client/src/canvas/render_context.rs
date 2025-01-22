@@ -143,6 +143,7 @@ pub async fn generate_render_context<'a>(
     let max_weight_context = MaxWeightContext {
         state: MaxWeightState::Empty,
         uniform_buffer: generate_uniform_buffer(&device),
+        value: None,
     };
 
     /////////////////////////////
@@ -209,6 +210,7 @@ pub struct CopyContext {
 pub struct MaxWeightContext {
     pub state: MaxWeightState,
     pub uniform_buffer: BufferContext,
+    pub value: Option<f32>,
 }
 
 #[derive(PartialEq)]
