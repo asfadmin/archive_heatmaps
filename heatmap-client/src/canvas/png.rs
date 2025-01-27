@@ -277,5 +277,5 @@ pub struct ExportContext {
     pub generate_img: ReadSignal<bool>,
     pub set_generate_img: WriteSignal<bool>,
     pub stage: InitStage,
-    pub img: leptos::WriteSignal<Option<image::Rgba32FImage>>,
+    pub base64_png: Option<String>,
 }

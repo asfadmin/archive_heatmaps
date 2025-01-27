@@ -4,7 +4,7 @@
 use std::rc::Rc;
 
 use heatmap_api::Filter;
-use leptos::ReadSignal;
+use leptos::{ReadSignal, SignalGetUntracked};
 use wgpu::{BindGroup, Extent3d, Origin3d};
 use winit::dpi::PhysicalSize;
 use winit::event::WindowEvent;
@@ -83,7 +83,7 @@ impl<'a> State<'a> {
                 buffer_mapped: false,
             };
 
-            render_context.export_context =
+            render_context.export_texture_context =
                 generate_export_texture(&render_context.device, new_size);
 
             web_sys::console::log_1(&format!("New Size: {:?}", new_size).into());
@@ -99,7 +99,7 @@ impl<'a> State<'a> {
         if let Some(export) = &self.export_context
             && export.stage == InitStage::Incomplete
             && self.geometry.is_some()
-            && (export.generate_img)() == true
+            && export.generate_img.get_untracked() == true
         {
             (export.set_generate_img)(false);
             let width = self
@@ -395,7 +395,7 @@ impl<'a> State<'a> {
                 && export.stage == InitStage::InProgress
             {
                 color_view = render_context
-                    .export_context
+                    .export_texture_context
                     .texture
                     .create_view(&wgpu::TextureViewDescriptor::default());
 
@@ -552,7 +552,7 @@ impl<'a> State<'a> {
                     export_render_pass.set_pipeline(&render_context.export_render_pipeline);
                     export_render_pass.set_bind_group(
                         0,
-                        &render_context.export_context.bind_group,
+                        &render_context.export_texture_context.bind_group,
                         &[],
                     );
                     export_render_pass
@@ -644,6 +644,18 @@ impl<'a> State<'a> {
                         let _ = event_loop_proxy_clone.send_event(UserMessage::ExportMapped);
                     },
                 );
+            } 
+            // If we have already generated a png then skip the export pass and just fire off the ExportMapped event
+            else if let Some(export) = &self.export_context
+                && export.stage == InitStage::Complete
+                && export.generate_img.get_untracked()
+            {
+                (export.set_generate_img)(false);
+                let _ = self
+                    .event_loop_proxy
+                    .as_ref()
+                    .expect("Failed to get event loop proxy")
+                    .send_event(UserMessage::ExportMapped);
             }
 
             // If we rendered onto the winit surface display the render

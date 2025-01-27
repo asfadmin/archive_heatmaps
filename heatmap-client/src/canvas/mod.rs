@@ -29,10 +29,7 @@ use crate::ingest::load::DataLoader;
 
 /// Component to display a heatmap generated using wgpu and wgsl shaders
 #[component]
-pub fn Canvas(
-    set_img: leptos::WriteSignal<Option<image::Rgba32FImage>>,
-    set_generate_img: leptos::WriteSignal<bool>,
-) -> impl IntoView {
+pub fn Canvas(set_generate_img: leptos::WriteSignal<bool>) -> impl IntoView {
     // Signal from the UI containing the filter
     let filter = use_context::<ReadSignal<heatmap_api::Filter>>()
         .expect("ERROR: Failed to get colormap read signal context in Canvas()");
@@ -61,7 +58,7 @@ pub fn Canvas(
                 generate_img,
                 set_generate_img,
                 stage: InitStage::Incomplete,
-                img: set_img,
+                base64_png: None,
             }),
             filter: Some(filter),
             ..Default::default()

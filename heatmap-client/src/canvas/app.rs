@@ -206,7 +206,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                 render_context.max_weight_context.state = MaxWeightState::Empty;
                 if let Some(export) = self.state.export_context.as_mut() {
                     export.stage = InitStage::Incomplete;
-                    export.img.set_untracked(None)
+                    export.base64_png = None;
                 }
 
                 web_sys::console::log_1(&"Done Generating Buffers".into());
@@ -290,71 +290,93 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     .as_mut()
                     .expect("Failed to get render context in UserMessage::BufferMapped");
 
-                // We read the data contained in the buffer and convert it from &[u8] to Vec<u8>
-                let raw_bytes: Vec<u8> = (&*render_context
-                    .copy_context
-                    .buffer
-                    .slice(..)
-                    .get_mapped_range())
-                    .into();
+                let mut base64_encoded_png: String;
 
-                // The buffer is formated for f32 but we pulled a Vec<u8>, we must reform the Vec<f32> from the bytes
-                let mut color_data: Vec<f32> = Vec::new();
-                let mut raw_iter = raw_bytes.iter();
-                while let Ok(raw) = raw_iter.next_chunk::<4>() {
-                    // Read one channel into a f32
-                    color_data.push(f32::from_le_bytes([*raw[0], *raw[1], *raw[2], *raw[3]]));
-                }
-
-                web_sys::console::log_1(&format!("Freshley decoded: {:?}", color_data).into());
-
-                // Convert the raw image data into an ImageBuffer that can be saved, must use copy texture width here,
-                //     Copy Texture is 256 byte aligned so copy_texture.width() is larger than displayed size and so
-                //     are the contents of our buffer
-                let colormap_img = image::Rgba32FImage::from_vec(
-                    render_context.copy_context.texture.width(),
-                    render_context.copy_context.texture.height(),
-                    color_data,
-                )
-                .expect("Failed to convert parsed floats into an Rgba<f32> ImageBuffer");
-
-                let filter = self
+                // If we have not generated the png for this data before
+                if let Some(base64_png) = &self
                     .state
-                    .filter
-                    .expect("Faile to get filter while generating png")
-                    .get_untracked();
-                let output_img = generate_export_image(
-                    &colormap_img,
-                    render_context
-                        .max_weight_context
-                        .value
-                        .expect("Failed to get max weight to generate output png"),
-                    filter,
-                );
+                    .export_context
+                    .as_ref()
+                    .expect("Failed to get export_context")
+                    .base64_png
+                {
+                    base64_encoded_png = base64_png.to_string();
+                } else {
+                    // We read the data contained in the buffer and convert it from &[u8] to Vec<u8>
+                    let raw_bytes: Vec<u8> = (&*render_context
+                        .copy_context
+                        .buffer
+                        .slice(..)
+                        .get_mapped_range())
+                        .into();
 
-                render_context.copy_context.buffer.unmap();
-                render_context.copy_context.buffer_mapped = false;
+                    // The buffer is formated for f32 but we pulled a Vec<u8>, we must reform the Vec<f32> from the bytes
+                    let mut color_data: Vec<f32> = Vec::new();
+                    let mut raw_iter = raw_bytes.iter();
+                    while let Ok(raw) = raw_iter.next_chunk::<4>() {
+                        // Read one channel into a f32
+                        color_data.push(f32::from_le_bytes([*raw[0], *raw[1], *raw[2], *raw[3]]));
+                    }
 
-                let output_img_width = output_img.width();
-                let output_img_height = output_img.height();
+                    web_sys::console::log_1(&format!("Freshley decoded: {:?}", color_data).into());
 
-                let raw_image_data: Vec<u8> =
-                    image::DynamicImage::from(output_img).to_rgba8().into_raw();
+                    // Convert the raw image data into an ImageBuffer that can be saved, must use copy texture width here,
+                    //     Copy Texture is 256 byte aligned so copy_texture.width() is larger than displayed size and so
+                    //     are the contents of our buffer
+                    let colormap_img = image::Rgba32FImage::from_vec(
+                        render_context.copy_context.texture.width(),
+                        render_context.copy_context.texture.height(),
+                        color_data,
+                    )
+                    .expect("Failed to convert parsed floats into an Rgba<f32> ImageBuffer");
 
-                let mut png_encoded = Vec::<u8>::new();
-                let png_encoder = PngEncoder::new(&mut png_encoded);
-                let _result = png_encoder.write_image(
-                    raw_image_data.as_slice(),
-                    output_img_width,
-                    output_img_height,
-                    image::ExtendedColorType::Rgba8,
-                );
+                    let filter = self
+                        .state
+                        .filter
+                        .expect("Failed to get filter while generating png")
+                        .get_untracked();
+                    let output_img = generate_export_image(
+                        &colormap_img,
+                        render_context
+                            .max_weight_context
+                            .value
+                            .expect("Failed to get max weight to generate output png"),
+                        filter,
+                    );
 
-                let base64_encoded_png =
-                    base64::engine::general_purpose::STANDARD.encode(&png_encoded);
+                    // Release the copy buffer for later use
+                    render_context.copy_context.buffer.unmap();
+                    render_context.copy_context.buffer_mapped = false;
+
+                    let output_img_width = output_img.width();
+                    let output_img_height = output_img.height();
+
+                    let raw_image_data: Vec<u8> =
+                        image::DynamicImage::from(output_img).to_rgba8().into_raw();
+
+                    let mut png_encoded = Vec::<u8>::new();
+                    let png_encoder = PngEncoder::new(&mut png_encoded);
+                    let _result = png_encoder.write_image(
+                        raw_image_data.as_slice(),
+                        output_img_width,
+                        output_img_height,
+                        image::ExtendedColorType::Rgba8,
+                    );
+
+                    base64_encoded_png =
+                        base64::engine::general_purpose::STANDARD.encode(&png_encoded);
+
+                    // Save the image we generated so we dont need to regenerate for the same data
+                    self.state
+                        .export_context
+                        .as_mut()
+                        .expect("Failed to get export context")
+                        .base64_png = Some(base64_encoded_png.clone());
+                }
 
                 web_sys::console::log_1(&format!("PNG Bytes: {:X?}", base64_encoded_png).into());
 
+                // We dynamically generate this anchor element to download the generated png, it is removed after use
                 let image_url = urlencoding::encode(&base64_encoded_png).to_string();
                 let anchor: HtmlAnchorElement = web_sys::window()
                     .expect("ERROR: Failed to get web_sys window")
@@ -378,7 +400,15 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
 
                 anchor.click();
 
-                web_sys::console::log_1(&".png Generated".into());
+                let _ = web_sys::window()
+                    .expect("ERROR: Failed to get web_sys window")
+                    .document()
+                    .expect("ERROR: Failed to get document")
+                    .body()
+                    .expect("ERROR: Failed to get body")
+                    .remove_child(&anchor);
+
+                web_sys::console::log_1(&".png downloaded".into());
             }
         }
     }

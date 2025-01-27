@@ -37,16 +37,13 @@ fn main() {
     });
     provide_context(filter);
 
-    let (img, set_img) = create_signal(None::<image::Rgba32FImage>);
-    provide_context(img);
-
     let (generate_img, set_generate_img) = create_signal(false);
     provide_context(generate_img);
 
     let app = view! {
         <div>
             <UserInterface set_filter set_generate_img/>
-            <Canvas set_img set_generate_img/>
+            <Canvas set_generate_img/>
         </div>
     };
 

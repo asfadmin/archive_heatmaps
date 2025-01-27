@@ -31,7 +31,7 @@ pub struct RenderContext<'a> {
     pub camera_context: CameraContext,
     pub blend_texture_context: TextureContext,
     pub colormap_texture_context: (TextureContext, TextureContext),
-    pub export_context: TextureContext,
+    pub export_texture_context: TextureContext,
     pub copy_context: CopyContext,
     pub max_weight_context: MaxWeightContext,
 }
@@ -127,7 +127,7 @@ pub async fn generate_render_context<'a>(
     // Used to convert polygons into heatmap
     let blend_texture_context = generate_blend_texture(&device, size);
     let colormap_texture_context = generate_colormaps(&device, &queue);
-    let export_context = generate_export_texture(&device, size);
+    let export_texture_context = generate_export_texture(&device, size);
 
     // Used to get data from GPU to CPU
     let copy_texture = generate_copy_texture(&device, size);
@@ -171,7 +171,7 @@ pub async fn generate_render_context<'a>(
     );
     let outline_render_pipeline = generate_outline_pipeline(&device, &camera_context);
     let export_render_pipeline =
-        generate_export_pipeline(&device, &export_context.bind_group_layout);
+        generate_export_pipeline(&device, &export_texture_context.bind_group_layout);
 
     // StateMessage is sent to the event loop with the contained variables
     let message = RenderContext {
@@ -189,7 +189,7 @@ pub async fn generate_render_context<'a>(
         camera_context,
         blend_texture_context,
         colormap_texture_context,
-        export_context,
+        export_texture_context,
         copy_context,
         max_weight_context,
     };

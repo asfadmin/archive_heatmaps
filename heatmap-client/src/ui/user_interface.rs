@@ -30,11 +30,6 @@ pub fn UserInterface(
 
     let doc = document();
 
-    let img = use_context::<ReadSignal<Option<image::Rgba32FImage>>>()
-        .expect("Failed to get img read signal in user interface");
-
-    let (image_url, set_image_url) = create_signal("".to_owned());
-
     // Run when an element of the UI changes, updates the filter signal
     let on_update = move |_: web_sys::Event| {
         let mut product_type = Vec::new();
@@ -218,8 +213,6 @@ pub fn UserInterface(
                 <a
                     class="button"
                     on:click= move |_| {set_generate_img(true)}
-                    //href=move || {"data:image/png;base64,".to_string() + &image_url()}
-                    //download="heatmap.png"
                 >
                     Export to PNG
                 </a>
