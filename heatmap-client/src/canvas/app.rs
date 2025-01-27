@@ -3,8 +3,14 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use base64::Engine as _;
+use image::codecs::png::PngEncoder;
+use image::ImageEncoder;
+use leptos::document;
 use leptos::html::{legend, template, ToHtmlElement};
 use leptos::{SignalGetUntracked, SignalSet, SignalSetUntracked};
+use wasm_bindgen::JsCast;
+use web_sys::HtmlAnchorElement;
 use winit::platform::web::WindowExtWebSys;
 use winit::{
     application::ApplicationHandler,
@@ -15,8 +21,9 @@ use winit::{
 };
 
 use super::geometry::{generate_copy_buffer, Geometry};
+use super::png::{ExportContext, InitStage};
 use super::render_context::{MaxWeightState, RenderContext};
-use super::state::{InitStage, State};
+use super::state::State;
 use super::texture::generate_copy_texture;
 use crate::canvas::png::generate_export_image;
 use crate::ingest::load::BufferStorage;
@@ -198,7 +205,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
 
                 render_context.max_weight_context.state = MaxWeightState::Empty;
                 if let Some(export) = self.state.export_context.as_mut() {
-                    export.png_generated = InitStage::Incomplete;
+                    export.stage = InitStage::Incomplete;
                     export.img.set_untracked(None)
                 }
 
@@ -325,23 +332,57 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     filter,
                 );
 
-                // Save the image to state, this lets us download it if the user presses the export button
-                self.state
-                    .export_context
-                    .as_ref()
-                    .expect("Failed to get export_context to write image to")
-                    .img
-                    .set(Some(output_img));
-
                 render_context.copy_context.buffer.unmap();
                 render_context.copy_context.buffer_mapped = false;
+
+                let output_img_width = output_img.width();
+                let output_img_height = output_img.height();
+
+                let raw_image_data: Vec<u8> =
+                    image::DynamicImage::from(output_img).to_rgba8().into_raw();
+
+                let mut png_encoded = Vec::<u8>::new();
+                let png_encoder = PngEncoder::new(&mut png_encoded);
+                let _result = png_encoder.write_image(
+                    raw_image_data.as_slice(),
+                    output_img_width,
+                    output_img_height,
+                    image::ExtendedColorType::Rgba8,
+                );
+
+                let base64_encoded_png =
+                    base64::engine::general_purpose::STANDARD.encode(&png_encoded);
+
+                web_sys::console::log_1(&format!("PNG Bytes: {:X?}", base64_encoded_png).into());
+
+                let image_url = urlencoding::encode(&base64_encoded_png).to_string();
+                let anchor: HtmlAnchorElement = web_sys::window()
+                    .expect("ERROR: Failed to get web_sys window")
+                    .document()
+                    .expect("ERROR: Failed to get document")
+                    .create_element("a")
+                    .expect("ERROR: Failed to create <a> element")
+                    .dyn_into()
+                    .expect("ERROR: Faile to convert to HtmlAnchorElement");
+
+                anchor.set_href(&("data:image/png;base64,".to_string() + &image_url));
+                anchor.set_download("heatmap.png");
+
+                let _ = web_sys::window()
+                    .expect("ERROR: Failed to get web_sys window")
+                    .document()
+                    .expect("ERROR: Failed to get document")
+                    .body()
+                    .expect("ERROR: Failed to get body")
+                    .append_child(&anchor);
+
+                anchor.click();
 
                 web_sys::console::log_1(&".png Generated".into());
             }
         }
     }
 }
-
 // All user events that can be sent to the event loop
 pub enum UserMessage<'a> {
     StateMessage(RenderContext<'a>),

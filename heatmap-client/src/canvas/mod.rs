@@ -20,19 +20,25 @@ use std::rc::Rc;
 
 use app::{App, ExternalState, UserMessage};
 use leptos::*;
-use state::{ExportContext, State};
+use state::State;
 use winit::event_loop::EventLoop;
 use winit::platform::web::EventLoopExtWebSys;
 
-use crate::canvas::state::InitStage;
+use crate::canvas::png::{ExportContext, InitStage};
 use crate::ingest::load::DataLoader;
 
 /// Component to display a heatmap generated using wgpu and wgsl shaders
 #[component]
-pub fn Canvas(set_img: leptos::WriteSignal<Option<image::Rgba32FImage>>) -> impl IntoView {
+pub fn Canvas(
+    set_img: leptos::WriteSignal<Option<image::Rgba32FImage>>,
+    set_generate_img: leptos::WriteSignal<bool>,
+) -> impl IntoView {
     // Signal from the UI containing the filter
     let filter = use_context::<ReadSignal<heatmap_api::Filter>>()
         .expect("ERROR: Failed to get colormap read signal context in Canvas()");
+
+    let generate_img = use_context::<ReadSignal<bool>>()
+        .expect("ERROR: Failed to get generate_png read signal in Canvas()");
 
     // Create event loop that can handle UserMessage events
     let event_loop = EventLoop::<UserMessage>::with_user_event()
@@ -52,7 +58,9 @@ pub fn Canvas(set_img: leptos::WriteSignal<Option<image::Rgba32FImage>>) -> impl
         external_state: external_state.clone(),
         state: State {
             export_context: Some(ExportContext {
-                png_generated: InitStage::Incomplete,
+                generate_img,
+                set_generate_img,
+                stage: InitStage::Incomplete,
                 img: set_img,
             }),
             filter: Some(filter),

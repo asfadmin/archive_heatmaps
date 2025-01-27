@@ -17,15 +17,7 @@ use super::geometry::{generate_copy_buffer, Geometry};
 use super::input::InputState;
 use super::render_context::{CopyContext, MaxWeightState, RenderContext};
 use super::texture::{generate_blend_texture, generate_copy_texture, generate_export_texture};
-
-/// Tracks setup stage of state and png generations
-#[derive(Default, PartialEq, Eq, Clone)]
-pub enum InitStage {
-    #[default]
-    Incomplete,
-    InProgress,
-    Complete,
-}
+use crate::canvas::png::{ExportContext, InitStage};
 
 /// Stores the information needed to draw to a surface with a shader
 #[derive(Default)]
@@ -100,18 +92,16 @@ impl<'a> State<'a> {
 
     /// Renders the contents of state to the canvas
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
-        // Check if we have generated a png for the current set of data,
-        // if we have not then we resize the canvas to increase the resolution of
+        // Check if we are generating a png for the current set of data,
+        // if we are we resize the canvas to increase the resolution of
         // the generated image, resize() takes a mut& self so we must do this before
         // getting a mut& render_context which is why this check occurs here
-        if self
-            .export_context
-            .as_ref()
-            .expect("failed to get export context from state")
-            .png_generated
-            == InitStage::Incomplete
+        if let Some(export) = &self.export_context
+            && export.stage == InitStage::Incomplete
             && self.geometry.is_some()
+            && (export.generate_img)() == true
         {
+            (export.set_generate_img)(false);
             let width = self
                 .render_context
                 .as_ref()
@@ -135,7 +125,7 @@ impl<'a> State<'a> {
             self.export_context
                 .as_mut()
                 .expect("Failed to get export context to update png_generated")
-                .png_generated = InitStage::InProgress;
+                .stage = InitStage::InProgress;
         }
 
         // Exit Render function if there is no geometry to render
@@ -178,7 +168,7 @@ impl<'a> State<'a> {
                     .export_context
                     .as_ref()
                     .expect("failed to get export context from state")
-                    .png_generated
+                    .stage
                     == InitStage::InProgress
             {
                 // Save values that will be changed
@@ -190,8 +180,7 @@ impl<'a> State<'a> {
                     .camera_context
                     .update_camera(CameraEvent::EntireView);
             }
-            // Restore any saved values, if either is saved at this point then both are so we only
-            // have to check a single one
+            // Restore any saved values
             else if self.camera_storage.is_some() {
                 render_context.camera_context.camera = self
                     .camera_storage
@@ -199,7 +188,9 @@ impl<'a> State<'a> {
                     .expect("Failed to get camera storage")
                     .clone();
                 self.camera_storage = None;
-
+            }
+            // Size is only changed on export so we need a seperate check to not break on max weight pass
+            if self.size_storage.is_some() {
                 render_context.size = *self
                     .size_storage
                     .as_ref()
@@ -401,7 +392,7 @@ impl<'a> State<'a> {
 
             // Draw to the export context texture if we have not generated a png yet
             if let Some(export) = &self.export_context
-                && export.png_generated == InitStage::InProgress
+                && export.stage == InitStage::InProgress
             {
                 color_view = render_context
                     .export_context
@@ -520,10 +511,10 @@ impl<'a> State<'a> {
             //   to simplify the code, could break the pass out into a copy_pass() function
 
             if let Some(export) = self.export_context.as_mut()
-                && export.png_generated == InitStage::InProgress
+                && export.stage == InitStage::InProgress
                 && !render_context.copy_context.buffer_mapped
             {
-                export.png_generated = InitStage::Complete;
+                export.stage = InitStage::Complete;
                 let export_output = &render_context.copy_context.texture;
                 let export_view =
                     export_output.create_view(&wgpu::TextureViewDescriptor::default());
@@ -662,11 +653,4 @@ impl<'a> State<'a> {
         }
         Ok(())
     }
-}
-
-/// Contains a tracker for the state of png generation and the image that was generated
-#[derive(Clone)]
-pub struct ExportContext {
-    pub png_generated: InitStage,
-    pub img: leptos::WriteSignal<Option<image::Rgba32FImage>>,
 }

@@ -35,47 +35,6 @@ pub fn UserInterface(
 
     let (image_url, set_image_url) = create_signal("".to_owned());
 
-    // When the raw bytes for a png are generated encode them in base64 and download them from a dynamically generated anchor element
-    create_effect(move |_| {
-        web_sys::console::log_1(&"Updating <img>...".into());
-        if let Some(export_image) = img.get() {
-            let raw_image_data: Vec<u8> = image::DynamicImage::from(export_image.clone())
-                .to_rgba8()
-                .into_raw();
-
-            let mut png_encoded = Vec::<u8>::new();
-            let png_encoder = PngEncoder::new(&mut png_encoded);
-            let _result = png_encoder.write_image(
-                raw_image_data.as_slice(),
-                export_image.width(),
-                export_image.height(),
-                image::ExtendedColorType::Rgba8,
-            );
-
-            let base64_encoded_png = base64::engine::general_purpose::STANDARD.encode(&png_encoded);
-
-            web_sys::console::log_1(&format!("PNG Bytes: {:X?}", base64_encoded_png).into());
-
-            set_image_url.set(urlencoding::encode(&base64_encoded_png).to_string());
-            let anchor: web_sys::HtmlAnchorElement = web_sys::window()
-                .expect("Failed to get window")
-                .document()
-                .expect("Failed to create document")
-                .create_element("anchor")
-                .expect("Failed to create anchor")
-                .dyn_into()
-                .expect("Failed to convert to HtmlAnchorElement");
-            let _ = document()
-                .body()
-                .expect("ERROR: Failed to get body")
-                .append_child(&anchor);
-            anchor.click();
-        } else {
-            web_sys::console::log_1(&"img.get() returned None".into())
-        }
-        web_sys::console::log_1(&"Updated <img>".into());
-    });
-
     // Run when an element of the UI changes, updates the filter signal
     let on_update = move |_: web_sys::Event| {
         let mut product_type = Vec::new();
@@ -263,12 +222,6 @@ pub fn UserInterface(
                     //download="heatmap.png"
                 >
                     Export to PNG
-                </a>
-                <a
-                    class="hidden"
-                    href=move || {"data:image/png;base64,".to_string() + &image_url()}
-                    download="heatmap.png"
-                >
                 </a>
             </div>
         </div>
