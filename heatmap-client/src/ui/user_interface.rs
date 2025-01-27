@@ -9,7 +9,10 @@ use leptos::wasm_bindgen::JsCast;
 use leptos::*;
 
 #[component]
-pub fn UserInterface(set_filter: leptos::WriteSignal<Filter>) -> impl IntoView {
+pub fn UserInterface(
+    set_filter: leptos::WriteSignal<Filter>,
+    set_generate_img: leptos::WriteSignal<bool>,
+) -> impl IntoView {
     let min_date = NaiveDate::from_ymd_opt(2019, 1, 1)
         .expect("Failed to parse left hand side when finding min_date")
         .format("%Y-%m-%d")
@@ -32,7 +35,7 @@ pub fn UserInterface(set_filter: leptos::WriteSignal<Filter>) -> impl IntoView {
 
     let (image_url, set_image_url) = create_signal("".to_owned());
 
-    // Convert the raw bytes into a png image to be exported when the 'Export to PNG' button is pressed
+    // When the raw bytes for a png are generated encode them in base64 and download them from a dynamically generated anchor element
     create_effect(move |_| {
         web_sys::console::log_1(&"Updating <img>...".into());
         if let Some(export_image) = img.get() {
@@ -54,6 +57,19 @@ pub fn UserInterface(set_filter: leptos::WriteSignal<Filter>) -> impl IntoView {
             web_sys::console::log_1(&format!("PNG Bytes: {:X?}", base64_encoded_png).into());
 
             set_image_url.set(urlencoding::encode(&base64_encoded_png).to_string());
+            let anchor: web_sys::HtmlAnchorElement = web_sys::window()
+                .expect("Failed to get window")
+                .document()
+                .expect("Failed to create document")
+                .create_element("anchor")
+                .expect("Failed to create anchor")
+                .dyn_into()
+                .expect("Failed to convert to HtmlAnchorElement");
+            let _ = document()
+                .body()
+                .expect("ERROR: Failed to get body")
+                .append_child(&anchor);
+            anchor.click();
         } else {
             web_sys::console::log_1(&"img.get() returned None".into())
         }
@@ -242,10 +258,17 @@ pub fn UserInterface(set_filter: leptos::WriteSignal<Filter>) -> impl IntoView {
             <div>
                 <a
                     class="button"
+                    on:click= move |_| {set_generate_img(true)}
+                    //href=move || {"data:image/png;base64,".to_string() + &image_url()}
+                    //download="heatmap.png"
+                >
+                    Export to PNG
+                </a>
+                <a
+                    class="hidden"
                     href=move || {"data:image/png;base64,".to_string() + &image_url()}
                     download="heatmap.png"
                 >
-                    Export to PNG
                 </a>
             </div>
         </div>
