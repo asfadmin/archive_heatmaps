@@ -22,7 +22,7 @@ pub fn generate_export_image(
     );
 
     // Store image template in memory
-    let template_bytes = include_bytes!("../../assets/export_template_revised.png");
+    let template_bytes = include_bytes!("../../assets/export_template.png");
     let mut template_img = image::load_from_memory(template_bytes)
         .expect("ERROR: Failed to load export_template.png")
         .to_rgba32f();
