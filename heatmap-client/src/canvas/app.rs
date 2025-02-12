@@ -6,9 +6,8 @@ use std::rc::Rc;
 use base64::Engine as _;
 use image::codecs::png::PngEncoder;
 use image::ImageEncoder;
-use leptos::document;
-use leptos::html::{legend, template, ToHtmlElement};
-use leptos::{SignalGetUntracked, SignalSet, SignalSetUntracked};
+use leptos::html::ToHtmlElement;
+use leptos::{SignalGetUntracked, SignalSet};
 use wasm_bindgen::JsCast;
 use web_sys::HtmlAnchorElement;
 use winit::platform::web::WindowExtWebSys;
@@ -21,7 +20,7 @@ use winit::{
 };
 
 use super::geometry::{generate_copy_buffer, Geometry};
-use super::png::{ExportContext, InitStage};
+use super::png::InitStage;
 use super::render_context::{MaxWeightState, RenderContext};
 use super::state::State;
 use super::texture::generate_copy_texture;
@@ -240,6 +239,8 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     // Read one channel into a f32
                     red_data.push(f32::from_le_bytes([*raw[0], *raw[1], *raw[2], *raw[3]]));
 
+                    // NOTE: We may be able to change rgba32float to r32float but I think this was one of the annoying
+                    //    places where we have to waste space to be able to copy to CPU
                     // The texture we stored in the buffer was rgba32Float but only had red data so we skip the g, b, a channels
                     match raw_iter.advance_by(4 * 3) {
                         Ok(_) => {}
@@ -283,6 +284,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                 render_context.copy_context.buffer.unmap();
             }
 
+            // This handles copying data to CPU when the buffer is mapped during the export render pass
             UserMessage::ExportMapped => {
                 let render_context = self
                     .state
@@ -290,9 +292,9 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     .as_mut()
                     .expect("Failed to get render context in UserMessage::BufferMapped");
 
-                let mut base64_encoded_png: String;
+                let base64_encoded_png: String;
 
-                // If we have not generated the png for this data before
+                // If we have generated the png for this data before use the stored base64_encoding
                 if let Some(base64_png) = &self
                     .state
                     .export_context
@@ -302,6 +304,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                 {
                     base64_encoded_png = base64_png.to_string();
                 } else {
+                    // We have not generated a png yet, do so
                     // We read the data contained in the buffer and convert it from &[u8] to Vec<u8>
                     let raw_bytes: Vec<u8> = (&*render_context
                         .copy_context
@@ -330,11 +333,14 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     )
                     .expect("Failed to convert parsed floats into an Rgba<f32> ImageBuffer");
 
+                    // Grab the current filter, this is needed to generate the text on the output img
                     let filter = self
                         .state
                         .filter
                         .expect("Failed to get filter while generating png")
                         .get_untracked();
+
+                    // Generate the image to be export, this code is found in png.rs
                     let output_img = generate_export_image(
                         &colormap_img,
                         render_context
@@ -354,6 +360,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     let raw_image_data: Vec<u8> =
                         image::DynamicImage::from(output_img).to_rgba8().into_raw();
 
+                    // Encode the generated ImageBuffer into a png
                     let mut png_encoded = Vec::<u8>::new();
                     let png_encoder = PngEncoder::new(&mut png_encoded);
                     let _result = png_encoder.write_image(
@@ -363,6 +370,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                         image::ExtendedColorType::Rgba8,
                     );
 
+                    // Encode the png in base64 to allow for download from an html anchor tag
                     base64_encoded_png =
                         base64::engine::general_purpose::STANDARD.encode(&png_encoded);
 
@@ -376,37 +384,23 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
 
                 web_sys::console::log_1(&format!("PNG Bytes: {:X?}", base64_encoded_png).into());
 
-                // We dynamically generate this anchor element to download the generated png, it is removed after use
-                let image_url = urlencoding::encode(&base64_encoded_png).to_string();
-                let anchor: HtmlAnchorElement = web_sys::window()
-                    .expect("ERROR: Failed to get web_sys window")
-                    .document()
-                    .expect("ERROR: Failed to get document")
-                    .create_element("a")
-                    .expect("ERROR: Failed to create <a> element")
-                    .dyn_into()
-                    .expect("ERROR: Faile to convert to HtmlAnchorElement");
+                // We dynamically generate this anchor element to download the generated png, it is removed after it goes out of scope
+                {
+                    let image_url = urlencoding::encode(&base64_encoded_png).to_string();
+                    let anchor: HtmlAnchorElement = web_sys::window()
+                        .expect("ERROR: Failed to get web_sys window")
+                        .document()
+                        .expect("ERROR: Failed to get document")
+                        .create_element("a")
+                        .expect("ERROR: Failed to create <a> element")
+                        .dyn_into()
+                        .expect("ERROR: Faile to convert to HtmlAnchorElement");
 
-                anchor.set_href(&("data:image/png;base64,".to_string() + &image_url));
-                anchor.set_download("heatmap.png");
+                    anchor.set_href(&("data:image/png;base64,".to_string() + &image_url));
+                    anchor.set_download("heatmap.png");
 
-                let _ = web_sys::window()
-                    .expect("ERROR: Failed to get web_sys window")
-                    .document()
-                    .expect("ERROR: Failed to get document")
-                    .body()
-                    .expect("ERROR: Failed to get body")
-                    .append_child(&anchor);
-
-                anchor.click();
-
-                let _ = web_sys::window()
-                    .expect("ERROR: Failed to get web_sys window")
-                    .document()
-                    .expect("ERROR: Failed to get document")
-                    .body()
-                    .expect("ERROR: Failed to get body")
-                    .remove_child(&anchor);
+                    anchor.click();
+                }
 
                 web_sys::console::log_1(&".png downloaded".into());
             }

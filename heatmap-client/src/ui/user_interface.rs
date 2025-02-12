@@ -1,10 +1,7 @@
 extern crate heatmap_api;
 
-use base64::Engine as _;
 use chrono::naive::NaiveDate;
 use heatmap_api::Filter;
-use image::codecs::png::PngEncoder;
-use image::ImageEncoder;
 use leptos::wasm_bindgen::JsCast;
 use leptos::*;
 

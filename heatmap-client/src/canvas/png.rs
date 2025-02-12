@@ -21,13 +21,13 @@ pub fn generate_export_image(
         image::imageops::FilterType::Nearest,
     );
 
-    // Get the image template
+    // Store image template in memory
     let template_bytes = include_bytes!("../../assets/export_template_revised.png");
     let mut template_img = image::load_from_memory(template_bytes)
         .expect("ERROR: Failed to load export_template.png")
         .to_rgba32f();
 
-    // Get the world outline, must be overlayed after heatmap image to appear on final image
+    // Store the world outline in memory, must be overlayed after heatmap image to appear on final image
     let outline_bytes = include_bytes!("../../assets/export_outline.png");
     let outline_img = image::load_from_memory(outline_bytes)
         .expect("ERROR: Failed to load export_outline.png")
@@ -43,20 +43,20 @@ pub fn generate_export_image(
     // Create the Legend //
     ///////////////////////
 
-    // Used to turn text into a png
+    // Renders text into a png we can overlay on the rest of our image
     let text_renderer = TextRenderer::try_new_with_ttf_font_data(include_bytes!(
         "../../assets/times_new_roman.ttf"
     ))
     .expect("ERROR: Failed to read times new roman font when creating text renderer");
 
-    // Get the Legend
+    // Store the legend in memory
     let legend_bytes = include_bytes!("../../assets/export_legend.png");
     let mut legend_img = image::load_from_memory(legend_bytes)
         .expect("ERROR: Failed to load export_legend")
         .to_rgba32f();
 
-    // These numbers correspond to the ratio of each color on the export colormap, ie num_pixels/length_of_texture
-    let legend_weights = vec![
+    // These numbers correspond to the ratio of each color on the export colormap, ie num_pixels_of_color/length_of_texture
+    let legend_weights = [
         0.004166667,
         0.010416667,
         0.010416667,
@@ -64,10 +64,11 @@ pub fn generate_export_image(
         0.022916667,
         0.075,
         0.15,
-        0.714583333,
+        0.714583,
     ];
 
-    // TO-DO: Update this to be more rusty
+    // Adds numbers to the legend, each range is added individually to allow
+    // for proper line spacing
     let mut layer = 0;
     let mut last_upper = 1.0; // Everywhere with color on the heatmap has >=1 images
     while layer < 7 {
@@ -93,6 +94,7 @@ pub fn generate_export_image(
         );
     }
 
+    // Last range in legend, formatting is unique so it cant be done in the loop
     let text_data = text_renderer
         .render_text_to_png_data(format!("> {:?}", last_upper as u32), 56, 0x0)
         .expect("ERROR: Failed to create final text_data png")
@@ -106,6 +108,7 @@ pub fn generate_export_image(
     // Create Labels and Date Text //
     /////////////////////////////////
 
+    // Parse the filter into text that can be turned into images
     let filter_text = filter_to_text(filter);
     let font_size = 68;
     let line1_data = text_renderer
@@ -117,11 +120,7 @@ pub fn generate_export_image(
         .expect("ERROR: Failed to create date range text")
         .data;
     let line2_data = text_renderer
-        .render_text_to_png_data(
-            filter_text.2 + &"-".to_owned() + &filter_text.3,
-            font_size,
-            0x0,
-        )
+        .render_text_to_png_data(filter_text.2 + "-" + &filter_text.3, font_size, 0x0)
         .expect("ERROR: Failed to create date range text")
         .data;
     let line3_data = text_renderer
@@ -161,6 +160,7 @@ pub fn generate_export_image(
         .expect("ERROR: Failed to create dynamic image for line5 text")
         .to_rgba32f();
 
+    // Create the blank template to write the date and info text onto
     let date_img_width: u32 = 1240;
     let mut date_img = image::ImageBuffer::<Rgba<f32>, Vec<f32>>::new(date_img_width, 400);
     date_img.pixels_mut().for_each(|x| {
@@ -171,13 +171,13 @@ pub fn generate_export_image(
         &mut date_img,
         &line1_img,
         center_img(date_img_width, &line1_img).into(),
-        font_size * 0,
+        0,
     );
     image::imageops::overlay(
         &mut date_img,
         &line2_img,
         center_img(date_img_width, &line2_img).into(),
-        font_size * 1,
+        font_size,
     );
     image::imageops::overlay(
         &mut date_img,
@@ -195,7 +195,7 @@ pub fn generate_export_image(
         &mut date_img,
         &line5_img,
         center_img(date_img_width, &line5_img).into(),
-        400 - font_size * 1,
+        400 - font_size,
     );
 
     ////////////////////////
@@ -208,11 +208,11 @@ pub fn generate_export_image(
     image::imageops::overlay(&mut template_img, &legend_img, 2804, 1750);
     image::imageops::overlay(&mut template_img, &date_img, 1563, 1796);
 
-    return template_img;
+    template_img
 }
 
 // Helper Function:
-//     Returns the x coordinate to center one image on another image
+//     Returns the x coordinate that centers one image on another image
 fn center_img(destination_width: u32, text: &ImageBuffer<Rgba<f32>, Vec<f32>>) -> u32 {
     let dest_center = destination_width / 2;
     let text_offset = text.width() / 2;
@@ -225,6 +225,11 @@ fn center_img(destination_width: u32, text: &ImageBuffer<Rgba<f32>, Vec<f32>>) -
     dest_center - text_offset
 }
 
+// Parse a filter into a tuple of four strings, the contents of each string are:
+//      0. Product Type
+//      1. Platform
+//      2. Start Year
+//      3. End Year
 fn filter_to_text(filter: Filter) -> (String, String, String, String) {
     let mut product_string = "".to_owned();
     for product_type in filter.product_type.iter().enumerate() {

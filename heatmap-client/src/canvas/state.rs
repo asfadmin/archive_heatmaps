@@ -3,7 +3,6 @@
 
 use std::rc::Rc;
 
-use heatmap_api::Filter;
 use leptos::{ReadSignal, SignalGetUntracked};
 use wgpu::{BindGroup, Extent3d, Origin3d};
 use winit::dpi::PhysicalSize;
@@ -99,7 +98,7 @@ impl<'a> State<'a> {
         if let Some(export) = &self.export_context
             && export.stage == InitStage::Incomplete
             && self.geometry.is_some()
-            && export.generate_img.get_untracked() == true
+            && export.generate_img.get_untracked()
         {
             (export.set_generate_img)(false);
             let width = self
@@ -644,7 +643,7 @@ impl<'a> State<'a> {
                         let _ = event_loop_proxy_clone.send_event(UserMessage::ExportMapped);
                     },
                 );
-            } 
+            }
             // If we have already generated a png then skip the export pass and just fire off the ExportMapped event
             else if let Some(export) = &self.export_context
                 && export.stage == InitStage::Complete

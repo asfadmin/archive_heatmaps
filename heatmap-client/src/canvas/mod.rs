@@ -66,6 +66,7 @@ pub fn Canvas(set_generate_img: leptos::WriteSignal<bool>) -> impl IntoView {
         event_loop_proxy: event_loop.create_proxy(),
     };
 
+    // Get an event loop proxy before app is borrowed by event_loop.spawn_app
     let event_loop_proxy = app.event_loop_proxy.clone();
 
     // Start the event loop
