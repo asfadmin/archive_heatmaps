@@ -1,2 +1,4 @@
 # This file exists soley to provide a relative path
 # to index.html when deploying to gh_pages
+[build]
+target = "index.html"       # The index HTML file to drive the bundling process.
