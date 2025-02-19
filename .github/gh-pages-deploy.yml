@@ -1,0 +1,47 @@
+name: Build and Deploy to GitHub Pages
+on: 
+  push:
+    branches: [ "main", "gh_pages/dev" ]
+  pull_request:
+    branches: [ "main", "gh_pages/dev" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    concurrency: ci-${{ github.ref }} # Recommended if you intend to make multiple deployments in quick succession.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v4
+
+      # Install Rust Nightly Toolchain, with Clippy & Rustfmt
+      - name: Install nightly Rust
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: clippy, rustfmt
+
+      - name: Add WASM target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: lint
+        run: cargo clippy & cargo fmt
+
+      - name: Download and install Trunk binary
+        run: wget -qO- https://github.com/trunk-rs/trunk/releases/download/v0.18.4/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf-
+
+      - name: Build with Trunk
+        # "${GITHUB_REPOSITORY#*/}" evaluates into the name of the repository
+        # using --public-url something will allow trunk to modify all the href paths like from favicon.ico to repo_name/favicon.ico .
+        # this is necessary for github pages where the site is deployed to username.github.io/repo_name and all files must be requested
+        # relatively as favicon.ico. if we skip public-url option, the href paths will instead request username.github.io/favicon.ico which
+        # will obviously return error 404 not found.
+        run: ./trunk build --release --public-url "${GITHUB_REPOSITORY#*/}"
+
+
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist # The folder the action should deploy.
