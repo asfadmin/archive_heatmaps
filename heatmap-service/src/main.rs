@@ -12,7 +12,6 @@ use crate::geo_assets::GeoAssets;
 
 mod assets;
 mod config;
-mod dataset;
 mod error;
 mod geo_assets;
 mod geo_json_path;
