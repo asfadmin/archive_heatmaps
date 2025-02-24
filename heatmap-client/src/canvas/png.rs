@@ -1,23 +1,93 @@
+use base64::Engine;
 use heatmap_api::{Filter, PlatformType, ProductTypes};
+use image::codecs::png::PngEncoder;
+use image::ImageEncoder;
 use image::{ImageBuffer, Rgba};
 use leptos::{ReadSignal, WriteSignal};
 use text_to_png::TextRenderer;
 
+use super::render_context::RenderContext;
 use crate::heatmap_api;
+
+/// Generate the final png that will be exported
+pub fn generate_heatmap_image(render_context: &mut RenderContext, filter: Filter) -> String {
+    // We read the data contained in the buffer and convert it from &[u8] to Vec<u8>
+    let raw_bytes: Vec<u8> = (&*render_context
+        .copy_context
+        .buffer
+        .slice(..)
+        .get_mapped_range())
+        .into();
+
+    // The buffer is formated for f32 but we pulled a Vec<u8>, we must reform the Vec<f32> from the bytes
+    let mut color_data: Vec<f32> = Vec::new();
+    let mut raw_iter = raw_bytes.iter();
+    while let Ok(raw) = raw_iter.next_chunk::<4>() {
+        // Read one channel into a f32
+        color_data.push(f32::from_le_bytes([*raw[0], *raw[1], *raw[2], *raw[3]]));
+    }
+
+    web_sys::console::log_1(&format!("Freshley decoded: {:?}", color_data).into());
+
+    // Convert the raw image data into an ImageBuffer that can be saved, must use copy texture width here,
+    //     Copy Texture is 256 byte aligned so copy_texture.width() is larger than displayed size and so
+    //     are the contents of our buffer
+    let colormap_img = image::Rgba32FImage::from_vec(
+        render_context.copy_context.texture.width(),
+        render_context.copy_context.texture.height(),
+        color_data,
+    )
+    .expect("Failed to convert parsed floats into an Rgba<f32> ImageBuffer");
+
+    // Generate the image to be export
+    let output_img = generate_export_image(
+        &colormap_img,
+        render_context
+            .max_weight_context
+            .value
+            .expect("Failed to get max weight to generate output png"),
+        filter,
+    );
+
+    // Release the copy buffer for later use
+    render_context.copy_context.buffer.unmap();
+    render_context.copy_context.buffer_mapped = false;
+
+    let output_img_width = output_img.width();
+    let output_img_height = output_img.height();
+
+    let raw_image_data: Vec<u8> = image::DynamicImage::from(output_img).to_rgba8().into_raw();
+
+    // Encode the generated ImageBuffer into a png
+    let mut png_encoded = Vec::<u8>::new();
+    let png_encoder = PngEncoder::new(&mut png_encoded);
+    let _result = png_encoder.write_image(
+        raw_image_data.as_slice(),
+        output_img_width,
+        output_img_height,
+        image::ExtendedColorType::Rgba8,
+    );
+
+    // Encode the png in base64 to allow for download from an html anchor tag
+    base64::engine::general_purpose::STANDARD.encode(&png_encoded)
+}
 
 pub fn generate_export_image(
     colormap_img: &ImageBuffer<Rgba<f32>, Vec<f32>>,
     max_weight: f32,
     filter: Filter,
 ) -> ImageBuffer<Rgba<f32>, Vec<f32>> {
+    let colormap_img_width = 3083;
+    let colormap_img_height = 1551;
+
     /////////////////////
     // Read Image Data //
     /////////////////////
 
     let resized_colormap_img = image::imageops::resize(
         colormap_img,
-        3083,
-        1551,
+        colormap_img_width,
+        colormap_img_height,
         image::imageops::FilterType::Nearest,
     );
 
@@ -34,8 +104,8 @@ pub fn generate_export_image(
         .to_rgba32f();
     let resized_outline_img = image::imageops::resize(
         &outline_img,
-        3083,
-        1551,
+        colormap_img_width,
+        colormap_img_height,
         image::imageops::FilterType::Nearest,
     );
 
@@ -68,7 +138,9 @@ pub fn generate_export_image(
     ];
 
     // Adds numbers to the legend, each range is added individually to allow
-    // for proper line spacing
+    // for proper line spacing. Renders text of size font_size into a png format
+    // this is then converted into a ImageBuffer and overlayed onto the legend
+    let font_size = 56;
     let mut layer = 0;
     let mut last_upper = 1.0; // Everywhere with color on the heatmap has >=1 images
     while layer < 7 {
@@ -76,7 +148,7 @@ pub fn generate_export_image(
         let text_data = text_renderer
             .render_text_to_png_data(
                 format!("{:?}-{:?}", last_upper as u32, upper as u32),
-                56,
+                font_size,
                 0x0,
             )
             .expect("ERROR: Failed to create text_data png")
@@ -96,7 +168,7 @@ pub fn generate_export_image(
 
     // Last range in legend, formatting is unique so it cant be done in the loop
     let text_data = text_renderer
-        .render_text_to_png_data(format!("> {:?}", last_upper as u32), 56, 0x0)
+        .render_text_to_png_data(format!("> {:?}", last_upper as u32), font_size, 0x0)
         .expect("ERROR: Failed to create final text_data png")
         .data;
     let text_img = image::load_from_memory(&text_data)

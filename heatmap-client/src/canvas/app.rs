@@ -3,9 +3,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use base64::Engine as _;
-use image::codecs::png::PngEncoder;
-use image::ImageEncoder;
 use leptos::html::ToHtmlElement;
 use leptos::{SignalGetUntracked, SignalSet};
 use wasm_bindgen::JsCast;
@@ -24,7 +21,7 @@ use super::png::InitStage;
 use super::render_context::{MaxWeightState, RenderContext};
 use super::state::State;
 use super::texture::generate_copy_texture;
-use crate::canvas::png::generate_export_image;
+use crate::canvas::png::generate_heatmap_image;
 use crate::ingest::load::BufferStorage;
 
 pub struct App<'a> {
@@ -286,13 +283,8 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
 
             // This handles copying data to CPU when the buffer is mapped during the export render pass
             UserMessage::ExportMapped => {
-                let render_context = self
-                    .state
-                    .render_context
-                    .as_mut()
-                    .expect("Failed to get render context in UserMessage::BufferMapped");
-
-                let base64_encoded_png: String;
+                // Default to an empty data set if we have not generated png and fail to get render_context
+                let mut base64_encoded_png: String = "".to_owned();
 
                 // If we have generated the png for this data before use the stored base64_encoding
                 if let Some(base64_png) = &self
@@ -303,36 +295,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     .base64_png
                 {
                     base64_encoded_png = base64_png.to_string();
-                } else {
-                    // We have not generated a png yet, do so
-                    // We read the data contained in the buffer and convert it from &[u8] to Vec<u8>
-                    let raw_bytes: Vec<u8> = (&*render_context
-                        .copy_context
-                        .buffer
-                        .slice(..)
-                        .get_mapped_range())
-                        .into();
-
-                    // The buffer is formated for f32 but we pulled a Vec<u8>, we must reform the Vec<f32> from the bytes
-                    let mut color_data: Vec<f32> = Vec::new();
-                    let mut raw_iter = raw_bytes.iter();
-                    while let Ok(raw) = raw_iter.next_chunk::<4>() {
-                        // Read one channel into a f32
-                        color_data.push(f32::from_le_bytes([*raw[0], *raw[1], *raw[2], *raw[3]]));
-                    }
-
-                    web_sys::console::log_1(&format!("Freshley decoded: {:?}", color_data).into());
-
-                    // Convert the raw image data into an ImageBuffer that can be saved, must use copy texture width here,
-                    //     Copy Texture is 256 byte aligned so copy_texture.width() is larger than displayed size and so
-                    //     are the contents of our buffer
-                    let colormap_img = image::Rgba32FImage::from_vec(
-                        render_context.copy_context.texture.width(),
-                        render_context.copy_context.texture.height(),
-                        color_data,
-                    )
-                    .expect("Failed to convert parsed floats into an Rgba<f32> ImageBuffer");
-
+                } else if let Some(render_context) = self.state.render_context.as_mut() {
                     // Grab the current filter, this is needed to generate the text on the output img
                     let filter = self
                         .state
@@ -340,39 +303,8 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                         .expect("Failed to get filter while generating png")
                         .get_untracked();
 
-                    // Generate the image to be export, this code is found in png.rs
-                    let output_img = generate_export_image(
-                        &colormap_img,
-                        render_context
-                            .max_weight_context
-                            .value
-                            .expect("Failed to get max weight to generate output png"),
-                        filter,
-                    );
-
-                    // Release the copy buffer for later use
-                    render_context.copy_context.buffer.unmap();
-                    render_context.copy_context.buffer_mapped = false;
-
-                    let output_img_width = output_img.width();
-                    let output_img_height = output_img.height();
-
-                    let raw_image_data: Vec<u8> =
-                        image::DynamicImage::from(output_img).to_rgba8().into_raw();
-
-                    // Encode the generated ImageBuffer into a png
-                    let mut png_encoded = Vec::<u8>::new();
-                    let png_encoder = PngEncoder::new(&mut png_encoded);
-                    let _result = png_encoder.write_image(
-                        raw_image_data.as_slice(),
-                        output_img_width,
-                        output_img_height,
-                        image::ExtendedColorType::Rgba8,
-                    );
-
-                    // Encode the png in base64 to allow for download from an html anchor tag
-                    base64_encoded_png =
-                        base64::engine::general_purpose::STANDARD.encode(&png_encoded);
+                    // We have not generated a png yet, do so
+                    base64_encoded_png = generate_heatmap_image(render_context, filter);
 
                     // Save the image we generated so we dont need to regenerate for the same data
                     self.state
