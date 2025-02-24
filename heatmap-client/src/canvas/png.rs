@@ -141,6 +141,8 @@ pub fn generate_export_image(
     // for proper line spacing. Renders text of size font_size into a png format
     // this is then converted into a ImageBuffer and overlayed onto the legend
     let font_size = 56;
+    let x_coord = 152;
+    let y_initial = 197;
     let mut layer = 0;
     let mut last_upper = 1.0; // Everywhere with color on the heatmap has >=1 images
     while layer < 7 {
@@ -156,7 +158,12 @@ pub fn generate_export_image(
         let text_img = image::load_from_memory(&text_data)
             .expect("ERROR: Failed to create dynamic image for data_text")
             .to_rgba32f();
-        image::imageops::overlay(&mut legend_img, &text_img, 152, 197 + (53 * layer as i64));
+        image::imageops::overlay(
+            &mut legend_img,
+            &text_img,
+            x_coord,
+            y_initial + (font_size * layer as i64),
+        );
 
         last_upper = upper;
         layer += 1;
@@ -174,7 +181,12 @@ pub fn generate_export_image(
     let text_img = image::load_from_memory(&text_data)
         .expect("ERROR: Failed to create dynamic image for text_data")
         .to_rgba32f();
-    image::imageops::overlay(&mut legend_img, &text_img, 152, 197 + (53 * layer as i64));
+    image::imageops::overlay(
+        &mut legend_img,
+        &text_img,
+        x_coord,
+        y_initial + (font_size * layer as i64),
+    );
 
     /////////////////////////////////
     // Create Labels and Date Text //
