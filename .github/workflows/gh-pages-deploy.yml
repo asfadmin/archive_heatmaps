@@ -43,7 +43,6 @@ jobs:
         # will obviously return error 404 not found.
         run: ./trunk build --release --config="heatmap-client/Trunk.toml" --public-url="${GITHUB_REPOSITORY#*/}"
 
-
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
         with:
