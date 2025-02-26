@@ -66,6 +66,19 @@ input[type="checkbox"]:checked {
     color: white;
     border: none;
 }
+.button {
+    color: white;
+    border: none;
+    background: #494747;
+    border-radius: 2mm;
+    padding-left: 2mm;
+    padding-right: 2mm;
+}
+
+.button:active {
+    background-color: #b3aeae;
+}
+
 p {
     margin: 1mm;
 }

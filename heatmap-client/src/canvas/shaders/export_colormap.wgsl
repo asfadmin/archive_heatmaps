@@ -1,3 +1,6 @@
+// This is shader is identical to colormap.wgsl except
+// for the removal of the transperancy adjustments
+
 struct VertexInput {
     @location(0) position: vec3<f32>,
 };
@@ -44,9 +47,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     let map_coord = clamp(ratio * 1.2, 0.0, f32(tex_dim - 1 ));
 
-    var color = textureLoad(colormap_tex, u32(map_coord), 0);
+    var color = textureLoad(colormap_tex, u32(map_coord), 0).rgb;
 
-    color.a = clamp(pow(f32(weight), 2.0)/(max_weight.x*5), 0.2, 1.0);
-
-    return vec4<f32>(color);
+    return vec4<f32>(color, 1.0);
 }

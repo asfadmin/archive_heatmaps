@@ -1,11 +1,15 @@
 extern crate heatmap_api;
 
 use chrono::naive::NaiveDate;
+use heatmap_api::Filter;
 use leptos::wasm_bindgen::JsCast;
 use leptos::*;
 
 #[component]
-pub fn UserInterface(set_filter: WriteSignal<heatmap_api::Filter>) -> impl IntoView {
+pub fn UserInterface(
+    set_filter: leptos::WriteSignal<Filter>,
+    set_generate_img: leptos::WriteSignal<bool>,
+) -> impl IntoView {
     let min_date = NaiveDate::from_ymd_opt(2019, 1, 1)
         .expect("Failed to parse left hand side when finding min_date")
         .format("%Y-%m-%d")
@@ -202,6 +206,14 @@ pub fn UserInterface(set_filter: WriteSignal<heatmap_api::Filter>) -> impl IntoV
                     </table>
                 </div>
             </form>
+            <div>
+                <a
+                    class="button"
+                    on:click= move |_| {set_generate_img(true)}
+                >
+                    Export to PNG
+                </a>
+            </div>
         </div>
     }
 }

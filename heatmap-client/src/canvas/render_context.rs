@@ -5,11 +5,14 @@ use winit::{dpi::PhysicalSize, event_loop::EventLoopProxy};
 
 use super::app::UserMessage;
 use super::camera::CameraContext;
-use super::geometry::{
-    generate_max_weight_buffer, generate_uniform_buffer, BlendVertex, BufferContext, Vertex,
+use super::geometry::{generate_copy_buffer, generate_uniform_buffer, BufferContext};
+use super::pipeline::{
+    generate_blend_pipeline, generate_display_colormap_pipeline, generate_export_colormap_pipeline,
+    generate_export_pipeline, generate_outline_pipeline,
 };
 use super::texture::{
-    generate_blend_texture, generate_colormap_texture, generate_max_weight_texture, TextureContext,
+    generate_blend_texture, generate_colormaps, generate_copy_texture, generate_export_texture,
+    TextureContext,
 };
 
 // Stores all the things we need to set up wgpu and run render passes,
@@ -21,17 +24,20 @@ pub struct RenderContext<'a> {
     pub size: winit::dpi::PhysicalSize<u32>,
     pub limits: wgpu::Limits,
     pub blend_render_pipeline: wgpu::RenderPipeline,
-    pub colormap_render_pipeline: wgpu::RenderPipeline,
+    pub display_colormap_render_pipeline: wgpu::RenderPipeline,
+    pub export_colormap_render_pipeline: wgpu::RenderPipeline,
     pub outline_render_pipeline: wgpu::RenderPipeline,
-    pub max_weight_render_pipeline: wgpu::RenderPipeline,
+    pub export_render_pipeline: wgpu::RenderPipeline,
     pub camera_context: CameraContext,
     pub blend_texture_context: TextureContext,
-    pub colormap_texture_context: TextureContext,
+    pub colormap_texture_context: (TextureContext, TextureContext),
+    pub export_texture_context: TextureContext,
+    pub copy_context: CopyContext,
     pub max_weight_context: MaxWeightContext,
 }
 
 /// Create a new RenderContext
-pub async fn generate_render_context<'a>(
+pub async fn generate_render_context(
     window: Rc<Window>,
     event_loop_proxy: EventLoopProxy<UserMessage<'_>>,
 ) {
@@ -120,233 +126,52 @@ pub async fn generate_render_context<'a>(
 
     // Used to convert polygons into heatmap
     let blend_texture_context = generate_blend_texture(&device, size);
-    let colormap_texture_context = generate_colormap_texture(&device, &queue);
+    let colormap_texture_context = generate_colormaps(&device, &queue);
+    let export_texture_context = generate_export_texture(&device, size);
 
-    // Used to calculate the maximum weight for a data set
-    let max_weight_texture = generate_max_weight_texture(&device, size);
-    let max_weight_buffer = generate_max_weight_buffer(&device, size);
-    let max_weight_uniform_buffer = generate_uniform_buffer(&device);
+    // Used to get data from GPU to CPU
+    let copy_texture = generate_copy_texture(&device, size);
+    let copy_buffer = generate_copy_buffer(&device, size);
 
-    //////////////////////////////////
-    // Set up blend render pipeline //
-    //////////////////////////////////
-    let blend_shader = device.create_shader_module(wgpu::include_wgsl!("shaders/blend.wgsl"));
-
-    let blend_render_pipeline_layout =
-        device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Blend Render Pipeline Layout"),
-            bind_group_layouts: &[&camera_context.camera_bind_group_layout],
-            push_constant_ranges: &[],
-        });
-
-    let blend_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        label: Some("Blend Render Pipeline"),
-        layout: Some(&blend_render_pipeline_layout),
-        vertex: wgpu::VertexState {
-            module: &blend_shader,
-            entry_point: "vs_main",
-            buffers: &[BlendVertex::desc()],
-            compilation_options: Default::default(),
-        },
-        fragment: Some(wgpu::FragmentState {
-            module: &blend_shader,
-            entry_point: "fs_main",
-            compilation_options: Default::default(),
-            targets: &[Some(wgpu::ColorTargetState {
-                format: wgpu::TextureFormat::R16Float,
-                blend: Some(wgpu::BlendState {
-                    color: wgpu::BlendComponent {
-                        src_factor: wgpu::BlendFactor::One,
-                        dst_factor: wgpu::BlendFactor::One,
-                        operation: wgpu::BlendOperation::Add,
-                    },
-                    alpha: wgpu::BlendComponent {
-                        src_factor: wgpu::BlendFactor::One,
-                        dst_factor: wgpu::BlendFactor::Zero,
-                        operation: wgpu::BlendOperation::Add,
-                    },
-                }),
-                write_mask: wgpu::ColorWrites::RED,
-            })],
-        }),
-        primitive: wgpu::PrimitiveState {
-            topology: wgpu::PrimitiveTopology::TriangleList,
-            strip_index_format: None,
-            front_face: wgpu::FrontFace::Cw,
-            cull_mode: None,
-            polygon_mode: wgpu::PolygonMode::Fill,
-            unclipped_depth: false,
-            conservative: false,
-        },
-        depth_stencil: None,
-        multisample: wgpu::MultisampleState {
-            count: 1,
-            mask: !0,
-            alpha_to_coverage_enabled: false,
-        },
-        multiview: None,
-    });
-
-    /////////////////////////////////////
-    // Set up colormap render pipeline //
-    /////////////////////////////////////
-    let colormap_shader = device.create_shader_module(wgpu::include_wgsl!("shaders/colormap.wgsl"));
-
-    let colormap_render_pipeline_layout =
-        device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Color Ramp Render Pipeline Layout"),
-            bind_group_layouts: &[
-                &colormap_texture_context.bind_group_layout,
-                &blend_texture_context.bind_group_layout,
-                &max_weight_uniform_buffer.bind_group_layout,
-            ],
-            push_constant_ranges: &[],
-        });
-
-    let colormap_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        label: Some("Color Ramp Render Pipeline"),
-        layout: Some(&colormap_render_pipeline_layout),
-        vertex: wgpu::VertexState {
-            module: &colormap_shader,
-            entry_point: "vs_main",
-            buffers: &[Vertex::desc()],
-            compilation_options: Default::default(),
-        },
-        fragment: Some(wgpu::FragmentState {
-            module: &colormap_shader,
-            entry_point: "fs_main",
-            compilation_options: Default::default(),
-            targets: &[Some(wgpu::ColorTargetState {
-                format: config.format,
-                blend: Some(wgpu::BlendState::ALPHA_BLENDING),
-                write_mask: wgpu::ColorWrites::ALL,
-            })],
-        }),
-        primitive: wgpu::PrimitiveState {
-            topology: wgpu::PrimitiveTopology::TriangleList,
-            strip_index_format: None,
-            front_face: wgpu::FrontFace::Cw,
-            cull_mode: None,
-            polygon_mode: wgpu::PolygonMode::Fill,
-            unclipped_depth: false,
-            conservative: false,
-        },
-        depth_stencil: None,
-        multisample: wgpu::MultisampleState {
-            count: 1,
-            mask: !0,
-            alpha_to_coverage_enabled: false,
-        },
-        multiview: None,
-    });
-
-    ////////////////////////////////////
-    // Set up Outline render pipeline //
-    ////////////////////////////////////
-
-    let outline_shader = device.create_shader_module(wgpu::include_wgsl!("shaders/outline.wgsl"));
-
-    let outline_render_pipeline_layout =
-        device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Outline Render Pipeline Layout"),
-            bind_group_layouts: &[&camera_context.camera_bind_group_layout],
-            push_constant_ranges: &[],
-        });
-
-    let outline_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        label: Some("Outline Render Pipeline"),
-        layout: Some(&outline_render_pipeline_layout),
-        vertex: wgpu::VertexState {
-            module: &outline_shader,
-            entry_point: "vs_main",
-            buffers: &[BlendVertex::desc()],
-            compilation_options: Default::default(),
-        },
-        fragment: Some(wgpu::FragmentState {
-            module: &outline_shader,
-            entry_point: "fs_main",
-            compilation_options: Default::default(),
-            targets: &[Some(wgpu::ColorTargetState {
-                format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                blend: None,
-                write_mask: wgpu::ColorWrites::ALL,
-            })],
-        }),
-        primitive: wgpu::PrimitiveState {
-            topology: wgpu::PrimitiveTopology::TriangleList,
-            strip_index_format: None,
-            front_face: wgpu::FrontFace::Cw,
-            cull_mode: None,
-            polygon_mode: wgpu::PolygonMode::Fill,
-            unclipped_depth: false,
-            conservative: false,
-        },
-        depth_stencil: None,
-        multisample: wgpu::MultisampleState {
-            count: 1,
-            mask: !0,
-            alpha_to_coverage_enabled: false,
-        },
-        multiview: None,
-    });
-
-    ///////////////////////////////////////
-    // Set up max weight render pipeline //
-    ///////////////////////////////////////
-    let max_weight_shader =
-        device.create_shader_module(wgpu::include_wgsl!("shaders/max_weight.wgsl"));
-
-    let max_weight_render_pipeline_layout =
-        device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Max Weight Render Pipeline Layout"),
-            bind_group_layouts: &[&blend_texture_context.bind_group_layout],
-            push_constant_ranges: &[],
-        });
-
-    let max_weight_render_pipeline =
-        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Max Weight Render Pipeline"),
-            layout: Some(&max_weight_render_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &max_weight_shader,
-                entry_point: "vs_main",
-                buffers: &[Vertex::desc()],
-                compilation_options: Default::default(),
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &max_weight_shader,
-                entry_point: "fs_main",
-                compilation_options: Default::default(),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: wgpu::TextureFormat::Rgba32Float,
-                    blend: None,
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Cw,
-                cull_mode: None,
-                polygon_mode: wgpu::PolygonMode::Fill,
-                unclipped_depth: false,
-                conservative: false,
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-            multiview: None,
-        });
-
-    let max_weight_context = MaxWeightContext {
-        texture: max_weight_texture,
-        buffer: max_weight_buffer,
-        state: MaxWeightState::Empty,
-        uniform_buffer: max_weight_uniform_buffer,
+    let copy_context = CopyContext {
+        texture: copy_texture,
+        buffer: copy_buffer,
+        buffer_mapped: false,
     };
+
+    // Used to pass calculated max weight into Render Pass
+    let max_weight_context = MaxWeightContext {
+        state: MaxWeightState::Empty,
+        uniform_buffer: generate_uniform_buffer(&device),
+        value: None,
+    };
+
+    /////////////////////////////
+    // Set up render pipelines //
+    /////////////////////////////
+
+    let blend_render_pipeline = generate_blend_pipeline(&device, &camera_context);
+    let display_colormap_render_pipeline = generate_display_colormap_pipeline(
+        &device,
+        (
+            &colormap_texture_context.0.bind_group_layout,
+            &blend_texture_context.bind_group_layout,
+            &max_weight_context.uniform_buffer.bind_group_layout,
+        ),
+        &config,
+    );
+    let export_colormap_render_pipeline = generate_export_colormap_pipeline(
+        &device,
+        (
+            &colormap_texture_context.0.bind_group_layout,
+            &blend_texture_context.bind_group_layout,
+            &max_weight_context.uniform_buffer.bind_group_layout,
+        ),
+        &config,
+    );
+    let outline_render_pipeline = generate_outline_pipeline(&device, &camera_context);
+    let export_render_pipeline =
+        generate_export_pipeline(&device, &export_texture_context.bind_group_layout);
 
     // StateMessage is sent to the event loop with the contained variables
     let message = RenderContext {
@@ -357,12 +182,15 @@ pub async fn generate_render_context<'a>(
         size,
         limits,
         blend_render_pipeline,
-        colormap_render_pipeline,
+        display_colormap_render_pipeline,
+        export_colormap_render_pipeline,
         outline_render_pipeline,
-        max_weight_render_pipeline,
+        export_render_pipeline,
         camera_context,
         blend_texture_context,
         colormap_texture_context,
+        export_texture_context,
+        copy_context,
         max_weight_context,
     };
 
@@ -372,12 +200,17 @@ pub async fn generate_render_context<'a>(
     let _ = event_loop_proxy.send_event(UserMessage::StateMessage(message));
 }
 
-/// Contains resources neccessary to calculate the maximum weight of a set of data
-pub struct MaxWeightContext {
+/// Contains a texture and buffer used to map a texture onto the CPU
+pub struct CopyContext {
     pub texture: wgpu::Texture,
     pub buffer: wgpu::Buffer,
+    pub buffer_mapped: bool,
+}
+/// Contains resources neccessary to calculate the maximum weight of a set of data
+pub struct MaxWeightContext {
     pub state: MaxWeightState,
     pub uniform_buffer: BufferContext,
+    pub value: Option<f32>,
 }
 
 #[derive(PartialEq)]

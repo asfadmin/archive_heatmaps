@@ -130,7 +130,7 @@ fn gen_lod_layers(
 
 // A uniform buffer that a texture can be copied to and can be mapped to the cpu
 //    used to calculate the max weight
-pub fn generate_max_weight_buffer(
+pub fn generate_copy_buffer(
     device: &wgpu::Device,
     size: winit::dpi::PhysicalSize<u32>,
 ) -> wgpu::Buffer {
