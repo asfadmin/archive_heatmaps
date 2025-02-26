@@ -1,1 +1,0 @@
-SELECT * FROM cmr WHERE dataset LIKE ($1) ORDER BY time ASC LIMIT 1;

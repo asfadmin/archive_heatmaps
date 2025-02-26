@@ -37,10 +37,13 @@ fn main() {
     });
     provide_context(filter);
 
+    let (generate_img, set_generate_img) = create_signal(false);
+    provide_context(generate_img);
+
     let app = view! {
         <div>
-            <UserInterface set_filter/>
-            <Canvas/>
+            <UserInterface set_filter set_generate_img/>
+            <Canvas set_generate_img/>
         </div>
     };
 

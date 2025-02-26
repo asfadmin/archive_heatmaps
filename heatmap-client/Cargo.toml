@@ -28,6 +28,11 @@ wgpu = { version = "0.20.1", features = ["webgl"] }
 winit = "0.30.3"
 heatmap-api = { path = "../heatmap-api" }
 geo = "0.28.0"
+js-sys = "0.3.69"
+png = "0.17.13"
+urlencoding = "2.1.3"
+base64 = "0.22.1"
+text-to-png = "0.2.0"
 
 [lints.clippy]
 unwrap_used = "warn"

@@ -4,7 +4,9 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use leptos::html::ToHtmlElement;
-use leptos::SignalSet;
+use leptos::{SignalGetUntracked, SignalSet};
+use wasm_bindgen::JsCast;
+use web_sys::HtmlAnchorElement;
 use winit::platform::web::WindowExtWebSys;
 use winit::{
     application::ApplicationHandler,
@@ -14,10 +16,12 @@ use winit::{
     window::{Window, WindowId},
 };
 
-use super::geometry::{generate_max_weight_buffer, Geometry};
+use super::geometry::{generate_copy_buffer, Geometry};
+use super::png::InitStage;
 use super::render_context::{MaxWeightState, RenderContext};
-use super::state::{InitStage, State};
-use super::texture::generate_max_weight_texture;
+use super::state::State;
+use super::texture::generate_copy_texture;
+use crate::canvas::png::generate_heatmap_image;
 use crate::ingest::load::BufferStorage;
 
 pub struct App<'a> {
@@ -30,7 +34,7 @@ pub struct App<'a> {
 // The application handler responds to changes in the event loop, we send custom events here using
 //    an event_loop_proxy
 
-impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
+impl ApplicationHandler<UserMessage<'static>> for App<'_> {
     // This is run on initial startup, creates a window and stores it in the state, also stores
     //     the windows canvas in external state
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
@@ -151,7 +155,10 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     geometry: None,
                     input_state: self.state.input_state.clone(),
                     event_loop_proxy: Some(self.event_loop_proxy.clone()),
+                    filter: self.state.filter,
                     camera_storage: None,
+                    size_storage: None,
+                    export_context: self.state.export_context.clone(),
                 };
 
                 // Resize configures the surface based on current canvas size
@@ -181,18 +188,22 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     outline_data,
                 ));
 
-                render_context.max_weight_context.texture =
-                    generate_max_weight_texture(&render_context.device, render_context.size);
+                render_context.copy_context.texture =
+                    generate_copy_texture(&render_context.device, render_context.size);
 
-                render_context.max_weight_context.buffer = generate_max_weight_buffer(
+                render_context.copy_context.buffer = generate_copy_buffer(
                     &render_context.device,
                     winit::dpi::PhysicalSize::<u32> {
-                        width: render_context.max_weight_context.texture.width(),
-                        height: render_context.max_weight_context.texture.height(),
+                        width: render_context.copy_context.texture.width(),
+                        height: render_context.copy_context.texture.height(),
                     },
                 );
 
                 render_context.max_weight_context.state = MaxWeightState::Empty;
+                if let Some(export) = self.state.export_context.as_mut() {
+                    export.stage = InitStage::Incomplete;
+                    export.base64_png = None;
+                }
 
                 web_sys::console::log_1(&"Done Generating Buffers".into());
 
@@ -203,7 +214,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
             // This is part of getting the max weight of a set of data, to get data from the GPU
             //    you have to map a buffer to the CPU, this is done asynchronously so we fire off
             //    a custom event on mapping completion
-            UserMessage::BufferMapped => {
+            UserMessage::MaxWeightMapped => {
                 let render_context = self
                     .state
                     .render_context
@@ -212,7 +223,7 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
 
                 // We read the data contained in the buffer and convert it from &[u8] to Vec<u8>
                 let raw_bytes: Vec<u8> = (&*render_context
-                    .max_weight_context
+                    .copy_context
                     .buffer
                     .slice(..)
                     .get_mapped_range())
@@ -225,6 +236,8 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                     // Read one channel into a f32
                     red_data.push(f32::from_le_bytes([*raw[0], *raw[1], *raw[2], *raw[3]]));
 
+                    // NOTE: We may be able to change rgba32float to r32float but I think this was one of the annoying
+                    //    places where we have to waste space to be able to copy to CPU
                     // The texture we stored in the buffer was rgba32Float but only had red data so we skip the g, b, a channels
                     match raw_iter.advance_by(4 * 3) {
                         Ok(_) => {}
@@ -263,18 +276,75 @@ impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
                 render_context.queue.submit([]);
 
                 render_context.max_weight_context.state = MaxWeightState::Completed;
+                render_context.max_weight_context.value = Some(max);
 
-                render_context.max_weight_context.buffer.unmap();
+                render_context.copy_context.buffer.unmap();
+            }
+
+            // This handles copying data to CPU when the buffer is mapped during the export render pass
+            UserMessage::ExportMapped => {
+                // Default to an empty data set if we have not generated png and fail to get render_context
+                let mut base64_encoded_png: String = "".to_owned();
+
+                // If we have generated the png for this data before use the stored base64_encoding
+                if let Some(base64_png) = &self
+                    .state
+                    .export_context
+                    .as_ref()
+                    .expect("Failed to get export_context")
+                    .base64_png
+                {
+                    base64_encoded_png = base64_png.to_string();
+                } else if let Some(render_context) = self.state.render_context.as_mut() {
+                    // Grab the current filter, this is needed to generate the text on the output img
+                    let filter = self
+                        .state
+                        .filter
+                        .expect("Failed to get filter while generating png")
+                        .get_untracked();
+
+                    // We have not generated a png yet, do so
+                    base64_encoded_png = generate_heatmap_image(render_context, filter);
+
+                    // Save the image we generated so we dont need to regenerate for the same data
+                    self.state
+                        .export_context
+                        .as_mut()
+                        .expect("Failed to get export context")
+                        .base64_png = Some(base64_encoded_png.clone());
+                }
+
+                web_sys::console::log_1(&format!("PNG Bytes: {:X?}", base64_encoded_png).into());
+
+                // We dynamically generate this anchor element to download the generated png, it is removed after it goes out of scope
+                {
+                    let image_url = urlencoding::encode(&base64_encoded_png).to_string();
+                    let anchor: HtmlAnchorElement = web_sys::window()
+                        .expect("ERROR: Failed to get web_sys window")
+                        .document()
+                        .expect("ERROR: Failed to get document")
+                        .create_element("a")
+                        .expect("ERROR: Failed to create <a> element")
+                        .dyn_into()
+                        .expect("ERROR: Faile to convert to HtmlAnchorElement");
+
+                    anchor.set_href(&("data:image/png;base64,".to_string() + &image_url));
+                    anchor.set_download("heatmap.png");
+
+                    anchor.click();
+                }
+
+                web_sys::console::log_1(&".png downloaded".into());
             }
         }
     }
 }
-
 // All user events that can be sent to the event loop
 pub enum UserMessage<'a> {
     StateMessage(RenderContext<'a>),
     IncomingData(Vec<BufferStorage>, Vec<BufferStorage>),
-    BufferMapped,
+    MaxWeightMapped,
+    ExportMapped,
 }
 
 /// Stores the canvas as an html element
