@@ -53,8 +53,8 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         let cors = Cors::default()
-            .allowed_origin("https://asfadmin.github.io")
-            .allowed_origin("localhost")
+            .allowed_origin("https://asfadmin.github.io") // The client is hosted on github pages
+            .allowed_origin("localhost") // Allowed for debug purposes
             .allowed_methods(vec!["GET", "POST"])
             .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
             .allowed_header(header::CONTENT_TYPE)
