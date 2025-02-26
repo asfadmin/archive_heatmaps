@@ -33,10 +33,6 @@ impl InputState {
         delta
     }
 
-    pub fn is_key_pressed(&self, key: Key) -> bool {
-        self.keys.contains(&key)
-    }
-
     pub fn is_mouse_button_pressed(&self, button: MouseButton) -> bool {
         self.mouse_buttons.contains(&button)
     }

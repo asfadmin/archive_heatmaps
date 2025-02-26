@@ -34,7 +34,7 @@ pub struct App<'a> {
 // The application handler responds to changes in the event loop, we send custom events here using
 //    an event_loop_proxy
 
-impl<'a> ApplicationHandler<UserMessage<'static>> for App<'a> {
+impl ApplicationHandler<UserMessage<'static>> for App<'_> {
     // This is run on initial startup, creates a window and stores it in the state, also stores
     //     the windows canvas in external state
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {

@@ -37,7 +37,7 @@ pub struct RenderContext<'a> {
 }
 
 /// Create a new RenderContext
-pub async fn generate_render_context<'a>(
+pub async fn generate_render_context(
     window: Rc<Window>,
     event_loop_proxy: EventLoopProxy<UserMessage<'_>>,
 ) {

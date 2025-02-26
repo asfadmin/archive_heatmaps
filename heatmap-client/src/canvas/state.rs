@@ -33,7 +33,7 @@ pub struct State<'a> {
     pub export_context: Option<ExportContext>,
 }
 
-impl<'a> State<'a> {
+impl State<'_> {
     // Process any user input on the heatmap
     pub fn handle_input_event(&mut self, event: WindowEvent) {
         self.input_state.eat_event(event);
