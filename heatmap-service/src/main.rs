@@ -1,5 +1,6 @@
 use actix_cors::Cors;
 use actix_web::{
+    http::header,
     middleware::{Compress, Logger},
     web::Data,
     App, HttpServer,
@@ -50,12 +51,20 @@ async fn main() -> std::io::Result<()> {
     let geo_assets = GeoAssets::from_config(config.clone());
 
     HttpServer::new(move || {
+        let cors = Cors::default()
+            .allowed_origin("https://asfadmin.github.io") // The client is hosted on github pages
+            .allowed_origin("localhost") // Allowed for debug purposes
+            .allowed_methods(vec!["GET", "POST"])
+            .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
+            .allowed_header(header::CONTENT_TYPE)
+            .max_age(3600);
+
         let mut app = App::new()
             .wrap(Logger::default())
             .wrap(Compress::default())
             .wrap(RedisCacheSet)
             .wrap(RedisCacheGet)
-            .wrap(Cors::permissive()) //TODO only for debug
+            .wrap(cors)
             .service(heatmap_query)
             .service(outline_query);
 
