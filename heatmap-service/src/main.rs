@@ -5,6 +5,7 @@ use actix_web::{
     web::Data,
     App, HttpServer,
 };
+use lambda_web::{is_running_on_lambda, run_actix_on_lambda};
 use middleware::{RedisCacheGet, RedisCacheSet};
 use query::{heatmap_query, outline_query};
 
@@ -50,7 +51,7 @@ async fn main() -> std::io::Result<()> {
 
     let geo_assets = GeoAssets::from_config(config.clone());
 
-    HttpServer::new(move || {
+    let factory = move || {
         let cors = Cors::default()
             .allowed_origin("https://asfadmin.github.io") // The client is hosted on github pages
             .allowed_origin("localhost") // Allowed for debug purposes
@@ -74,8 +75,16 @@ async fn main() -> std::io::Result<()> {
 
         app.app_data(Data::new(config.clone()))
             .app_data(Data::new(geo_assets.clone()))
-    })
-    .bind(bind_address)?
-    .run()
-    .await
+    };
+
+    if is_running_on_lambda() {
+        // Run on AWS Lambda
+        println!("Starting AWS Lambda");
+        run_actix_on_lambda(factory).await; // No error handeling currently
+    } else {
+        println!("Starting Local Server");
+        // Local server
+        HttpServer::new(factory).bind(bind_address)?.run().await?
+    }
+    Ok(())
 }

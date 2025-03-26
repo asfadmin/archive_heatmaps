@@ -5,6 +5,22 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[profile.release]
+opt-level = 3 # or 'z' for file size!
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.release.build-override]
+opt-level = 'z' # or 'z' for file size!
+codegen-units = 1
+strip = true
+
+[[bin]]
+name = "bootstrap"
+path = "src/main.rs"
+
 [dependencies]
 actix-cors = "0.7.0"
 actix-http = "3.2.1"
@@ -29,3 +45,4 @@ serde_with = "2.0.0"
 heatmap-api = { path = "../heatmap-api" }
 rust-embed = "8.5.0"
 rayon = "1.10.0"
+lambda-web = { version = "0.2.1", features = ["actix4"] }
