@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use bincode::{Encode, Decode};
 
 pub trait ToPartialString {
     fn _to_partial_string(&self) -> String;
@@ -76,16 +77,16 @@ pub struct HeatmapQuery {
 
 // Server sends this back to client after a query,
 // contains the granule data
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Decode, Encode, Deserialize, Serialize, Debug, PartialEq)]
 pub struct HeatmapResponse {
     pub data: HeatmapData,
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Encode, Decode, Deserialize, Serialize, Debug, PartialEq)]
 pub struct HeatmapData {
     pub data: InteriorData,
 }
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Encode, Decode, Deserialize, Serialize, Debug, PartialEq)]
 pub struct InteriorData {
     pub length: i32,
     pub positions: Vec<Vec<(f64, f64)>>,

@@ -1,8 +1,9 @@
+use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use crate::granule::Granule;
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Decode, Encode, Debug, PartialEq)]
 pub struct HeatmapData {
     pub length: i32,
     pub positions: Vec<Vec<(f64, f64)>>,

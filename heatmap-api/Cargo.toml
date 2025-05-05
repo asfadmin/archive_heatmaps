@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+bincode = "2.0.1"
 chrono = "0.4.38"
 leptos = "0.6.12"
 serde = "1.0.204"

@@ -12,17 +12,15 @@ pub async fn request(filter: heatmap_api::Filter) -> (HeatmapData, OutlineRespon
         .await
         .expect("ERROR: Failed to recive data from post request");
 
-    // Deserialize response into json string
-    let str = data
-        .text()
-        .await
-        .expect("ERROR: Failed to deserialize Response into json str");
+    // Deserialize response into bytes
+    let res_bytes = data.bytes().await.unwrap();
 
-    web_sys::console::log_2(&"Data text: ".into(), &format!("{:?}", str).into());
+    web_sys::console::log_2(&"Data text: ".into(), &format!("{:?}", res_bytes).into());
 
     // Convert json string into a HeatmapData struct
-    let json_data: heatmap_api::HeatmapData =
-        serde_json::from_str(&str).expect("ERROR: Failed to deserialized json data");
+    let heatmap_data:(HeatmapData, usize) =
+        bincode::decode_from_slice(&res_bytes.to_vec(), bincode::config::standard()).expect("ERROR: Failed to deserialized json data");
+
 
     // Get the outline data from the service
     // *** This should be broken out into its own function so we only get and mesh the world outline once ***
@@ -40,5 +38,5 @@ pub async fn request(filter: heatmap_api::Filter) -> (HeatmapData, OutlineRespon
 
     // Deserialize the json into a HeatmapData struct
     web_sys::console::log_1(&"Data succesfully deserialized".into());
-    (json_data, outline_data)
+    (heatmap_data.0, outline_data)
 }
