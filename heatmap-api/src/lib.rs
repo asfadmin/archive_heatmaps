@@ -1,5 +1,5 @@
+use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
-use bincode::{Encode, Decode};
 
 pub trait ToPartialString {
     fn _to_partial_string(&self) -> String;

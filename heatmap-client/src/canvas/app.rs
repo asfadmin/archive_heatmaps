@@ -149,7 +149,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                 web_sys::console::log_1(&"Assign state values in application handler...".into());
 
                 self.state = State {
-                    render_context: Some(render_context),
+                    render_context: Some(*render_context),
                     window: self.state.window.clone(),
                     init_stage: InitStage::Complete,
                     geometry: None,
@@ -339,9 +339,9 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
         }
     }
 }
-// All user events that can be sent to the event loop
+/// All user events that can be sent to the event loop
 pub enum UserMessage<'a> {
-    StateMessage(RenderContext<'a>),
+    StateMessage(Box<RenderContext<'a>>),
     IncomingData(Vec<BufferStorage>, Vec<BufferStorage>),
     MaxWeightMapped,
     ExportMapped,
