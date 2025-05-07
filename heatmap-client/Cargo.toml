@@ -10,29 +10,28 @@ forced-target = "wasm32-unknown-unknown"
 async-std = "1.12.0"
 bytemuck = { version = "1.12", features = [ "derive" ] }
 cgmath = { version = "0.18.0", features = ["swizzle"] }
-chrono = "0.4.38"
 console_error_panic_hook = "0.1.7"
 console_log = "1.0.0"
 earcutr = "0.4.3"
 image = "0.25.1"
-leptos = { version = "0.6.12", features = ["csr", "nightly"] }
-leptosfmt = "0.1.18"
-log = "0.4.21"
 reqwest = { version = "0.12.5", features = ["json"] }
-serde = "1.0.203"
-serde_json = "1.0.118"
 wasm-bindgen = "0.2.92"
 wasm-bindgen-futures = "0.4.42"
 web-sys = { version = "0.3.69", features = ["Document", "Window", "Element"] }
 wgpu = { version = "0.20.1", features = ["webgl"] }
 winit = "0.30.3"
 heatmap-api = { path = "../heatmap-api" }
-geo = "0.28.0"
 js-sys = "0.3.69"
 png = "0.17.13"
 urlencoding = "2.1.3"
-base64 = "0.22.1"
 text-to-png = "0.2.0"
+chrono = {workspace = true}
+leptos = { workspace = true}
+serde = {workspace = true}
+serde_json = {workspace = true}
+log = {workspace = true}
+geo = {workspace = true}
+base64 = {workspace = true}
 
 [lints.clippy]
 unwrap_used = "warn"
