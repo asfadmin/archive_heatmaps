@@ -106,7 +106,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                             self.exiting(event_loop);
                         }
 
-                        Err(e) => eprintln!("{:?}", e),
+                        Err(e) => eprintln!("{e:?}",),
                     }
                 }
 
@@ -256,7 +256,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                     }
                 }
 
-                web_sys::console::log_1(&format!("Max: {:?}", max).into());
+                web_sys::console::log_1(&format!("Max: {max:?}").into());
 
                 // We now update the uniform buffer with our max weight
                 //    so that we can read the max value in the colormap render pass
@@ -314,7 +314,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                         .base64_png = Some(base64_encoded_png.clone());
                 }
 
-                web_sys::console::log_1(&format!("PNG Bytes: {:X?}", base64_encoded_png).into());
+                web_sys::console::log_1(&format!("PNG Bytes: {base64_encoded_png:X?}").into());
 
                 // We dynamically generate this anchor element to download the generated png, it is removed after it goes out of scope
                 {

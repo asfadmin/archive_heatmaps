@@ -27,7 +27,7 @@ pub fn generate_heatmap_image(render_context: &mut RenderContext, filter: Filter
         color_data.push(f32::from_le_bytes([*raw[0], *raw[1], *raw[2], *raw[3]]));
     }
 
-    web_sys::console::log_1(&format!("Freshley decoded: {:?}", color_data).into());
+    web_sys::console::log_1(&format!("Freshley decoded: {color_data:?}").into());
 
     // Convert the raw image data into an ImageBuffer that can be saved, must use copy texture width here,
     //     Copy Texture is 256 byte aligned so copy_texture.width() is larger than displayed size and so
@@ -168,9 +168,7 @@ pub fn generate_export_image(
         last_upper = upper;
         layer += 1;
 
-        web_sys::console::log_1(
-            &format!("Upper: {:?}\nRunning Total: {:?}", upper, last_upper).into(),
-        );
+        web_sys::console::log_1(&format!("Upper: {upper:?}\nRunning Total: {last_upper:?}").into());
     }
 
     // Last range in legend, formatting is unique so it cant be done in the loop
