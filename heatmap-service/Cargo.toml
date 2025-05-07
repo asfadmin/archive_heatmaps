@@ -29,3 +29,4 @@ rayon = "1.10.0"
 base64 = { workspace = true }
 log = {workspace = true}
 geo = {workspace = true}
+bincode = { workspace = true }

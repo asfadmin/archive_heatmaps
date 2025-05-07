@@ -32,6 +32,7 @@ serde_json = {workspace = true}
 log = {workspace = true}
 geo = {workspace = true}
 base64 = {workspace = true}
+bincode = {workspace = true}
 
 [lints.clippy]
 unwrap_used = "warn"

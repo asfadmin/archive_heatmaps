@@ -102,7 +102,7 @@ fn gen_lod_layers(
             render_context
                 .device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some(&(format!("{:?} LOD {:?} Vertex Buffer", label, i))),
+                    label: Some(&(format!("{label:?} LOD {i:?} Vertex Buffer"))),
                     contents: bytemuck::cast_slice(layer.vertices.as_slice()),
                     usage: wgpu::BufferUsages::VERTEX,
                 });
@@ -111,7 +111,7 @@ fn gen_lod_layers(
             render_context
                 .device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some(&(format!("{:?} LOD {:?} Index Buffer", label, i))),
+                    label: Some(&(format!("{label:?} LOD {i:?} Index Buffer"))),
                     contents: bytemuck::cast_slice(layer.indices.as_slice()),
                     usage: wgpu::BufferUsages::INDEX,
                 });
