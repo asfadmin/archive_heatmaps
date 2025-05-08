@@ -26,6 +26,8 @@ mod redis;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    println!("Service starting up");
+
     dotenv::dotenv().ok();
 
     std::env::set_var("RUST_LOG", "actix_web=info");
@@ -49,6 +51,8 @@ async fn main() -> std::io::Result<()> {
     let bind_address = config.server_address.clone();
 
     let geo_assets = GeoAssets::from_config(config.clone());
+
+    println!("Service Running!");
 
     HttpServer::new(move || {
         let cors = Cors::default()
