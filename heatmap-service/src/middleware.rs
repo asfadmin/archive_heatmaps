@@ -16,6 +16,7 @@ use actix_web::{
     web::{Bytes, BytesMut, Data},
     Error, HttpMessage, HttpResponse,
 };
+use base64::{engine::general_purpose, Engine as _};
 use futures_util::{future::LocalBoxFuture, stream::StreamExt};
 use redis::AsyncCommands;
 use serde::{Deserialize, Serialize};
@@ -147,7 +148,11 @@ where
                             let response = HttpResponse::Ok()
                                 .content_type("application/json")
                                 .append_header(encoding)
-                                .body(base64::decode(response).actix_map_result()?)
+                                .body(
+                                    general_purpose::STANDARD
+                                        .decode(response)
+                                        .actix_map_result()?,
+                                )
                                 .map_into_right_body();
 
                             return Ok(ServiceResponse::new(request, response));
@@ -281,7 +286,7 @@ impl<B> PinnedDrop for BodyCacher<B> {
     fn drop(self: Pin<&mut Self>) {
         if let Some(caching_information) = self.caching_information.clone() {
             let redis_pool_wrapped = self.redis_pool.clone();
-            let body = base64::encode(&self.body_accum);
+            let body = general_purpose::STANDARD.encode(&self.body_accum);
 
             rt::spawn(async move {
                 // there isnt much we can do for proper error handling here :/
