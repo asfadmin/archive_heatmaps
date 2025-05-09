@@ -20,6 +20,7 @@ The goal of this project is to rewrite and consolidate the existing codebases fo
 1. Install rust, rust-lang.org has instructions on how to go about this
 2. This project uses nightly features of rust, this means you will need a nightly version of rust, run `rustup toolchain install nightly-2025-04-01`
 3. To swtich to a nightly build of rust run `rustup override set nightly-2025-04-01`
+4. Install the `wasm32-unknown-unknown` target with: `rustup target add wasm32-unknown-unknown`
 
 ### Running the Service in Docker
 1. Move `sat_data.geojson` to the `heatmap-service` directory, don't change the file name or the server will fail to find the data

@@ -1,4 +1,4 @@
-FROM rust:1.86 AS builder
+FROM rust:1.84 AS builder
 
 ENV USER=heatmap
 ENV UID=10001
