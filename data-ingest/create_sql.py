@@ -15,7 +15,7 @@ def generate_command(
     start=date.datetime(2021, 1, 1),
     end=date.datetime(2021, 1, 10),
     platform_type="'SA', 'SB'",
-    data_type="'GRD'",
+    data_type="'OCN', 'SLC', 'GRD'",
 ):
 
     cmd = (

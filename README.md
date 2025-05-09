@@ -12,7 +12,9 @@ The goal of this project is to rewrite and consolidate the existing codebases fo
    export DB_PASSWORD=change_me
    export DB_NAME=change_me
    ```
-4.  1)  If you have the dependencies installed locally you can now run `python3 ingest.py` and `sat_data.geojson` will be generated
+
+4. To select a date range and data type to generate data for go into `create_sql.py` and change the default values of `generate_command` as you desire 
+5.  1)  If you have the dependencies installed locally you can now run `python3 ingest.py` and `sat_data.geojson` will be generated
 
     2)  If you have conda installed then you can create a conda enviornment using `env.yml` located inside the `Docker` directory, you can then run `python3 ingest.py` inside this environment to generate `sat_data.geojson`
 

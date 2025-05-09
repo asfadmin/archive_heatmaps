@@ -4,7 +4,6 @@ import geopandas as gpd
 import pandas as pd
 import antimeridian
 import data_merger
-import datetime
 import shapely
 import os
 
@@ -18,7 +17,7 @@ def ingest_data():
     ####################
 
     # Generate SQL command to filter data in PostgreSQL DB
-    SQL = generate_command(data_type="'OCN', 'SLC', 'GRD'")
+    SQL = generate_command()
 
     # Load credentials to connect to DB
     load_dotenv()
