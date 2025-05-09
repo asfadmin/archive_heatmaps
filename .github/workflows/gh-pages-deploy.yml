@@ -21,6 +21,7 @@ jobs:
       - name: Install nightly Rust
         uses: dtolnay/rust-toolchain@nightly
         with:
+          toolchain: "nightly-2025-05-08"
           components: clippy, rustfmt
 
       - name: Add WASM target
