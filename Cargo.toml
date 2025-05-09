@@ -1,4 +1,5 @@
 [workspace]
+resolver = "1"
 
 members = [ 
   "heatmap-service",
@@ -14,10 +15,3 @@ log = "0.4.22"
 geo = "0.28.0"
 base64 = "0.22.1"
 bincode = "2.0.1"
-
-
-
-
-
-
-resolver = "2"
