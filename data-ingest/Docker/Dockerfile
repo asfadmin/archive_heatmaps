@@ -5,9 +5,9 @@ FROM continuumio/miniconda3
 WORKDIR /data_ingest
 
 # Copy all python files over
-COPY ${PWD}/*.py .
-COPY ${PWD}/Docker/env.yml .
-COPY ${PWD}/.env .
+COPY ./*.py .
+COPY ./Docker/env.yml .
+COPY ./.env .
 
 RUN apt update
 RUN apt install libgdal-dev \
