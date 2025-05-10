@@ -10,7 +10,6 @@ actix-cors = "0.7.0"
 actix-http = "3.2.1"
 actix-web = "4.1.0"
 approx = "0.5.1"
-base64 = "0.13.0"
 chrono = { version = "0.4.24", features = ["serde"] }
 config = "0.13.2"
 deadpool-redis = { version = "0.10.2", features = ["serde"] }
@@ -18,9 +17,7 @@ derive_more = "0.99.17"
 dotenv = "0.15.0"
 env_logger = "0.9.0"
 futures-util = "0.3.28"
-geo = "0.28.0"
 geojson = "0.24.1"
-log = "0.4.22"
 pin-project = "1.0.12"
 redis = { version = "0.21.5", features = ["tokio-comp"] }
 serde = "1.0.163"
@@ -29,3 +26,7 @@ serde_with = "2.0.0"
 heatmap-api = { path = "../heatmap-api" }
 rust-embed = "8.5.0"
 rayon = "1.10.0"
+base64 = { workspace = true }
+log = {workspace = true}
+geo = {workspace = true}
+bincode = { workspace = true }

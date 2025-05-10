@@ -1,6 +1,4 @@
-FROM rust:1.69 AS builder
-
-RUN update-ca-certificates
+FROM rust:1.84 AS builder
 
 ENV USER=heatmap
 ENV UID=10001
@@ -16,10 +14,17 @@ RUN adduser \
 
 WORKDIR /heatmap
 
-COPY ./ .
+COPY ./ ./
 
-RUN cargo update # required to fix issue with poorly specified dependencies for tokio-postgres
-RUN cargo build --release
+# Service config values
+RUN <<EOF
+echo "SERVER_ADDRESS=0.0.0.0:8000" >> ./.env
+echo "CACHE_TTL=3600" >> ./.env
+echo "HEATMAP_GEO_JSON_PATH=/heatmap/sat_data.geojson" >> ./.env
+echo "GEO_JSON_PATH=/heatmap/sat_data.geojson" >> ./.env
+EOF
+
+RUN cargo build --release --package heatmap-service
 
 FROM gcr.io/distroless/cc
 
@@ -29,7 +34,11 @@ COPY --from=builder /etc/group /etc/group
 WORKDIR /heatmap
 
 COPY --from=builder /heatmap/target/release/heatmap-service ./
+COPY --from=builder /heatmap/heatmap-service/sat_data.geojson ./
+COPY --from=builder /heatmap/.env ./
 
 USER heatmap:heatmap
 
-CMD ["/heatmap/heatmap-service"]
+EXPOSE 8000
+
+CMD [ "/heatmap/heatmap-service" ]

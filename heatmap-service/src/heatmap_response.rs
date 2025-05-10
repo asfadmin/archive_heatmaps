@@ -1,10 +1,11 @@
+use bincode::{Decode, Encode};
 use chrono::NaiveDate;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{granule::Granule, heatmap_data::HeatmapData};
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Decode, Encode, Debug, PartialEq)]
 pub struct HeatmapResponse {
     pub data: HeatmapData,
 }

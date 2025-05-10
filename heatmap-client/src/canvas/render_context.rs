@@ -197,7 +197,7 @@ pub async fn generate_render_context(
     web_sys::console::log_1(&"Done Generating State".into());
     // Because this is a wasm application we cannot block on async calls so we instead send a message
     //    back to the application handler when this function completes
-    let _ = event_loop_proxy.send_event(UserMessage::StateMessage(message));
+    let _ = event_loop_proxy.send_event(UserMessage::StateMessage(Box::new(message)));
 }
 
 /// Contains a texture and buffer used to map a texture onto the CPU

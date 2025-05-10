@@ -26,6 +26,8 @@ mod redis;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    println!("Service starting up");
+
     dotenv::dotenv().ok();
 
     std::env::set_var("RUST_LOG", "actix_web=info");
@@ -50,10 +52,12 @@ async fn main() -> std::io::Result<()> {
 
     let geo_assets = GeoAssets::from_config(config.clone());
 
+    println!("Service Running!");
+
     HttpServer::new(move || {
         let cors = Cors::default()
             .allowed_origin("https://asfadmin.github.io") // The client is hosted on github pages
-            .allowed_origin("localhost") // Allowed for debug purposes
+            .allowed_origin("http://localhost:8080") // Allowed for debug purposes
             .allowed_methods(vec!["GET", "POST"])
             .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
             .allowed_header(header::CONTENT_TYPE)

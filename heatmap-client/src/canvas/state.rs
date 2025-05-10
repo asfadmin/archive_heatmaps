@@ -85,7 +85,7 @@ impl State<'_> {
             render_context.export_texture_context =
                 generate_export_texture(&render_context.device, new_size);
 
-            web_sys::console::log_1(&format!("New Size: {:?}", new_size).into());
+            web_sys::console::log_1(&format!("New Size: {new_size:?}").into());
         }
     }
 

@@ -1,4 +1,5 @@
 use actix_web::{
+    body::BoxBody,
     web::{Data, Json},
     Error, HttpRequest, HttpResponse,
 };
@@ -38,7 +39,11 @@ async fn heatmap_query(
 
     let response_data = HeatmapResponse::from_geojson(query.filter, feature_collection);
 
-    let response = HttpResponse::Ok().json(&response_data);
+    let response = HttpResponse::Ok()
+        .message_body(BoxBody::new(
+            bincode::encode_to_vec(&response_data, bincode::config::standard()).unwrap(),
+        ))
+        .expect("Failed to create HttpResponse for heatmap granules");
 
     if let Some(redis_pool) = redis_wrapped {
         redis::cache_put(
