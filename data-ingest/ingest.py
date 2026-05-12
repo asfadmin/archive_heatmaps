@@ -28,17 +28,17 @@ def ingest_data():
 
     # Formulate and execute command to dump a shapefile
     cmd = (
-        "pgsql2shp -f ./Resources/sat_data -h "
-        + db_host
-        + " -u "
-        + db_username
-        + " -P "
-        + db_password
-        + " "
+        "ogr2ogr -f 'ESRI Shapefile' ./Resources/sat_data.shp PG:\"dbname="
         + db_name
-        + ' "'
+        + " host="
+        + db_host
+        + " port=5432 user="
+        + db_username
+        + " password="
+        + db_password
+        + "\" -sql \""
         + SQL
-        + '"'
+        + "\""
     )
     os.system("mkdir Resources")
     os.system(cmd)
