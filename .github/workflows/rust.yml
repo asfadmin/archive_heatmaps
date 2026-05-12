@@ -18,7 +18,7 @@ jobs:
       - name: Cargo Target
         run: rustup target add wasm32-unknown-unknown
       - name: Cargo Toolchain
-        run: rustup toolchain add nightly
+        run: rustup toolchain toolchain install nightly-2025-02-01
       - name: Cargo Clippy
         run: cargo clippy
   formatting:
