@@ -118,11 +118,6 @@ def ingest_data():
     out_gdf = gpd.GeoDataFrame(out_dict, crs=data_gdf.crs)
     out_gdf.to_parquet("sat_data.parquet")
 
-    # Write the geojson string to a file
-    #file = open("sat_data.geojson", "w")
-    #file.write(output)
-    #file.close()
-
     # Clean up the resources folder
     os.system("rm -rf ./Resources")
 
