@@ -28,17 +28,17 @@ def ingest_data():
 
     # Formulate and execute command to dump a shapefile
     cmd = (
-        "pgsql2shp -f ./Resources/sat_data -h "
-        + db_host
-        + " -u "
-        + db_username
-        + " -P "
-        + db_password
-        + " "
+        "ogr2ogr -f 'ESRI Shapefile' ./Resources/sat_data.shp PG:\"dbname="
         + db_name
-        + ' "'
+        + " host="
+        + db_host
+        + " port=5432 user="
+        + db_username
+        + " password="
+        + db_password
+        + "\" -sql \""
         + SQL
-        + '"'
+        + "\""
     )
     os.system("mkdir Resources")
     os.system(cmd)
@@ -116,12 +116,7 @@ def ingest_data():
     # Convert merged data to a geojson string
     out_dict = merger.to_dict()
     out_gdf = gpd.GeoDataFrame(out_dict, crs=data_gdf.crs)
-    output = out_gdf.to_json()
-
-    # Write the geojson string to a file
-    file = open("sat_data.geojson", "w")
-    file.write(output)
-    file.close()
+    out_gdf.to_parquet("sat_data.parquet")
 
     # Clean up the resources folder
     os.system("rm -rf ./Resources")

@@ -3,7 +3,8 @@ resolver = "1"
 
 members = [ 
   "heatmap-service",
-  "heatmap-client", "heatmap-api",
+  "heatmap-client", 
+  "heatmap-api",
 ]
 
 [workspace.dependencies]

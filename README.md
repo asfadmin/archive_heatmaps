@@ -13,7 +13,7 @@ The goal of this project is to rewrite and consolidate the existing codebases fo
    export DB_NAME=change_me
    ```
 
-4. To select a date range and data type to generate data for go into `create_sql.py` and change the default values of `generate_command` as you desire 
+4. To select a date range and data type to generate go into `create_sql.py` and change the default values of `generate_command` as you desire 
 5.  1)  If you have docker installed then you can cd into `./Docker` and run `./run.sh` to generate `sat_data.geojson`
     2)  If you have the dependencies installed locally you can now run `python3 ingest.py` and `sat_data.geojson` will be generated
 
