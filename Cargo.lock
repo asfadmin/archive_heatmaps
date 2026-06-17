@@ -1743,17 +1743,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "heatmap-api"
-version = "0.1.0"
-dependencies = [
- "bincode",
- "chrono",
- "leptos",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "heatmap-client"
 version = "0.1.0"
 dependencies = [
@@ -1767,7 +1756,6 @@ dependencies = [
  "console_log",
  "earcutr",
  "geo",
- "heatmap-api",
  "image",
  "js-sys",
  "leptos",
