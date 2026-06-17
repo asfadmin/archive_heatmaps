@@ -31,7 +31,7 @@ use crate::ingest::load::DataLoader;
 #[component]
 pub fn Canvas(set_generate_img: leptos::WriteSignal<bool>) -> impl IntoView {
     // Signal from the UI containing the filter
-    let filter = use_context::<ReadSignal<heatmap_api::Filter>>()
+    let filter = use_context::<ReadSignal<types::Filter>>()
         .expect("ERROR: Failed to get colormap read signal context in Canvas()");
 
     let generate_img = use_context::<ReadSignal<bool>>()

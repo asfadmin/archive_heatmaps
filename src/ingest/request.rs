@@ -1,14 +1,14 @@
-use heatmap_api::{HeatmapData, OutlineResponse};
+use types::{HeatmapData, HeatmapQuery, OutlineResponse, Filter};
 
 // Send a request to the service for data based on the filter
-pub async fn request(filter: heatmap_api::Filter) -> (HeatmapData, OutlineResponse) {
+pub async fn request(filter: Filter) -> (HeatmapData, OutlineResponse) {
     let client = reqwest::Client::new();
 
     // Get the granule data from the service
     let heatmap_data: HeatmapData = bincode::decode_from_slice(
         &client
             .post("http://localhost:8000/heatmap") // TODO, some configuration mechanism for this
-            .json(&heatmap_api::HeatmapQuery { filter })
+            .json(&HeatmapQuery { filter })
             .send()
             .await
             .expect("ERROR: Failed to recive data from post request")

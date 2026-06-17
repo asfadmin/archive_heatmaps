@@ -3,13 +3,14 @@ use std::collections::VecDeque;
 
 use geo::geometry::{Coord, LineString, Polygon};
 use geo::{coord, Simplify, TriangulateEarcut};
-use heatmap_api::{HeatmapData, OutlineResponse};
 use leptos::{create_signal, SignalGetUntracked, SignalSet, SignalUpdate};
 use winit::event_loop::EventLoopProxy;
 
+use crate::types::{HeatmapData, OutlineResponse};
 use super::request::request;
 use crate::canvas::app::UserMessage;
 use crate::canvas::geometry::BlendVertex;
+use crate::types;
 
 enum Data {
     Outline(OutlineResponse),
@@ -47,7 +48,7 @@ impl DataLoader {
     }
 
     // Updates signals and starts the process of requesting new data based on filter
-    pub fn load_data(&self, filter: heatmap_api::Filter) {
+    pub fn load_data(&self, filter: types::Filter) {
         self.set_active_requests.update(|n| *n += 1);
         self.set_ready.set(false);
 
@@ -62,24 +63,24 @@ impl DataLoader {
 
 async fn load_data_async(
     event_loop_proxy: EventLoopProxy<UserMessage<'static>>,
-    filter: heatmap_api::Filter,
+    filter: types::Filter,
     active_requests: leptos::ReadSignal<u32>,
     set_active_requests: leptos::WriteSignal<u32>,
 ) {
     // Request data from the server
     let (data, outline_data) = request(filter).await;
 
-    web_sys::console::log_1(
-        &format!("Active Requests: {:?}", active_requests.get_untracked()).into(),
-    );
+    // web_sys::console::log_1(
+    //     &format!("Active Requests: {:?}", active_requests.get_untracked()).into(),
+    // );
     // Convert the data into a triangular mesh
     if active_requests.get_untracked() == 1 {
-        web_sys::console::log_1(&"Meshing data...".into());
+        // web_sys::console::log_1(&"Meshing data...".into());
         let meshed_data = mesh_data(Data::Heatmap(data));
         let meshed_outline_data = mesh_data(Data::Outline(outline_data));
 
         // Send the triangular mesh to the event loop
-        web_sys::console::log_1(&"Sending Mesh to event loop".into());
+        // web_sys::console::log_1(&"Sending Mesh to event loop".into());
         let _ = event_loop_proxy
             .send_event(UserMessage::IncomingData(meshed_data, meshed_outline_data));
     }

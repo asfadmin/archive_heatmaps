@@ -1,9 +1,9 @@
-extern crate heatmap_api;
-
 use chrono::naive::NaiveDate;
 use heatmap_api::Filter;
 use leptos::wasm_bindgen::JsCast;
 use leptos::*;
+
+use crate::types;
 
 #[component]
 pub fn UserInterface(
@@ -84,7 +84,7 @@ pub fn UserInterface(
             .expect("failed to get end_date value")
             .value();
 
-        set_filter(heatmap_api::Filter {
+        set_filter(types::Filter {
             product_type,
             platform_type,
             start_date,

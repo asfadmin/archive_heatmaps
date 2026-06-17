@@ -17,6 +17,7 @@ use super::input::InputState;
 use super::render_context::{CopyContext, MaxWeightState, RenderContext};
 use super::texture::{generate_blend_texture, generate_copy_texture, generate_export_texture};
 use crate::canvas::png::{ExportContext, InitStage};
+use crate::types;
 
 /// Stores the information needed to draw to a surface with a shader
 #[derive(Default)]
@@ -27,7 +28,7 @@ pub struct State<'a> {
     pub input_state: InputState,
     pub init_stage: InitStage,
     pub event_loop_proxy: Option<EventLoopProxy<UserMessage<'static>>>,
-    pub filter: Option<ReadSignal<heatmap_api::Filter>>,
+    pub filter: Option<ReadSignal<types::Filter>>,
     pub camera_storage: Option<Camera>,
     pub size_storage: Option<PhysicalSize<u32>>,
     pub export_context: Option<ExportContext>,

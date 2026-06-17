@@ -10,20 +10,21 @@ use ui::user_interface::UserInterface;
 mod canvas;
 mod ingest;
 mod ui;
+mod types;
 
 fn main() {
     console_error_panic_hook::set_once();
 
     // Default filter, used on startup
-    let (filter, set_filter) = create_signal(heatmap_api::Filter {
+    let (filter, set_filter) = create_signal(types::Filter {
         product_type: vec![
-            heatmap_api::ProductTypes::GroundRangeDetected,
-            heatmap_api::ProductTypes::SingleLookComplex,
-            heatmap_api::ProductTypes::Ocean,
+            types::ProductTypes::GroundRangeDetected,
+            types::ProductTypes::SingleLookComplex,
+            types::ProductTypes::Ocean,
         ],
         platform_type: vec![
-            heatmap_api::PlatformType::Sentinel1A,
-            heatmap_api::PlatformType::Sentinel1B,
+            types::PlatformType::Sentinel1A,
+            types::PlatformType::Sentinel1B,
         ],
         start_date: NaiveDate::from_ymd_opt(2019, 1, 1)
             .expect("Failed to create start date when creating filter signal")
