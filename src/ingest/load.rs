@@ -3,8 +3,8 @@ use std::collections::VecDeque;
 
 use geo::geometry::{Coord, LineString, Polygon};
 use geo::{coord, Simplify, TriangulateEarcut};
-use leptos::{create_signal, SignalGetUntracked, SignalSet, SignalUpdate};
 use winit::event_loop::EventLoopProxy;
+use leptos::prelude::{Set, Update, GetUntracked, create_signal};
 
 use crate::types::{HeatmapData, OutlineResponse};
 use super::request::request;
@@ -27,15 +27,15 @@ pub struct BufferStorage {
 // Struct that is responsible for submitting requests to the service for new data
 pub struct DataLoader {
     pub event_loop_proxy: EventLoopProxy<UserMessage<'static>>,
-    pub active_requests: leptos::ReadSignal<u32>,
-    pub set_active_requests: leptos::WriteSignal<u32>,
-    pub set_ready: leptos::WriteSignal<bool>,
+    pub active_requests: leptos::prelude::ReadSignal<u32>,
+    pub set_active_requests: leptos::prelude::WriteSignal<u32>,
+    pub set_ready: leptos::prelude::WriteSignal<bool>,
 }
 
 impl DataLoader {
     pub fn new(
         event_loop_proxy: EventLoopProxy<UserMessage<'static>>,
-        set_ready: leptos::WriteSignal<bool>,
+        set_ready: leptos::prelude::WriteSignal<bool>,
     ) -> Self {
         let (active_requests, set_active_requests) = create_signal(0);
 
@@ -52,7 +52,7 @@ impl DataLoader {
         self.set_active_requests.update(|n| *n += 1);
         self.set_ready.set(false);
 
-        leptos::spawn_local(load_data_async(
+        leptos::task::spawn_local(load_data_async(
             self.event_loop_proxy.clone(),
             filter,
             self.active_requests,
@@ -64,8 +64,8 @@ impl DataLoader {
 async fn load_data_async(
     event_loop_proxy: EventLoopProxy<UserMessage<'static>>,
     filter: types::Filter,
-    active_requests: leptos::ReadSignal<u32>,
-    set_active_requests: leptos::WriteSignal<u32>,
+    active_requests: leptos::prelude::ReadSignal<u32>,
+    set_active_requests: leptos::prelude::WriteSignal<u32>,
 ) {
     // Request data from the server
     let (data, outline_data) = request(filter).await;

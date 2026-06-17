@@ -2,13 +2,12 @@
 //  to render a shader
 
 use std::rc::Rc;
-
-use leptos::{ReadSignal, SignalGetUntracked};
 use wgpu::{BindGroup, Extent3d, Origin3d};
 use winit::dpi::PhysicalSize;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoopProxy;
 use winit::window::Window;
+use leptos::prelude::{GetUntracked};
 
 use super::app::UserMessage;
 use super::camera::{Camera, CameraEvent};
@@ -28,7 +27,7 @@ pub struct State<'a> {
     pub input_state: InputState,
     pub init_stage: InitStage,
     pub event_loop_proxy: Option<EventLoopProxy<UserMessage<'static>>>,
-    pub filter: Option<ReadSignal<types::Filter>>,
+    pub filter: Option<leptos::prelude::ReadSignal<types::Filter>>,
     pub camera_storage: Option<Camera>,
     pub size_storage: Option<PhysicalSize<u32>>,
     pub export_context: Option<ExportContext>,

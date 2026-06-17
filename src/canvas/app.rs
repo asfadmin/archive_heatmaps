@@ -3,8 +3,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use leptos::html::ToHtmlElement;
-use leptos::{SignalGetUntracked, SignalSet};
+use leptos::html::HtmlElement;
+use leptos::prelude::{Set, GetUntracked};
 use wasm_bindgen::JsCast;
 use web_sys::HtmlAnchorElement;
 use winit::platform::web::WindowExtWebSys;
@@ -121,7 +121,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                 // Initialize setup of state when resized is first called, otherwise call state.resize
                 if self.state.init_stage == InitStage::Incomplete {
                     // web_sys::console::log_1(&"Generating state...".into());
-                    leptos::spawn_local(super::render_context::generate_render_context(
+                    leptos::task::spawn_local(super::render_context::generate_render_context(
                         self.state
                             .window
                             .as_ref()
@@ -349,6 +349,6 @@ pub enum UserMessage<'a> {
 
 /// Stores the canvas as an html element
 pub struct ExternalState {
-    pub canvas: Option<leptos::HtmlElement<leptos::html::AnyElement>>,
-    pub set_ready: leptos::WriteSignal<bool>,
+    pub canvas: Option<leptos::html::HtmlElement<leptos::html::AnyElement>>,
+    pub set_ready: leptos::prelude::WriteSignal<bool>,
 }

@@ -1,10 +1,9 @@
-#![feature(let_chains)]
 #![feature(iter_next_chunk)]
 #![feature(iter_advance_by)]
 
 use canvas::Canvas;
 use chrono::NaiveDate;
-use leptos::*;
+    use leptos::{prelude::*, mount::mount_to_body };
 use ui::user_interface::UserInterface;
 
 mod canvas;
@@ -47,5 +46,5 @@ fn main() {
         </div>
     };
 
-    leptos::mount_to_body(move || app)
+    mount_to_body(move || app)
 }

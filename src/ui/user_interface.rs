@@ -1,14 +1,14 @@
 use chrono::naive::NaiveDate;
-use heatmap_api::Filter;
+use types::Filter;
 use leptos::wasm_bindgen::JsCast;
-use leptos::*;
+use leptos::{prelude::*, html};
 
 use crate::types;
 
 #[component]
 pub fn UserInterface(
-    set_filter: leptos::WriteSignal<Filter>,
-    set_generate_img: leptos::WriteSignal<bool>,
+    set_filter: WriteSignal<Filter>,
+    set_generate_img: WriteSignal<bool>,
 ) -> impl IntoView {
     let min_date = NaiveDate::from_ymd_opt(2019, 1, 1)
         .expect("Failed to parse left hand side when finding min_date")
@@ -45,9 +45,9 @@ pub fn UserInterface(
                     .expect("Failed to parse u32 from val");
 
                 match val {
-                    0 => product_type.push(heatmap_api::ProductTypes::GroundRangeDetected),
-                    1 => product_type.push(heatmap_api::ProductTypes::SingleLookComplex),
-                    2 => product_type.push(heatmap_api::ProductTypes::Ocean),
+                    0 => product_type.push(types::ProductTypes::GroundRangeDetected),
+                    1 => product_type.push(types::ProductTypes::SingleLookComplex),
+                    2 => product_type.push(types::ProductTypes::Ocean),
                     _ => (),
                 }
             }
@@ -69,8 +69,8 @@ pub fn UserInterface(
                     .expect("Failed to parse u32 from val");
 
                 match val {
-                    0 => platform_type.push(heatmap_api::PlatformType::Sentinel1A),
-                    1 => platform_type.push(heatmap_api::PlatformType::Sentinel1B),
+                    0 => platform_type.push(types::PlatformType::Sentinel1A),
+                    1 => platform_type.push(types::PlatformType::Sentinel1B),
                     _ => (),
                 }
             }

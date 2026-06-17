@@ -1,4 +1,4 @@
-use types::{HeatmapData, HeatmapQuery, OutlineResponse, Filter};
+use crate::types::{HeatmapData, HeatmapQuery, OutlineResponse, Filter};
 
 // Send a request to the service for data based on the filter
 pub async fn request(filter: Filter) -> (HeatmapData, OutlineResponse) {
@@ -35,6 +35,6 @@ pub async fn request(filter: Filter) -> (HeatmapData, OutlineResponse) {
     .expect("failed to deserialize json data");
 
     // Deserialize the json into a HeatmapData struct
-    web_sys::console::log_1(&"Data succesfully deserialized".into());
+    // web_sys::console::log_1(&"Data succesfully deserialized".into());
     (heatmap_data, outline_data)
 }

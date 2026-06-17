@@ -19,17 +19,18 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use app::{App, ExternalState, UserMessage};
-use leptos::*;
+use leptos::prelude::*;
 use state::State;
 use winit::event_loop::EventLoop;
 use winit::platform::web::EventLoopExtWebSys;
 
 use crate::canvas::png::{ExportContext, InitStage};
 use crate::ingest::load::DataLoader;
+use crate::types;
 
 /// Component to display a heatmap generated using wgpu and wgsl shaders
 #[component]
-pub fn Canvas(set_generate_img: leptos::WriteSignal<bool>) -> impl IntoView {
+pub fn Canvas(set_generate_img: leptos::prelude::WriteSignal<bool>) -> impl IntoView {
     // Signal from the UI containing the filter
     let filter = use_context::<ReadSignal<types::Filter>>()
         .expect("ERROR: Failed to get colormap read signal context in Canvas()");
