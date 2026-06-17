@@ -87,11 +87,13 @@ pub fn Canvas(set_generate_img: leptos::WriteSignal<bool>) -> impl IntoView {
     create_effect(move |_| data_loader.load_data(filter()));
 
     view! {
-        <Show when=move || { !ready() }>
-            <div id="loader">
-                <span class="loader"></span>
-            </div>
-        </Show>
-        {canvas}
+        <div>
+            <Show when=move || { !ready() }>
+                <div id="loader">
+                    <span class="loader"></span>
+                </div>
+            </Show>
+            {canvas}
+        </div>
     }
 }
