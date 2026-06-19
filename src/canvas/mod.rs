@@ -19,6 +19,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use app::{App, ExternalState, UserMessage};
+use leptos::html::Div;
 use leptos::prelude::*;
 use state::State;
 use winit::event_loop::EventLoop;
@@ -44,7 +45,7 @@ pub fn Canvas(set_generate_img: leptos::prelude::WriteSignal<bool>) -> impl Into
         .expect("ERROR: Failed to create event loop");
 
     // Determines if the loading bar is displayed or not, false is displayed, true is hidden
-    let (ready, set_ready) = create_signal(false);
+    let (ready, set_ready) = signal(false);
 
     // The canvas element will be stored here once it has been created
     let external_state = Rc::new(RefCell::new(ExternalState {
@@ -74,18 +75,20 @@ pub fn Canvas(set_generate_img: leptos::prelude::WriteSignal<bool>) -> impl Into
     event_loop.spawn_app(app);
 
     // Get a reference to the canvas and add a css class to it
-    let canvas = external_state
+    let (canvas, _) = external_state
         .borrow()
         .canvas
         .clone()
         .expect("ERROR: Failed to get external state")
-        .attr("class", "wgpu_surface");
+        .class("wgpu_surface");
 
     // Struct responsible for making requests to the service for new data
     let data_loader = DataLoader::new(event_loop_proxy, set_ready);
 
     // Anytime the filter signal changes the data loader now calls load data with the new signal
-    create_effect(move |_| data_loader.load_data(filter()));
+    Effect::new(move |_| data_loader.load_data(filter()));
+
+    let canvas_ref = NodeRef::<Div>::new();
 
     view! {
         <div>
@@ -94,7 +97,7 @@ pub fn Canvas(set_generate_img: leptos::prelude::WriteSignal<bool>) -> impl Into
                     <span class="loader"></span>
                 </div>
             </Show>
-            {canvas}
+            <div node_ref=canvas_ref></div>
         </div>
     }
 }

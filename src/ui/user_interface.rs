@@ -20,10 +20,10 @@ pub fn UserInterface(
         .format("%Y-%m-%d")
         .to_string();
 
-    let (start_date, _set_start_date) = create_signal(min_date);
-    let start_date_element: NodeRef<html::Input> = create_node_ref();
-    let (end_date, _set_end_date) = create_signal(max_date);
-    let end_date_element: NodeRef<html::Input> = create_node_ref();
+    let (start_date, _set_start_date) = signal(min_date);
+    let start_date_element: NodeRef<html::Input> = NodeRef::new();
+    let (end_date, _set_end_date) = signal(max_date);
+    let end_date_element: NodeRef<html::Input> = NodeRef::new();
 
     let doc = document();
 
@@ -77,11 +77,15 @@ pub fn UserInterface(
         }
 
         // Gets the selected start and end dates
-        let start_date = start_date_element()
-            .expect("failed to get start date value")
+        let start_date = start_date_element
+            .read_untracked()
+            .as_ref()
+            .unwrap()
             .value();
-        let end_date = end_date_element()
-            .expect("failed to get end_date value")
+        let end_date = end_date_element
+            .read_untracked()
+            .as_ref()
+            .unwrap()
             .value();
 
         set_filter(types::Filter {

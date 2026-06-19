@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 use geo::geometry::{Coord, LineString, Polygon};
 use geo::{coord, Simplify, TriangulateEarcut};
 use winit::event_loop::EventLoopProxy;
-use leptos::prelude::{Set, Update, GetUntracked, create_signal};
+use leptos::prelude::{Set, Update, GetUntracked, signal};
 
 use crate::types::{HeatmapData, OutlineResponse};
 use super::request::request;
@@ -37,7 +37,7 @@ impl DataLoader {
         event_loop_proxy: EventLoopProxy<UserMessage<'static>>,
         set_ready: leptos::prelude::WriteSignal<bool>,
     ) -> Self {
-        let (active_requests, set_active_requests) = create_signal(0);
+        let (active_requests, set_active_requests) = signal(0);
 
         DataLoader {
             event_loop_proxy,

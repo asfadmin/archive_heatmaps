@@ -15,7 +15,7 @@ fn main() {
     console_error_panic_hook::set_once();
 
     // Default filter, used on startup
-    let (filter, set_filter) = create_signal(types::Filter {
+    let (filter, set_filter) = signal(types::Filter {
         product_type: vec![
             types::ProductTypes::GroundRangeDetected,
             types::ProductTypes::SingleLookComplex,
@@ -36,7 +36,7 @@ fn main() {
     });
     provide_context(filter);
 
-    let (generate_img, set_generate_img) = create_signal(false);
+    let (generate_img, set_generate_img) = signal(false);
     provide_context(generate_img);
 
     let app = view! {

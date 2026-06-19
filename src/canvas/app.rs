@@ -3,7 +3,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use leptos::html::HtmlElement;
 use leptos::prelude::{Set, GetUntracked};
 use wasm_bindgen::JsCast;
 use web_sys::HtmlAnchorElement;
@@ -55,7 +54,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
             .expect("ERROR: Failed to get window when creating HtmlCanvasElement")
             .as_ref()
             .canvas()
-            .map(|canvas_element| canvas_element.to_leptos_element());
+            .map(|canvas_element| canvas_element);
     }
 
     fn window_event(
@@ -349,6 +348,6 @@ pub enum UserMessage<'a> {
 
 /// Stores the canvas as an html element
 pub struct ExternalState {
-    pub canvas: Option<leptos::html::HtmlElement<leptos::html::AnyElement>>,
+    pub canvas: Option<web_sys::HtmlCanvasElement>,
     pub set_ready: leptos::prelude::WriteSignal<bool>,
 }

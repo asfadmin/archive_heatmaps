@@ -5,7 +5,6 @@ use image::{ImageBuffer, Rgba};
 use text_to_png::TextRenderer;
 
 use super::render_context::RenderContext;
-use crate::types;
 use crate::types::{Filter, PlatformType, ProductTypes};
 
 /// Generate the final png that will be exported
