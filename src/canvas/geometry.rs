@@ -136,13 +136,13 @@ pub fn generate_copy_buffer(
 ) -> wgpu::Buffer {
     let temp_contents = vec![0_u8; (4 * 4 * size.width * size.height) as usize];
 
-    let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    
+
+    device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Max Weight Buffer"),
         contents: temp_contents.as_slice(),
         usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-    });
-
-    vertex_buffer
+    })
 }
 
 // Used to store the camera_uniform

@@ -75,7 +75,7 @@ pub fn Canvas(set_generate_img: leptos::prelude::WriteSignal<bool>) -> impl Into
     event_loop.spawn_app(app);
 
     // Get a reference to the canvas and add a css class to it
-    let (canvas, _) = external_state
+    let (_canvas, _) = external_state
         .borrow()
         .canvas
         .clone()

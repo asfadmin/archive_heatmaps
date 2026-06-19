@@ -5,3 +5,4 @@ __pycache__
 target/
 heatmap-client/dist/
 *sat_data.*
+dist

@@ -53,8 +53,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
             .clone()
             .expect("ERROR: Failed to get window when creating HtmlCanvasElement")
             .as_ref()
-            .canvas()
-            .map(|canvas_element| canvas_element);
+            .canvas();
     }
 
     fn window_event(
@@ -262,7 +261,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                 let mut uniform_data: Vec<u8> = max.to_le_bytes().into();
 
                 // Uniform Buffer must be 16 byte aligned so we pad it with 0's
-                while uniform_data.len() % 16 != 0 {
+                while !uniform_data.len().is_multiple_of(16) {
                     uniform_data.push(0);
                 }
 
