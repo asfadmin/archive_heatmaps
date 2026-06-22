@@ -11,9 +11,8 @@ mod ingest;
 mod ui;
 mod types;
 
-fn main() {
-    console_error_panic_hook::set_once();
-
+#[component]
+fn App() -> impl IntoView {
     // Default filter, used on startup
     let (filter, set_filter) = signal(types::Filter {
         product_type: vec![
@@ -39,12 +38,15 @@ fn main() {
     let (generate_img, set_generate_img) = signal(false);
     provide_context(generate_img);
 
-    let app = view! {
+    view! {
         <div>
             <UserInterface set_filter set_generate_img/>
             <Canvas set_generate_img/>
         </div>
-    };
+    }
+}
 
-    mount_to_body(move || app)
+fn main() {
+    console_error_panic_hook::set_once();
+    mount_to_body(App)
 }
