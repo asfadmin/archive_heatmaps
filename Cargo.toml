@@ -34,6 +34,8 @@ base64 = "0.22.1"
 bincode = "2.0.1"
 gloo-timers = { version = "=0.3.0", features = ["futures"] }
 web-time = "1.1.0"
+strum = { version = "0.28.0", features = ["strum_macros"] }
+strum_macros = "0.28.0"
 
 [lints.clippy]
 unwrap_used = "warn"

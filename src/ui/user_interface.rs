@@ -77,16 +77,20 @@ pub fn UserInterface(
         }
 
         // Gets the selected start and end dates
-        let start_date = start_date_element
+        let start_date = NaiveDate::parse_from_str(&start_date_element
             .read_untracked()
             .as_ref()
             .unwrap()
-            .value();
-        let end_date = end_date_element
+            .value(),
+            "%Y-%m-%d"
+        ).expect("Failed to parse start date from HTML Input");
+        let end_date =  NaiveDate::parse_from_str(&end_date_element
             .read_untracked()
             .as_ref()
             .unwrap()
-            .value();
+            .value(),
+            "%Y-%m-%d"
+        ).expect("Failed to parse end date from HTML Input");
 
         set_filter(types::Filter {
             product_type,

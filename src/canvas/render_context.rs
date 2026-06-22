@@ -2,6 +2,7 @@ use std::rc::Rc;
 
 use winit::window::Window;
 use winit::{dpi::PhysicalSize, event_loop::EventLoopProxy};
+use leptos::logging::log;
 
 use super::app::UserMessage;
 use super::camera::CameraContext;
@@ -194,7 +195,7 @@ pub async fn generate_render_context(
         max_weight_context,
     };
 
-    web_sys::console::log_1(&"Done Generating State".into());
+    log!("Done Generating State");
     // Because this is a wasm application we cannot block on async calls so we instead send a message
     //    back to the application handler when this function completes
     let _ = event_loop_proxy.send_event(UserMessage::StateMessage(Box::new(message)));

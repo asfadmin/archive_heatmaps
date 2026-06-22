@@ -1,18 +1,21 @@
 use bincode::{Decode, Encode};
+use chrono::NaiveDate;
+use geo::Polygon;
 use serde::{Deserialize, Serialize};
+use strum_macros::Display;
 
 pub trait ToPartialString {
     fn _to_partial_string(&self) -> String;
 }
 
 // Enums defining possible filter options
-#[derive(Deserialize, Serialize, Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Display)]
 pub enum ProductTypes {
-    #[serde(rename = "GRD")]
+    #[strum(to_string = "GRD")]
     GroundRangeDetected,
-    #[serde(rename = "SLC")]
+    #[strum(to_string = "SLC")]
     SingleLookComplex,
-    #[serde(rename = "OCN")]
+    #[strum(to_string = "OCN")]
     Ocean,
 }
 
@@ -27,12 +30,16 @@ impl ProductTypes {
     }
 }
 
-#[derive(Deserialize, Serialize, Clone, Copy, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Clone, Copy, Debug, PartialEq, Display)]
 pub enum PlatformType {
-    #[serde(rename = "SA")]
+    #[strum(to_string = "SA")]
     Sentinel1A,
-    #[serde(rename = "SB")]
+    #[strum(to_string = "SB")]
     Sentinel1B,
+    #[strum(to_string = "5C")]
+    Sentinel1C,
+    #[strum(to_string = "5D")]
+    Sentinel1D,
 }
 
 impl PlatformType {
@@ -61,25 +68,17 @@ impl DataSensor {
 }
 
 // The filter passed from client to server on a request for data
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Clone)]
 pub struct Filter {
     pub product_type: Vec<ProductTypes>,
     pub platform_type: Vec<PlatformType>,
-    pub start_date: String,
-    pub end_date: String,
+    pub start_date: NaiveDate,
+    pub end_date: NaiveDate,
 }
 
-// Client sends this to server
-#[derive(Deserialize, Serialize)]
-pub struct HeatmapQuery {
-    pub filter: Filter,
-}
-
-// Server sends this back to client after a query,
-// contains the granule data
-#[derive(Decode, Encode, Deserialize, Serialize, Debug, PartialEq)]
-pub struct HeatmapResponse {
-    pub data: HeatmapData,
+pub struct Granule {
+    pub geometry: Polygon,
+    pub weight: u64,
 }
 
 #[derive(Encode, Decode, Deserialize, Serialize, Debug, PartialEq)]

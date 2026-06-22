@@ -1,40 +1,59 @@
-use crate::types::{HeatmapData, HeatmapQuery, OutlineResponse, Filter};
+use geo::Polygon;
+use leptos::logging::log;
+
+use crate::{ingest::sql::{generate_sql, generate_populate_sql}, types::{Filter, Granule, HeatmapData, OutlineResponse}};
+
+pub fn populate_duckdb() -> () {
+    let conn = (); // Connection::open_in_memory().expect("Failed to open in memory DuckDB");
+    // conn.execute("LOAD '/var/runtime/httpfs.duckdb_extension';", [])?;
+
+    log!("Populating duckdb...");
+    let sql = generate_populate_sql();
+    // conn.execute(&sql, [])?;
+
+    // conn.query_row("SELECT COUNT(*) FROM sat_data;", [], |row| {
+    //     if let Ok(val) = row.get::<usize, usize>(0) {
+    //         log!("Loaded {:?} Rows!", val);
+    //     } else {
+    //         log!("Failed to get row count");
+    //     }
+
+    //     Ok(())
+    // });
+
+    conn
+}
 
 // Send a request to the service for data based on the filter
-pub async fn request(filter: Filter) -> (HeatmapData, OutlineResponse) {
-    let client = reqwest::Client::new();
+pub async fn request(conn: &(), filter: Filter) -> (Vec<Granule>, Vec<Polygon>) {
+    let sql = &generate_sql(&filter);
+    // let mut stmt = conn.prepare(sql?);
 
-    // Get the granule data from the service
-    let heatmap_data: HeatmapData = bincode::decode_from_slice(
-        &client
-            .post("http://localhost:8000/heatmap") // TODO, some configuration mechanism for this
-            .json(&HeatmapQuery { filter })
-            .send()
-            .await
-            .expect("ERROR: Failed to recive data from post request")
-            .bytes()
-            .await
-            .expect("ERROR: Failed to convert response into Bytes"),
-        bincode::config::standard(),
-    )
-    .expect("ERROR: Failed to deserialized json data")
-    .0;
+    // let gran_vec: Vec<Granule>  = stmt
+    //     .query_map([], |row| {
+    //         if let Ok(wkb_binary) = hex::decode(row.get::<usize, Vec<u8>>(0)?)
+    //             && let Ok(geom) = wkb::reader::read_wkb(&wkb_binary)
+    //             && let Ok(poly) = geom.to_geometry().try_into()
+    //         {
+    //             let weight: u64 = row.get(1)?;
 
-    // Get the outline data from the service
-    // *** This should be broken out into its own function so we only get and mesh the world outline once ***
-    let outline_data: OutlineResponse = serde_json::from_str(
-        &client
-            .get("http://localhost:8000/outline")
-            .send()
-            .await
-            .expect("Failed to recieve outline data from post request")
-            .text()
-            .await
-            .expect("failed to convert outline data to text"),
-    )
-    .expect("failed to deserialize json data");
+    //             Ok(Granule {
+    //                 geometry: poly,
+    //                 weight,
+    //             })
+    //         } else {
+    //             Err(duckdb::Error::InvalidColumnType(
+    //                 1,
+    //                 "geometry".to_string(),
+    //                 duckdb::types::Type::Enum,
+    //             ))
+    //         }
+    //     })?
+    //     .collect::<Result<Vec<Granule>, duckdb::Error>>()?;
+    let gran_vec = vec![];
+    let outline_vec: Vec<Polygon> = vec![];
 
     // Deserialize the json into a HeatmapData struct
-    // web_sys::console::log_1(&"Data succesfully deserialized".into());
-    (heatmap_data, outline_data)
+    log!("Data succesfully deserialized");
+    (gran_vec, outline_vec)
 }

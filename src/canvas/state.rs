@@ -2,6 +2,7 @@
 //  to render a shader
 
 use std::rc::Rc;
+use leptos::logging::log;
 use wgpu::{BindGroup, Extent3d, Origin3d};
 use winit::dpi::PhysicalSize;
 use winit::event::WindowEvent;
@@ -85,7 +86,7 @@ impl State<'_> {
             render_context.export_texture_context =
                 generate_export_texture(&render_context.device, new_size);
 
-            web_sys::console::log_1(&format!("New Size: {new_size:?}").into());
+            log!("New Size: {new_size:?}");
         }
     }
 
@@ -401,7 +402,7 @@ impl State<'_> {
                 active_colormap = &render_context.colormap_texture_context.1.bind_group;
                 active_colormap_render_pipeline = &render_context.export_colormap_render_pipeline;
 
-                web_sys::console::log_1(&"Generating .png".into());
+                log!("Generating .png");
             } else {
                 // We will draw to the surface of the window, this is displayed in the HtmlElement
                 colormap_output = Some(render_context.surface.get_current_texture()?);
@@ -604,23 +605,17 @@ impl State<'_> {
                     },
                 );
 
-                web_sys::console::log_1(
-                    &format!(
-                        "Copied {:?} bytes",
-                        (render_context.copy_context.texture.width()
-                            * render_context.copy_context.texture.height()
-                            * 4
-                            * 4)
-                    )
-                    .into(),
+                log!(
+                    "Copied {:?} bytes",
+                    (render_context.copy_context.texture.width()
+                        * render_context.copy_context.texture.height()
+                        * 4
+                        * 4)
                 );
-                web_sys::console::log_1(
-                    &format!(
-                        "Copy Texture Dimensions: {:?} by {:?}",
-                        render_context.copy_context.texture.width(),
-                        render_context.copy_context.texture.height()
-                    )
-                    .into(),
+                log!(
+                    "Copy Texture Dimensions: {:?} by {:?}",
+                    render_context.copy_context.texture.width(),
+                    render_context.copy_context.texture.height()
                 );
 
                 render_context

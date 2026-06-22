@@ -3,7 +3,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use leptos::prelude::{Set, GetUntracked};
+use leptos::prelude::{Set, GetUntracked, IntoAny, AnyView};
+use leptos::logging::log;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlAnchorElement;
 use winit::platform::web::WindowExtWebSys;
@@ -14,6 +15,7 @@ use winit::{
     event_loop::{ActiveEventLoop, EventLoopProxy},
     window::{Window, WindowId},
 };
+use web_sys::HtmlCanvasElement;
 
 use super::geometry::{generate_copy_buffer, Geometry};
 use super::png::InitStage;
@@ -47,13 +49,17 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
         ));
 
         // Convert web_sys HtmlCanvasElement into a leptos HtmlElement<AnyElement>
-        self.external_state.borrow_mut().canvas = self
+        self.external_state.borrow_mut().canvas = Some(self
             .state
             .window
             .clone()
             .expect("ERROR: Failed to get window when creating HtmlCanvasElement")
             .as_ref()
-            .canvas();
+            .canvas()
+            .unwrap()
+        );
+
+        log!("Canvas created");
     }
 
     fn window_event(
@@ -117,8 +123,9 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
 
             WindowEvent::Resized(physical_size) => {
                 // Initialize setup of state when resized is first called, otherwise call state.resize
+                log!("Window resized");
                 if self.state.init_stage == InitStage::Incomplete {
-                    // web_sys::console::log_1(&"Generating state...".into());
+                    log!("Generating state...");
                     leptos::task::spawn_local(super::render_context::generate_render_context(
                         self.state
                             .window
@@ -128,7 +135,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                         self.event_loop_proxy.clone(),
                     ));
                 } else {
-                    // web_sys::console::log_1(&"Resizing".into());
+                    log!("Resizing");
                     self.state.resize(physical_size);
                 }
             }
@@ -144,7 +151,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
         match event {
             UserMessage::StateMessage(render_context) => {
                 // Fill out the rest of the state class with the contents of StateMessage
-                // web_sys::console::log_1(&"Assign state values in application handler...".into());
+                log!("Assign state values in application handler...");
 
                 self.state = State {
                     render_context: Some(*render_context),
@@ -173,7 +180,10 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
 
             // There is incoming data from the service, we need to place this new data into buffers to render
             UserMessage::IncomingData(data, outline_data) => {
-                // web_sys::console::log_1(&"Generating Buffers...".into());
+                if self.state.init_stage != InitStage::Complete {
+                    return
+                }
+                log!("Generating Buffers...");
                 let render_context = self
                     .state
                     .render_context
@@ -203,7 +213,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                     export.base64_png = None;
                 }
 
-                // web_sys::console::log_1(&"Done Generating Buffers".into());
+                log!("Done Generating Buffers");
 
                 // Turn off the loading wheel
                 self.external_state.borrow_mut().set_ready.set(true);
@@ -254,7 +264,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                     }
                 }
 
-                // web_sys::console::log_1(&format!("Max: {max:?}").into());
+                log!("Max: {max:?}");
 
                 // We now update the uniform buffer with our max weight
                 //    so that we can read the max value in the colormap render pass
@@ -312,7 +322,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                         .base64_png = Some(base64_encoded_png.clone());
                 }
 
-                // web_sys::console::log_1(&format!("PNG Bytes: {base64_encoded_png:X?}").into());
+                log!("PNG Bytes: {base64_encoded_png:X?}");
 
                 // We dynamically generate this anchor element to download the generated png, it is removed after it goes out of scope
                 {
@@ -332,7 +342,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                     anchor.click();
                 }
 
-                // web_sys::console::log_1(&".png downloaded".into());
+                log!(".png downloaded");
             }
         }
     }
@@ -347,6 +357,6 @@ pub enum UserMessage<'a> {
 
 /// Stores the canvas as an html element
 pub struct ExternalState {
-    pub canvas: Option<web_sys::HtmlCanvasElement>,
+    pub canvas: Option<HtmlCanvasElement>,
     pub set_ready: leptos::prelude::WriteSignal<bool>,
 }

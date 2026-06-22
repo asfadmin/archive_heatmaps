@@ -1,20 +1,24 @@
 extern crate earcutr;
 use std::collections::VecDeque;
+use std::time::Duration;
 
+use async_std::task::sleep;
 use geo::geometry::{Coord, LineString, Polygon};
 use geo::{coord, Simplify, TriangulateEarcut};
 use winit::event_loop::EventLoopProxy;
 use leptos::prelude::{Set, Update, GetUntracked, signal};
+use leptos::logging::log;
 
-use crate::types::{HeatmapData, OutlineResponse};
+use crate::ingest::request::populate_duckdb;
+use crate::types::{Granule, HeatmapData, OutlineResponse};
 use super::request::request;
 use crate::canvas::app::UserMessage;
 use crate::canvas::geometry::BlendVertex;
 use crate::types;
 
 enum Data {
-    Outline(OutlineResponse),
-    Heatmap(HeatmapData),
+    Outline(Vec<Polygon>),
+    Heatmap(Vec<Granule>),
 }
 
 #[derive(Clone)]
@@ -30,6 +34,7 @@ pub struct DataLoader {
     pub active_requests: leptos::prelude::ReadSignal<u32>,
     pub set_active_requests: leptos::prelude::WriteSignal<u32>,
     pub set_ready: leptos::prelude::WriteSignal<bool>,
+    pub connection: (),
 }
 
 impl DataLoader {
@@ -38,12 +43,13 @@ impl DataLoader {
         set_ready: leptos::prelude::WriteSignal<bool>,
     ) -> Self {
         let (active_requests, set_active_requests) = signal(0);
-
+        let connection = populate_duckdb();
         DataLoader {
             event_loop_proxy,
             active_requests,
             set_active_requests,
             set_ready,
+            connection,
         }
     }
 
@@ -57,6 +63,7 @@ impl DataLoader {
             filter,
             self.active_requests,
             self.set_active_requests,
+            self.connection,
         ));
     }
 }
@@ -66,23 +73,23 @@ async fn load_data_async(
     filter: types::Filter,
     active_requests: leptos::prelude::ReadSignal<u32>,
     set_active_requests: leptos::prelude::WriteSignal<u32>,
+    connection: (),
 ) {
     // Request data from the server
-    let (data, outline_data) = request(filter).await;
+    let (data, outline_data) = request(&connection, filter).await;
 
-    // web_sys::console::log_1(
-    //     &format!("Active Requests: {:?}", active_requests.get_untracked()).into(),
-    // );
+    log!("Active Requests: {:?}", active_requests.get_untracked());
     // Convert the data into a triangular mesh
     if active_requests.get_untracked() == 1 {
-        // web_sys::console::log_1(&"Meshing data...".into());
+        log!("Meshing data...");
         let meshed_data = mesh_data(Data::Heatmap(data));
         let meshed_outline_data = mesh_data(Data::Outline(outline_data));
 
         // Send the triangular mesh to the event loop
-        // web_sys::console::log_1(&"Sending Mesh to event loop".into());
-        let _ = event_loop_proxy
-            .send_event(UserMessage::IncomingData(meshed_data, meshed_outline_data));
+        log!("Sending Mesh to event loop");
+        sleep(Duration::new(10, 0)).await;
+        // let _ = event_loop_proxy
+        //    .send_event(UserMessage::IncomingData(meshed_data, meshed_outline_data));
     }
     set_active_requests.update(|n| *n -= 1);
 }
@@ -91,18 +98,27 @@ async fn load_data_async(
 ///     this is done for a varying level of detail to allow for LODs, polygon simplification
 ///     is done using the Ramer-Douglas-Peucker algorithm
 fn mesh_data(data_exterior: Data) -> Vec<BufferStorage> {
-    let positions: Vec<Vec<(f64, f64)>>;
-    let weights: Vec<u64>;
+    let mut positions: Vec<Vec<(f64, f64)>>;
+    let mut weights: Vec<u64>;
 
     match data_exterior {
         Data::Outline(outline_data) => {
-            positions = outline_data.data.positions;
+            positions = vec![];
             weights = vec![0; positions.len()];
         }
 
         Data::Heatmap(heatmap_data) => {
-            positions = heatmap_data.data.positions;
-            weights = heatmap_data.data.weights;
+            positions = vec![];
+            weights = vec![];
+            for gran in heatmap_data {
+                positions.push(gran
+                    .geometry
+                    .exterior()
+                    .points()
+                    .map(|x| {(x.x(), x.y())})
+                    .collect());
+                weights.push(gran.weight);
+            }
         }
     }
 

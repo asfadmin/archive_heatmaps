@@ -3,6 +3,7 @@ use image::codecs::png::PngEncoder;
 use image::ImageEncoder;
 use image::{ImageBuffer, Rgba};
 use text_to_png::TextRenderer;
+use leptos::logging::log;
 
 use super::render_context::RenderContext;
 use crate::types::{Filter, PlatformType, ProductTypes};
@@ -25,7 +26,7 @@ pub fn generate_heatmap_image(render_context: &mut RenderContext, filter: Filter
         color_data.push(f32::from_le_bytes([*raw[0], *raw[1], *raw[2], *raw[3]]));
     }
 
-    // web_sys::console::log_1(&format!("Freshley decoded: {color_data:?}").into());
+    log!("Freshley decoded: {color_data:?}");
 
     // Convert the raw image data into an ImageBuffer that can be saved, must use copy texture width here,
     //     Copy Texture is 256 byte aligned so copy_texture.width() is larger than displayed size and so
@@ -166,7 +167,7 @@ pub fn generate_export_image(
         last_upper = upper;
         layer += 1;
 
-        // web_sys::console::log_1(&format!("Upper: {upper:?}\nRunning Total: {last_upper:?}").into());
+        log!("Upper: {upper:?}\nRunning Total: {last_upper:?}");
     }
 
     // Last range in legend, formatting is unique so it cant be done in the loop
@@ -335,15 +336,19 @@ fn filter_to_text(filter: Filter) -> (String, String, String, String) {
         match platform_type.1 {
             PlatformType::Sentinel1A => platform_string += "Sentinel-1A",
             PlatformType::Sentinel1B => platform_string += "Sentinel-1B",
+            PlatformType::Sentinel1C => platform_string += "Sentinel-1C",
+            PlatformType::Sentinel1D => platform_string += "Sentinel-1D",
         }
     }
 
     let start_year: String = filter
         .start_date
+        .format("%Y-%m-%d")
+        .to_string()
         .chars()
         .take_while(|x| *x != '-')
         .collect();
-    let end_year: String = filter.end_date.chars().take_while(|x| *x != '-').collect();
+    let end_year: String = filter.end_date.format("%Y-%m-%d").to_string().chars().take_while(|x| *x != '-').collect();
 
     (product_string, platform_string, start_year, end_year)
 }
