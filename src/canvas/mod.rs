@@ -24,7 +24,6 @@ use leptos::prelude::*;
 use state::State;
 use winit::event_loop::EventLoop;
 use winit::platform::web::EventLoopExtWebSys;
-use crate::NaiveDate;
 use leptos::logging::log;
 
 use crate::canvas::png::{ExportContext, InitStage};
@@ -78,14 +77,16 @@ pub fn Canvas(set_generate_img: leptos::prelude::WriteSignal<bool>) -> impl Into
 
     let canvas_ref = NodeRef::<Div>::new();
     Effect::new(move |_| {
+        log!("Adding canvas to DOM");
         if let Some(div) = canvas_ref.get() {
             let es = external_state.borrow();
             let canvas = es.canvas.as_ref().unwrap();
             div.append_child(canvas).unwrap();
+            log!("Canvas added to DOM");
+        } else {
+            log!("Failed to get ref to div");
         }
     });
-
-    log!("Canvas ref obtained in mod.rs");
 
     // Struct responsible for making requests to the service for new data
     let data_loader = DataLoader::new(event_loop_proxy, set_ready);
@@ -93,7 +94,7 @@ pub fn Canvas(set_generate_img: leptos::prelude::WriteSignal<bool>) -> impl Into
     // Anytime the filter signal changes the data loader now calls load data with the new signal
     Effect::new(move |_| data_loader.load_data(filter()));
 
-    let canvas_ref = NodeRef::<Div>::new();
+    log!("Creating view!");
 
     view! {
         <div>

@@ -27,7 +27,7 @@ fn App() -> impl IntoView {
         start_date: NaiveDate::from_ymd_opt(2019, 1, 1)
             .expect("Failed to create start date when creating filter signal"),
         end_date: NaiveDate::from_ymd_opt(2024, 4, 21)
-            .expect("Failed to create end date when creating filter signal"),
+            .expect("Failed to create end date when creating filter signal")
     });
     provide_context(filter);
 

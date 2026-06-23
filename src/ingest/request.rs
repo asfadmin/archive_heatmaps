@@ -1,14 +1,14 @@
 use geo::Polygon;
 use leptos::logging::log;
 
-use crate::{ingest::sql::{generate_sql, generate_populate_sql}, types::{Filter, Granule, HeatmapData, OutlineResponse}};
+use crate::{ingest::sql::{generate_sql, generate_populate_sql}, types::{Filter, Granule}};
 
 pub fn populate_duckdb() -> () {
     let conn = (); // Connection::open_in_memory().expect("Failed to open in memory DuckDB");
     // conn.execute("LOAD '/var/runtime/httpfs.duckdb_extension';", [])?;
 
     log!("Populating duckdb...");
-    let sql = generate_populate_sql();
+    let _sql = generate_populate_sql();
     // conn.execute(&sql, [])?;
 
     // conn.query_row("SELECT COUNT(*) FROM sat_data;", [], |row| {
@@ -25,8 +25,8 @@ pub fn populate_duckdb() -> () {
 }
 
 // Send a request to the service for data based on the filter
-pub async fn request(conn: &(), filter: Filter) -> (Vec<Granule>, Vec<Polygon>) {
-    let sql = &generate_sql(&filter);
+pub async fn request(_conn: &(), filter: Filter) -> (Vec<Granule>, Vec<Polygon>) {
+    let _sql = &generate_sql(&filter);
     // let mut stmt = conn.prepare(sql?);
 
     // let gran_vec: Vec<Granule>  = stmt

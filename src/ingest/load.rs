@@ -10,7 +10,7 @@ use leptos::prelude::{Set, Update, GetUntracked, signal};
 use leptos::logging::log;
 
 use crate::ingest::request::populate_duckdb;
-use crate::types::{Granule, HeatmapData, OutlineResponse};
+use crate::types::Granule;
 use super::request::request;
 use crate::canvas::app::UserMessage;
 use crate::canvas::geometry::BlendVertex;
@@ -88,8 +88,8 @@ async fn load_data_async(
         // Send the triangular mesh to the event loop
         log!("Sending Mesh to event loop");
         sleep(Duration::new(10, 0)).await;
-        // let _ = event_loop_proxy
-        //    .send_event(UserMessage::IncomingData(meshed_data, meshed_outline_data));
+        let _ = event_loop_proxy
+           .send_event(UserMessage::IncomingData(meshed_data, meshed_outline_data));
     }
     set_active_requests.update(|n| *n -= 1);
 }
@@ -102,7 +102,7 @@ fn mesh_data(data_exterior: Data) -> Vec<BufferStorage> {
     let mut weights: Vec<u64>;
 
     match data_exterior {
-        Data::Outline(outline_data) => {
+        Data::Outline(_outline_data) => {
             positions = vec![];
             weights = vec![0; positions.len()];
         }

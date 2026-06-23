@@ -3,7 +3,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use leptos::prelude::{Set, GetUntracked, IntoAny, AnyView};
+use leptos::prelude::{Set, GetUntracked};
 use leptos::logging::log;
 use wasm_bindgen::JsCast;
 use web_sys::HtmlAnchorElement;
