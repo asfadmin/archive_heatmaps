@@ -6,3 +6,4 @@ target/
 heatmap-client/dist/
 *sat_data.*
 dist
+assets/duckdb-browser.mjs

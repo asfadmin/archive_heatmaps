@@ -5,7 +5,7 @@ use wasm_bindgen_futures::JsFuture;
 
 #[wasm_bindgen(module = "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm/dist/")]
 extern "C" {
-    
+
 }
 
 pub async fn download_duckdb_wasm() -> Result<(), JsValue> {
@@ -14,7 +14,6 @@ pub async fn download_duckdb_wasm() -> Result<(), JsValue> {
 
     let js_source_text = "
     (async () => {
-        console.log('***** Entered JS Source Code *****');
         const duckdb = await import('https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.33.1-dev57.0/dist/duckdb-browser.mjs');
 
         const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
