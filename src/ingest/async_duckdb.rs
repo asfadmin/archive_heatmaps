@@ -1,16 +1,16 @@
 use js_sys::{Object, Promise, Reflect, WebAssembly};
-use leptos::logging::log;
+use leptos::{attr::Async, logging::log};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
 
-#[wasm_bindgen]
+#[wasm_bindgen(module = "/assets/duckdb-browser.mjs")]
 extern "C" {
-    #[wasm_bindgen(js_name = "AsyncDuckDB")]
-    pub type JsAsyncDuckDB;
-
-    #[wasm_bindgen(js_name="AsyncDuckDBConnection")]
+    #[wasm_bindgen(js_name = "AsyncDuckDBConnection")]
     #[derive(Debug)]
-    pub type JsAsyncDuckDBConnection;
+    type AsyncDuckDBConnection;
+
+    #[wasm_bindgen(method, js_name = "query")]
+    async fn query(this: &AsyncDuckDBConnection, text: &str) -> JsValue;
 }
 
 
@@ -19,7 +19,7 @@ pub async fn download_duckdb_wasm() -> Result<(), JsValue> {
 
     let js_source_text = "
     (async () => {
-        const duckdb = await import('./duckdb-browser.mjs');
+        const duckdb = await import('./snippets/heatmap-client-752fa26ee35a9ffd/assets/duckdb-browser.mjs'); // TO-DO: Figure out how to make hash dynamic in case it changes! shouldnt be a problem unless .mjs gets a version bump?
 
         const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
 
@@ -39,14 +39,24 @@ pub async fn download_duckdb_wasm() -> Result<(), JsValue> {
         
         const conn = await db.connect();
 
+        console.log('conn is AsyncDuckDBConnection: ', conn instanceof duckdb.AsyncDuckDBConnection)
 
         return conn
     })()
     ";
 
-    let conn: Promise = js_sys::eval(js_source_text)?.dyn_into().unwrap();
-    log!("Got promise back from eval");
-    let conn_await: JsAsyncDuckDBConnection = conn.await?.dyn_into().unwrap();
-    log!("Conn in rust: {conn_await:?}");
+    let conn = js_sys::eval(js_source_text)
+        .unwrap()
+        .dyn_into::<Promise>()
+        .unwrap()
+        .await
+        .unwrap()
+        .dyn_into::<AsyncDuckDBConnection>()
+        .unwrap();
+
+    log!("Conn in rust is AsyncDuckDB: {:?}", conn);
+
+    let res = conn.query("SELECT version()").await;
+    log!("DuckDB Query resolved: {:?}", res);
     Ok(())
 }
