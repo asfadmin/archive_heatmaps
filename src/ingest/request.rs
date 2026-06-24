@@ -1,7 +1,7 @@
 use geo::Polygon;
 use leptos::logging::log;
 
-use crate::{ingest::sql::{generate_sql, generate_populate_sql}, types::{Filter, Granule}};
+use crate::{ingest::{async_duckdb::download_duckdb_wasm, sql::{generate_populate_sql, generate_sql}}, types::{Filter, Granule}};
 
 pub fn populate_duckdb() -> () {
     let conn = (); // Connection::open_in_memory().expect("Failed to open in memory DuckDB");
@@ -26,6 +26,10 @@ pub fn populate_duckdb() -> () {
 
 // Send a request to the service for data based on the filter
 pub async fn request(_conn: &(), filter: Filter) -> (Vec<Granule>, Vec<Polygon>) {
+    log!("Request started...");
+    if let Err(e) = download_duckdb_wasm().await {
+        log!("Failed to init DuckDB wasm: {e:?}");
+    }
     let _sql = &generate_sql(&filter);
     // let mut stmt = conn.prepare(sql?);
 
