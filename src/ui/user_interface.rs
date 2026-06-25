@@ -1,7 +1,9 @@
 use chrono::naive::NaiveDate;
 use leptos::wasm_bindgen::JsCast;
 use leptos::{html, prelude::*};
+use chrono::Utc;
 use types::Filter;
+
 
 use crate::types;
 
@@ -10,19 +12,19 @@ pub fn UserInterface(
     set_filter: WriteSignal<Filter>,
     set_generate_img: WriteSignal<bool>,
 ) -> impl IntoView {
-    let min_date = NaiveDate::from_ymd_opt(2019, 1, 1)
+    let min_date = NaiveDate::from_ymd_opt(2014, 6, 1)
         .expect("Failed to parse left hand side when finding min_date")
         .format("%Y-%m-%d")
         .to_string();
 
-    let max_date = NaiveDate::from_ymd_opt(2024, 4, 21)
-        .expect("Failed to parse left hand side when finding max_date")
+    let max_date = Utc::now()
+        .date_naive()
         .format("%Y-%m-%d")
         .to_string();
 
-    let (start_date, _set_start_date) = signal(min_date);
+    let (start_date, _) = signal(NaiveDate::from_ymd_opt(2020, 1, 1).expect("Failed to create start date for filter").format("%Y-%m-%d").to_string());
     let start_date_element: NodeRef<html::Input> = NodeRef::new();
-    let (end_date, _set_end_date) = signal(max_date);
+    let (end_date, _) = signal(NaiveDate::from_ymd_opt(2020, 2, 1).expect("Failed to create end date for filter").format("%Y-%m-%d").to_string());
     let end_date_element: NodeRef<html::Input> = NodeRef::new();
 
     let doc = document();

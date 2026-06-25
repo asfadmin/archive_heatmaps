@@ -48,6 +48,9 @@ GEO_JSON_PATH=/path/to/geojson
 2. Navigate into the `heatmap-service` directory
 3. Run `cargo run --release --package heatmap-service` from repository root 
 
+## Attribution
+TO-DO: Make this an actual attribution statement
+World Continent data comes from hub.arcgis.com/datasets/esri::world-continents/explore
 
 ## Contributers
 Elliott Lewandowski<br>

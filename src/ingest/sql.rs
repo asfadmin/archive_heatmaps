@@ -4,7 +4,14 @@ use crate::types::Filter;
 pub fn generate_populate_sql() -> String {
     "CREATE TABLE sat_data AS 
      SELECT * 
-     FROM read_parquet('s3://archive-heatmap-storage/sat_data/2021-01-01_2021-02-01.parquet');"
+     FROM read_parquet('s3://archive-heatmap-storage/sat_data/*');"
+        .to_string()
+}
+
+pub fn generate_ingest_world_outline_sql() -> String {
+    "CREATE TABLE world_outline AS
+     SELECT * 
+     FROM read_parquet('s3://archive-heatmap-storage/world_continents.parquet');"
         .to_string()
 }
 

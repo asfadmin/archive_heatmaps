@@ -17,6 +17,7 @@ use super::request::request;
 use crate::canvas::app::UserMessage;
 use crate::canvas::geometry::BlendVertex;
 use crate::ingest::async_duckdb::{AsyncDuckDBConnection, generate_duckdb_connection};
+use crate::ingest::sql::generate_ingest_world_outline_sql;
 use crate::ingest::sql::generate_populate_sql;
 use crate::types;
 use crate::types::{Filter, Granule};
@@ -26,20 +27,20 @@ enum Data {
     Heatmap(Vec<Granule>),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct BufferStorage {
     pub vertices: Vec<BlendVertex>,
     pub indices: Vec<u32>,
     pub num_indices: u32,
 }
 
-// Struct that is responsible for submitting requests to the service for new data
+// Struct that is responsible for submitting storing/subsetting data with DuckDB
 pub struct DataLoader {
     pub event_loop_proxy: EventLoopProxy<UserMessage<'static>>,
     pub active_requests: leptos::prelude::ReadSignal<u32>,
     pub set_active_requests: leptos::prelude::WriteSignal<u32>,
     pub set_ready: leptos::prelude::WriteSignal<bool>,
-    pub connection: Rc<AsyncDuckDBConnection>,
+    pub connection: Rc<AsyncDuckDBConnection>,    
 }
 
 impl DataLoader {
@@ -59,9 +60,18 @@ impl DataLoader {
             .await
             .expect("Failed to install/load httpfs in DuckDB");
         connection
+            .query("LOAD spatial;")
+            .await
+            .expect("Failed to install/load spatial in DuckDB");
+
+        connection
             .query(&generate_populate_sql())
             .await
-            .expect("Failed to populate DuckDB");
+            .expect("Failed to populate DuckDB wit satellite data");
+        connection
+            .query(&generate_ingest_world_outline_sql())
+            .await
+            .expect("Failed to ingest world outlines in DuckDB");
         DataLoader {
             event_loop_proxy,
             active_requests,
@@ -116,18 +126,23 @@ async fn load_data_async(
 ///     this is done for a varying level of detail to allow for LODs, polygon simplification
 ///     is done using the Ramer-Douglas-Peucker algorithm
 fn mesh_data(data_exterior: Data) -> Vec<BufferStorage> {
-    let mut positions: Vec<Vec<(f64, f64)>>;
-    let mut weights: Vec<u64>;
+    let mut positions: Vec<Vec<(f64, f64)>> = Vec::new();
+    let mut weights: Vec<u64> = Vec::new();
 
     match data_exterior {
-        Data::Outline(_outline_data) => {
-            positions = vec![];
-            weights = vec![0; positions.len()];
+        Data::Outline(outline_data) => {
+            for poly in outline_data {
+                positions.push(
+                    poly.exterior()
+                        .points()
+                        .map(|x| (x.x(), x.y()))
+                        .collect()
+                );
+                weights.push(0);
+            }
         }
 
         Data::Heatmap(heatmap_data) => {
-            positions = vec![];
-            weights = vec![];
             for gran in heatmap_data {
                 positions.push(
                     gran.geometry
