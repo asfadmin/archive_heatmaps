@@ -76,6 +76,7 @@ pub struct Filter {
     pub end_date: NaiveDate,
 }
 
+#[derive(Debug)]
 pub struct Granule {
     pub geometry: Polygon,
     pub weight: u64,

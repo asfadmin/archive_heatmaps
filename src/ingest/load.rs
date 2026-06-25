@@ -1,43 +1,29 @@
 extern crate earcutr;
 use std::cell::{Ref, RefCell};
 use std::collections::VecDeque;
+use std::pin::Pin;
 use std::rc::Rc;
 use std::time::Duration;
 
 use async_std::task::sleep;
 use geo::geometry::{Coord, LineString, Polygon};
-use geo::{coord, Simplify, TriangulateEarcut};
-use winit::event_loop::EventLoopProxy;
-use leptos::prelude::{Set, Update, GetUntracked, signal};
+use geo::{Simplify, TriangulateEarcut, coord};
 use leptos::logging::log;
-
-use crate::ingest::async_duckdb::{AsyncDuckDBConnection, generate_duckdb_connection};
-use crate::ingest::request::populate_duckdb;
-use std::pin::Pin;
+use leptos::prelude::{GetUntracked, Set, Update, signal};
 use wasm_bindgen::JsValue;
-use crate::types::Granule;
+use winit::event_loop::EventLoopProxy;
+
 use super::request::request;
 use crate::canvas::app::UserMessage;
 use crate::canvas::geometry::BlendVertex;
+use crate::ingest::async_duckdb::{AsyncDuckDBConnection, generate_duckdb_connection};
+use crate::ingest::sql::generate_populate_sql;
 use crate::types;
+use crate::types::{Filter, Granule};
 
 enum Data {
     Outline(Vec<Polygon>),
     Heatmap(Vec<Granule>),
-}
-
-enum Connection {
-    Ready(Rc<AsyncDuckDBConnection>),
-    NotReady(Pin<Box<dyn Future<Output = Result<AsyncDuckDBConnection, JsValue>>>>),
-}
-
-impl Connection {
-    async fn resolve(self) -> Rc<AsyncDuckDBConnection> {
-        match self {
-            Connection::NotReady(fut) => Rc::new(fut.await.unwrap()),
-            Connection::Ready(val) => val,
-        }
-    }
 }
 
 #[derive(Clone)]
@@ -53,44 +39,50 @@ pub struct DataLoader {
     pub active_requests: leptos::prelude::ReadSignal<u32>,
     pub set_active_requests: leptos::prelude::WriteSignal<u32>,
     pub set_ready: leptos::prelude::WriteSignal<bool>,
-    pub connection: Connection,
+    pub connection: Rc<AsyncDuckDBConnection>,
 }
 
 impl DataLoader {
-    pub fn new(
+    pub async fn new(
         event_loop_proxy: EventLoopProxy<UserMessage<'static>>,
         set_ready: leptos::prelude::WriteSignal<bool>,
     ) -> Self {
         let (active_requests, set_active_requests) = signal(0);
+        // TO-DO: Make data ingest incremental based on needed data
+        let connection = Rc::new(
+            generate_duckdb_connection()
+                .await
+                .expect("Failed to get connection to DuckDB"),
+        );
+        connection
+            .query("LOAD httpfs;")
+            .await
+            .expect("Failed to install/load httpfs in DuckDB");
+        connection
+            .query(&generate_populate_sql())
+            .await
+            .expect("Failed to populate DuckDB");
         DataLoader {
             event_loop_proxy,
             active_requests,
             set_active_requests,
             set_ready,
-            connection: Connection::NotReady(Box::pin(generate_duckdb_connection())),
+            connection,
         }
-    }
-
-    pub async fn resolve_connection(mut self) {
-        self.connection = Connection::Ready(self.connection.resolve().await);
     }
 
     // Updates signals and starts the process of requesting new data based on filter
-    pub fn load_data(&self, filter: types::Filter) {
+    pub fn load_data(&self, filter: Filter) {
         self.set_active_requests.update(|n| *n += 1);
         self.set_ready.set(false);
-        if let Connection::Ready(connection) = &self.connection {
-            leptos::task::spawn_local(
-            load_data_async(
-                    self.event_loop_proxy.clone(),
-                    filter,
-                    self.active_requests,
-                    self.set_active_requests,
-                    connection.clone()
-                )
-            )
-        }
-        
+
+        leptos::task::spawn_local(load_data_async(
+            self.event_loop_proxy.clone(),
+            filter,
+            self.active_requests,
+            self.set_active_requests,
+            self.connection.clone(),
+        ))
     }
 }
 
@@ -115,7 +107,7 @@ async fn load_data_async(
         log!("Sending Mesh to event loop");
         sleep(Duration::new(10, 0)).await;
         let _ = event_loop_proxy
-           .send_event(UserMessage::IncomingData(meshed_data, meshed_outline_data));
+            .send_event(UserMessage::IncomingData(meshed_data, meshed_outline_data));
     }
     set_active_requests.update(|n| *n -= 1);
 }
@@ -137,12 +129,13 @@ fn mesh_data(data_exterior: Data) -> Vec<BufferStorage> {
             positions = vec![];
             weights = vec![];
             for gran in heatmap_data {
-                positions.push(gran
-                    .geometry
-                    .exterior()
-                    .points()
-                    .map(|x| {(x.x(), x.y())})
-                    .collect());
+                positions.push(
+                    gran.geometry
+                        .exterior()
+                        .points()
+                        .map(|x| (x.x(), x.y()))
+                        .collect(),
+                );
                 weights.push(gran.weight);
             }
         }
