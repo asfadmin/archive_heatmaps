@@ -1,24 +1,43 @@
 extern crate earcutr;
+use std::cell::{Ref, RefCell};
 use std::collections::VecDeque;
+use std::rc::Rc;
 use std::time::Duration;
 
 use async_std::task::sleep;
 use geo::geometry::{Coord, LineString, Polygon};
-use geo::{Simplify, TriangulateEarcut, coord};
-use leptos::logging::log;
-use leptos::prelude::{GetUntracked, Set, Update, signal};
+use geo::{coord, Simplify, TriangulateEarcut};
 use winit::event_loop::EventLoopProxy;
+use leptos::prelude::{Set, Update, GetUntracked, signal};
+use leptos::logging::log;
 
+use crate::ingest::async_duckdb::{AsyncDuckDBConnection, generate_duckdb_connection};
+use crate::ingest::request::populate_duckdb;
+use std::pin::Pin;
+use wasm_bindgen::JsValue;
+use crate::types::Granule;
 use super::request::request;
 use crate::canvas::app::UserMessage;
 use crate::canvas::geometry::BlendVertex;
-use crate::ingest::request::populate_duckdb;
 use crate::types;
-use crate::types::Granule;
 
 enum Data {
     Outline(Vec<Polygon>),
     Heatmap(Vec<Granule>),
+}
+
+enum Connection {
+    Ready(Rc<AsyncDuckDBConnection>),
+    NotReady(Pin<Box<dyn Future<Output = Result<AsyncDuckDBConnection, JsValue>>>>),
+}
+
+impl Connection {
+    async fn resolve(self) -> Rc<AsyncDuckDBConnection> {
+        match self {
+            Connection::NotReady(fut) => Rc::new(fut.await.unwrap()),
+            Connection::Ready(val) => val,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -34,7 +53,7 @@ pub struct DataLoader {
     pub active_requests: leptos::prelude::ReadSignal<u32>,
     pub set_active_requests: leptos::prelude::WriteSignal<u32>,
     pub set_ready: leptos::prelude::WriteSignal<bool>,
-    pub connection: (),
+    pub connection: Connection,
 }
 
 impl DataLoader {
@@ -43,28 +62,35 @@ impl DataLoader {
         set_ready: leptos::prelude::WriteSignal<bool>,
     ) -> Self {
         let (active_requests, set_active_requests) = signal(0);
-        let connection = populate_duckdb();
         DataLoader {
             event_loop_proxy,
             active_requests,
             set_active_requests,
             set_ready,
-            connection,
+            connection: Connection::NotReady(Box::pin(generate_duckdb_connection())),
         }
+    }
+
+    pub async fn resolve_connection(mut self) {
+        self.connection = Connection::Ready(self.connection.resolve().await);
     }
 
     // Updates signals and starts the process of requesting new data based on filter
     pub fn load_data(&self, filter: types::Filter) {
         self.set_active_requests.update(|n| *n += 1);
         self.set_ready.set(false);
-
-        leptos::task::spawn_local(load_data_async(
-            self.event_loop_proxy.clone(),
-            filter,
-            self.active_requests,
-            self.set_active_requests,
-            self.connection,
-        ));
+        if let Connection::Ready(connection) = &self.connection {
+            leptos::task::spawn_local(
+            load_data_async(
+                    self.event_loop_proxy.clone(),
+                    filter,
+                    self.active_requests,
+                    self.set_active_requests,
+                    connection.clone()
+                )
+            )
+        }
+        
     }
 }
 
@@ -73,7 +99,7 @@ async fn load_data_async(
     filter: types::Filter,
     active_requests: leptos::prelude::ReadSignal<u32>,
     set_active_requests: leptos::prelude::WriteSignal<u32>,
-    connection: (),
+    connection: Rc<AsyncDuckDBConnection>,
 ) {
     // Request data from the server
     let (data, outline_data) = request(&connection, filter).await;
@@ -89,7 +115,7 @@ async fn load_data_async(
         log!("Sending Mesh to event loop");
         sleep(Duration::new(10, 0)).await;
         let _ = event_loop_proxy
-            .send_event(UserMessage::IncomingData(meshed_data, meshed_outline_data));
+           .send_event(UserMessage::IncomingData(meshed_data, meshed_outline_data));
     }
     set_active_requests.update(|n| *n -= 1);
 }
@@ -111,13 +137,12 @@ fn mesh_data(data_exterior: Data) -> Vec<BufferStorage> {
             positions = vec![];
             weights = vec![];
             for gran in heatmap_data {
-                positions.push(
-                    gran.geometry
-                        .exterior()
-                        .points()
-                        .map(|x| (x.x(), x.y()))
-                        .collect(),
-                );
+                positions.push(gran
+                    .geometry
+                    .exterior()
+                    .points()
+                    .map(|x| {(x.x(), x.y())})
+                    .collect());
                 weights.push(gran.weight);
             }
         }

@@ -3,7 +3,7 @@ use leptos::logging::log;
 
 use crate::{
     ingest::{
-        async_duckdb::generate_duckdb_connection,
+        async_duckdb::{AsyncDuckDBConnection, generate_duckdb_connection},
         sql::{generate_populate_sql, generate_sql},
     },
     types::{Filter, Granule},
@@ -31,7 +31,7 @@ pub fn populate_duckdb() -> () {
 }
 
 // Send a request to the service for data based on the filter
-pub async fn request(_conn: &(), filter: Filter) -> (Vec<Granule>, Vec<Polygon>) {
+pub async fn request(conn: &AsyncDuckDBConnection, filter: Filter) -> (Vec<Granule>, Vec<Polygon>) {
     log!("Request started...");
 
     let _sql = &generate_sql(&filter);

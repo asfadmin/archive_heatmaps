@@ -18,7 +18,7 @@ extern "C" {
 
     #[wasm_bindgen(js_name = "AsyncDuckDBConnection")]
     #[derive(Debug)]
-    type AsyncDuckDBConnection;
+    pub type AsyncDuckDBConnection;
     #[wasm_bindgen(method, getter, js_name = "bindings")]
     fn bindings(this: &AsyncDuckDBConnection) -> AsyncDuckDB;
 }
