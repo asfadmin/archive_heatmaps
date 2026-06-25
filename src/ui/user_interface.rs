@@ -5,19 +5,19 @@ use chrono::Utc;
 use types::Filter;
 
 
-use crate::types;
+use crate::types::{self, DateRange};
 
 #[component]
 pub fn UserInterface(
     set_filter: WriteSignal<Filter>,
     set_generate_img: WriteSignal<bool>,
 ) -> impl IntoView {
-    let min_date = NaiveDate::from_ymd_opt(2014, 6, 1)
+    let _min_date = NaiveDate::from_ymd_opt(2014, 6, 1)
         .expect("Failed to parse left hand side when finding min_date")
         .format("%Y-%m-%d")
         .to_string();
 
-    let max_date = Utc::now()
+    let _max_date = Utc::now()
         .date_naive()
         .format("%Y-%m-%d")
         .to_string();
@@ -97,8 +97,7 @@ pub fn UserInterface(
         set_filter(types::Filter {
             product_type,
             platform_type,
-            start_date,
-            end_date,
+            date_range: DateRange::new(start_date, end_date).expect("Failed to create DateRange")
         })
     };
 

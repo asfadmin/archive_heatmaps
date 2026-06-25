@@ -1,7 +1,5 @@
 extern crate earcutr;
-use std::cell::{Ref, RefCell};
 use std::collections::VecDeque;
-use std::pin::Pin;
 use std::rc::Rc;
 use std::time::Duration;
 
@@ -10,7 +8,6 @@ use geo::geometry::{Coord, LineString, Polygon};
 use geo::{Simplify, TriangulateEarcut, coord};
 use leptos::logging::log;
 use leptos::prelude::{GetUntracked, Set, Update, signal};
-use wasm_bindgen::JsValue;
 use winit::event_loop::EventLoopProxy;
 
 use super::request::request;
@@ -19,7 +16,7 @@ use crate::canvas::geometry::BlendVertex;
 use crate::ingest::async_duckdb::{AsyncDuckDBConnection, generate_duckdb_connection};
 use crate::ingest::sql::generate_ingest_world_outline_sql;
 use crate::ingest::sql::generate_populate_sql;
-use crate::types;
+use crate::types::{self, DateRange};
 use crate::types::{Filter, Granule};
 
 enum Data {
@@ -40,13 +37,15 @@ pub struct DataLoader {
     pub active_requests: leptos::prelude::ReadSignal<u32>,
     pub set_active_requests: leptos::prelude::WriteSignal<u32>,
     pub set_ready: leptos::prelude::WriteSignal<bool>,
-    pub connection: Rc<AsyncDuckDBConnection>,    
+    pub connection: Rc<AsyncDuckDBConnection>,
+    ingested_data: Vec<DateRange>,    
 }
 
 impl DataLoader {
     pub async fn new(
         event_loop_proxy: EventLoopProxy<UserMessage<'static>>,
         set_ready: leptos::prelude::WriteSignal<bool>,
+        filter: &Filter
     ) -> Self {
         let (active_requests, set_active_requests) = signal(0);
         // TO-DO: Make data ingest incremental based on needed data
@@ -65,7 +64,7 @@ impl DataLoader {
             .expect("Failed to install/load spatial in DuckDB");
 
         connection
-            .query(&generate_populate_sql())
+            .query(&generate_populate_sql(filter))
             .await
             .expect("Failed to populate DuckDB wit satellite data");
         connection
@@ -78,6 +77,7 @@ impl DataLoader {
             set_active_requests,
             set_ready,
             connection,
+            ingested_data: vec![filter.date_range.clone()]
         }
     }
 

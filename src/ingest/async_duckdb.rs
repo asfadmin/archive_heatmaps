@@ -2,11 +2,8 @@ use std::io::Cursor;
 
 use arrow::ipc::reader::FileReader;
 use arrow::record_batch::RecordBatch;
-use geo::convex_hull::qhull;
-use js_sys::{Promise, Reflect, Uint8Array, WebAssembly};
-use leptos::{attr::Async, logging::log};
+use js_sys::{Promise, Uint8Array};
 use wasm_bindgen::prelude::*;
-use wasm_bindgen_futures::JsFuture;
 
 #[wasm_bindgen(module = "/assets/duckdb-browser.mjs")]
 extern "C" {
@@ -25,10 +22,10 @@ extern "C" {
 
 impl AsyncDuckDBConnection {
     fn conn(&self) -> Result<u32, JsValue> {
-        return js_sys::Reflect::get(&self, &"_conn".into())?
+        js_sys::Reflect::get(self, &"_conn".into())?
             .as_f64()
             .map(|x| x as u32)
-            .ok_or("Failed to get connection number for AsyncDuckDBConnection".into());
+            .ok_or("Failed to get connection number for AsyncDuckDBConnection".into())
     }
 
     pub async fn query(&self, sql: &str) -> Result<Vec<RecordBatch>, js_sys::Error> {
@@ -47,7 +44,7 @@ impl AsyncDuckDBConnection {
 }
 
 pub async fn generate_duckdb_connection() -> Result<AsyncDuckDBConnection, JsValue> {
-    Ok(js_sys::eval("
+    js_sys::eval("
         (async () => {
             const duckdb = await import('./snippets/heatmap-client-752fa26ee35a9ffd/assets/duckdb-browser.mjs'); // TO-DO: Figure out how to make hash dynamic in case it changes! shouldnt be a problem unless .mjs gets a version bump?
 
@@ -78,6 +75,5 @@ pub async fn generate_duckdb_connection() -> Result<AsyncDuckDBConnection, JsVal
         .unwrap()
         .dyn_into::<Promise>()?
         .await?
-        .dyn_into::<AsyncDuckDBConnection>()?
-    )
+        .dyn_into::<AsyncDuckDBConnection>()
 }

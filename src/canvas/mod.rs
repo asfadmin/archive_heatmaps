@@ -91,10 +91,10 @@ pub fn Canvas(set_generate_img: leptos::prelude::WriteSignal<bool>) -> impl Into
     // Struct responsible for making requests to the service for new data
 
     leptos::task::spawn_local(async move {
-        let data_loader = DataLoader::new(event_loop_proxy, set_ready).await;
+        let data_loader = DataLoader::new(event_loop_proxy, set_ready, &filter()).await;
         // Anytime the filter signal changes the data loader now calls load data with the new signal
         Effect::new(move |_| data_loader.load_data(filter()));
-        ()
+        
     });
 
     log!("Creating view!");

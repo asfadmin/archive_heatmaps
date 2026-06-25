@@ -1,11 +1,35 @@
+use std::iter::successors;
+
+use leptos::html::P;
+use chrono::Months;
+use leptos::logging::log;
+
 use crate::types::Filter;
 
 /// Create sql to read sat data from s3 into DuckDB
-pub fn generate_populate_sql() -> String {
-    "CREATE TABLE sat_data AS 
+pub fn generate_populate_sql(filter: &Filter) -> String {
+    let missing: String = successors(Some(filter.date_range.start), |x| {
+        log!("x: {x:?}\tend: {:?}", filter.date_range.end);
+        if *x >= filter.date_range.end {
+            log!("x: {x:?}\tend: {:?}", filter.date_range.end);
+            return None
+        }
+        x.checked_add_months(Months::new(1))
+    }).map(|x| {
+        let end = x.checked_add_months(Months::new(1)).expect("Failed to add a month");
+        format!("{}_{}.parquet", x.format("%Y-%m-%d"), end.format("%Y-%m-%d")).to_string()
+    }).enumerate()
+    .fold("[".to_string(), |mut acc, (i, s)| {
+        if i != 0 {
+            acc += ", ";
+        }
+        acc += &format!("'s3://archive-heatmap-storage/sat_data/{s}'");
+        acc
+    }) + "]";
+    log!("Missing: {missing}");
+    format!("CREATE TABLE sat_data AS 
      SELECT * 
-     FROM read_parquet('s3://archive-heatmap-storage/sat_data/*');"
-        .to_string()
+     FROM read_parquet({missing});")
 }
 
 pub fn generate_ingest_world_outline_sql() -> String {
@@ -48,8 +72,8 @@ pub fn generate_sql(filter: &Filter) -> String {
     FROM sat_data
     WHERE weight > 0;
     ",
-        filter.start_date.format("%Y-%m-%d"),
-        filter.end_date.format("%Y-%m-%d"),
+        filter.date_range.start.format("%Y-%m-%d"),
+        filter.date_range.end.format("%Y-%m-%d"),
         plat_str,
         prod_str
     )

@@ -342,14 +342,16 @@ fn filter_to_text(filter: Filter) -> (String, String, String, String) {
     }
 
     let start_year: String = filter
-        .start_date
+        .date_range
+        .start
         .format("%Y-%m-%d")
         .to_string()
         .chars()
         .take_while(|x| *x != '-')
         .collect();
     let end_year: String = filter
-        .end_date
+        .date_range
+        .end
         .format("%Y-%m-%d")
         .to_string()
         .chars()

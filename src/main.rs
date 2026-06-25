@@ -6,6 +6,8 @@ use chrono::NaiveDate;
 use leptos::{mount::mount_to_body, prelude::*};
 use ui::user_interface::UserInterface;
 
+use crate::types::DateRange;
+
 mod canvas;
 mod ingest;
 mod types;
@@ -24,10 +26,12 @@ fn App() -> impl IntoView {
             types::PlatformType::Sentinel1A,
             types::PlatformType::Sentinel1B,
         ],
-        start_date: NaiveDate::from_ymd_opt(2019, 1, 1)
+        date_range: DateRange::new(
+            NaiveDate::from_ymd_opt(2020, 1, 1)
             .expect("Failed to create start date when creating filter signal"),
-        end_date: NaiveDate::from_ymd_opt(2024, 4, 21)
-            .expect("Failed to create end date when creating filter signal"),
+            NaiveDate::from_ymd_opt(2020, 2, 1)
+            .expect("Failed to create end date when creating filter signal")).expect("Failed to create DateRange")
+        
     });
     provide_context(filter);
 
