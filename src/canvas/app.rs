@@ -3,10 +3,11 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use leptos::prelude::{Set, GetUntracked};
 use leptos::logging::log;
+use leptos::prelude::{GetUntracked, Set};
 use wasm_bindgen::JsCast;
 use web_sys::HtmlAnchorElement;
+use web_sys::HtmlCanvasElement;
 use winit::platform::web::WindowExtWebSys;
 use winit::{
     application::ApplicationHandler,
@@ -15,9 +16,8 @@ use winit::{
     event_loop::{ActiveEventLoop, EventLoopProxy},
     window::{Window, WindowId},
 };
-use web_sys::HtmlCanvasElement;
 
-use super::geometry::{generate_copy_buffer, Geometry};
+use super::geometry::{Geometry, generate_copy_buffer};
 use super::png::InitStage;
 use super::render_context::{MaxWeightState, RenderContext};
 use super::state::State;
@@ -49,14 +49,14 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
         ));
 
         // Convert web_sys HtmlCanvasElement into a leptos HtmlElement<AnyElement>
-        self.external_state.borrow_mut().canvas = Some(self
-            .state
-            .window
-            .clone()
-            .expect("ERROR: Failed to get window when creating HtmlCanvasElement")
-            .as_ref()
-            .canvas()
-            .unwrap()
+        self.external_state.borrow_mut().canvas = Some(
+            self.state
+                .window
+                .clone()
+                .expect("ERROR: Failed to get window when creating HtmlCanvasElement")
+                .as_ref()
+                .canvas()
+                .unwrap(),
         );
 
         log!("Canvas created");
@@ -181,7 +181,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
             // There is incoming data from the service, we need to place this new data into buffers to render
             UserMessage::IncomingData(data, outline_data) => {
                 if self.state.init_stage != InitStage::Complete {
-                    return
+                    return;
                 }
                 log!("Generating Buffers...");
                 let render_context = self

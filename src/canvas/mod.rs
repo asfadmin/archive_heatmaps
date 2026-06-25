@@ -20,11 +20,11 @@ use std::rc::Rc;
 
 use app::{App, ExternalState, UserMessage};
 use leptos::html::Div;
+use leptos::logging::log;
 use leptos::prelude::*;
 use state::State;
 use winit::event_loop::EventLoop;
 use winit::platform::web::EventLoopExtWebSys;
-use leptos::logging::log;
 
 use crate::canvas::png::{ExportContext, InitStage};
 use crate::ingest::load::DataLoader;

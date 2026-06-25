@@ -1,19 +1,19 @@
 use std::rc::Rc;
 
+use leptos::logging::log;
 use winit::window::Window;
 use winit::{dpi::PhysicalSize, event_loop::EventLoopProxy};
-use leptos::logging::log;
 
 use super::app::UserMessage;
 use super::camera::CameraContext;
-use super::geometry::{generate_copy_buffer, generate_uniform_buffer, BufferContext};
+use super::geometry::{BufferContext, generate_copy_buffer, generate_uniform_buffer};
 use super::pipeline::{
     generate_blend_pipeline, generate_display_colormap_pipeline, generate_export_colormap_pipeline,
     generate_export_pipeline, generate_outline_pipeline,
 };
 use super::texture::{
-    generate_blend_texture, generate_colormaps, generate_copy_texture, generate_export_texture,
-    TextureContext,
+    TextureContext, generate_blend_texture, generate_colormaps, generate_copy_texture,
+    generate_export_texture,
 };
 
 // Stores all the things we need to set up wgpu and run render passes,

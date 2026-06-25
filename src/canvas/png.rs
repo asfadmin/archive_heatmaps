@@ -1,9 +1,9 @@
 use base64::Engine;
-use image::codecs::png::PngEncoder;
 use image::ImageEncoder;
+use image::codecs::png::PngEncoder;
 use image::{ImageBuffer, Rgba};
-use text_to_png::TextRenderer;
 use leptos::logging::log;
+use text_to_png::TextRenderer;
 
 use super::render_context::RenderContext;
 use crate::types::{Filter, PlatformType, ProductTypes};
@@ -348,7 +348,13 @@ fn filter_to_text(filter: Filter) -> (String, String, String, String) {
         .chars()
         .take_while(|x| *x != '-')
         .collect();
-    let end_year: String = filter.end_date.format("%Y-%m-%d").to_string().chars().take_while(|x| *x != '-').collect();
+    let end_year: String = filter
+        .end_date
+        .format("%Y-%m-%d")
+        .to_string()
+        .chars()
+        .take_while(|x| *x != '-')
+        .collect();
 
     (product_string, platform_string, start_year, end_year)
 }

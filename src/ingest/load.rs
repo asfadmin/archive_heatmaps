@@ -4,17 +4,17 @@ use std::time::Duration;
 
 use async_std::task::sleep;
 use geo::geometry::{Coord, LineString, Polygon};
-use geo::{coord, Simplify, TriangulateEarcut};
-use winit::event_loop::EventLoopProxy;
-use leptos::prelude::{Set, Update, GetUntracked, signal};
+use geo::{Simplify, TriangulateEarcut, coord};
 use leptos::logging::log;
+use leptos::prelude::{GetUntracked, Set, Update, signal};
+use winit::event_loop::EventLoopProxy;
 
-use crate::ingest::request::populate_duckdb;
-use crate::types::Granule;
 use super::request::request;
 use crate::canvas::app::UserMessage;
 use crate::canvas::geometry::BlendVertex;
+use crate::ingest::request::populate_duckdb;
 use crate::types;
+use crate::types::Granule;
 
 enum Data {
     Outline(Vec<Polygon>),
@@ -89,7 +89,7 @@ async fn load_data_async(
         log!("Sending Mesh to event loop");
         sleep(Duration::new(10, 0)).await;
         let _ = event_loop_proxy
-           .send_event(UserMessage::IncomingData(meshed_data, meshed_outline_data));
+            .send_event(UserMessage::IncomingData(meshed_data, meshed_outline_data));
     }
     set_active_requests.update(|n| *n -= 1);
 }
@@ -111,12 +111,13 @@ fn mesh_data(data_exterior: Data) -> Vec<BufferStorage> {
             positions = vec![];
             weights = vec![];
             for gran in heatmap_data {
-                positions.push(gran
-                    .geometry
-                    .exterior()
-                    .points()
-                    .map(|x| {(x.x(), x.y())})
-                    .collect());
+                positions.push(
+                    gran.geometry
+                        .exterior()
+                        .points()
+                        .map(|x| (x.x(), x.y()))
+                        .collect(),
+                );
                 weights.push(gran.weight);
             }
         }

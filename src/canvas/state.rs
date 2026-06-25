@@ -2,17 +2,18 @@
 //  to render a shader
 
 use std::rc::Rc;
+
 use leptos::logging::log;
+use leptos::prelude::GetUntracked;
 use wgpu::{BindGroup, Extent3d, Origin3d};
 use winit::dpi::PhysicalSize;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoopProxy;
 use winit::window::Window;
-use leptos::prelude::{GetUntracked};
 
 use super::app::UserMessage;
 use super::camera::{Camera, CameraEvent};
-use super::geometry::{generate_copy_buffer, Geometry};
+use super::geometry::{Geometry, generate_copy_buffer};
 use super::input::InputState;
 use super::render_context::{CopyContext, MaxWeightState, RenderContext};
 use super::texture::{generate_blend_texture, generate_copy_texture, generate_export_texture};

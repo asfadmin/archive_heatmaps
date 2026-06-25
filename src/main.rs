@@ -3,13 +3,13 @@
 
 use canvas::Canvas;
 use chrono::NaiveDate;
-    use leptos::{prelude::*, mount::mount_to_body };
+use leptos::{mount::mount_to_body, prelude::*};
 use ui::user_interface::UserInterface;
 
 mod canvas;
 mod ingest;
-mod ui;
 mod types;
+mod ui;
 
 #[component]
 fn App() -> impl IntoView {
@@ -27,7 +27,7 @@ fn App() -> impl IntoView {
         start_date: NaiveDate::from_ymd_opt(2019, 1, 1)
             .expect("Failed to create start date when creating filter signal"),
         end_date: NaiveDate::from_ymd_opt(2024, 4, 21)
-            .expect("Failed to create end date when creating filter signal")
+            .expect("Failed to create end date when creating filter signal"),
     });
     provide_context(filter);
 

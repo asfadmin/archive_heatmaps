@@ -1,7 +1,7 @@
 use chrono::naive::NaiveDate;
-use types::Filter;
 use leptos::wasm_bindgen::JsCast;
-use leptos::{prelude::*, html};
+use leptos::{html, prelude::*};
+use types::Filter;
 
 use crate::types;
 
@@ -77,20 +77,20 @@ pub fn UserInterface(
         }
 
         // Gets the selected start and end dates
-        let start_date = NaiveDate::parse_from_str(&start_date_element
-            .read_untracked()
-            .as_ref()
-            .unwrap()
-            .value(),
-            "%Y-%m-%d"
-        ).expect("Failed to parse start date from HTML Input");
-        let end_date =  NaiveDate::parse_from_str(&end_date_element
-            .read_untracked()
-            .as_ref()
-            .unwrap()
-            .value(),
-            "%Y-%m-%d"
-        ).expect("Failed to parse end date from HTML Input");
+        let start_date = NaiveDate::parse_from_str(
+            &start_date_element
+                .read_untracked()
+                .as_ref()
+                .unwrap()
+                .value(),
+            "%Y-%m-%d",
+        )
+        .expect("Failed to parse start date from HTML Input");
+        let end_date = NaiveDate::parse_from_str(
+            &end_date_element.read_untracked().as_ref().unwrap().value(),
+            "%Y-%m-%d",
+        )
+        .expect("Failed to parse end date from HTML Input");
 
         set_filter(types::Filter {
             product_type,

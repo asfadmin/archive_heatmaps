@@ -136,8 +136,6 @@ pub fn generate_copy_buffer(
 ) -> wgpu::Buffer {
     let temp_contents = vec![0_u8; (4 * 4 * size.width * size.height) as usize];
 
-    
-
     device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Max Weight Buffer"),
         contents: temp_contents.as_slice(),
