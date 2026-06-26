@@ -3,18 +3,20 @@ use std::iter::successors;
 use leptos::html::P;
 use chrono::Months;
 use leptos::logging::log;
+use crate::DateRange;
 
 use crate::types::Filter;
 
-/// Create sql to read sat data from s3 into DuckDB
-pub fn generate_populate_sql(filter: &Filter) -> String {
-    let missing: String = successors(Some(filter.date_range.start), |x| {
-        log!("x: {x:?}\tend: {:?}", filter.date_range.end);
-        if *x >= filter.date_range.end {
-            log!("x: {x:?}\tend: {:?}", filter.date_range.end);
+/// Create sql to read sat data from s3 into DuckDB based on the passed DateRange
+pub fn generate_populate_sql(date_range: &DateRange) -> String {
+    let missing: String = successors(Some(date_range.start), |x| {
+        log!("x: {x:?}\tend: {:?}", date_range.end);
+        let next = x.checked_add_months(Months::new(1));
+        if let Some(n) = next && n >= date_range.end {
+            log!("x: {x:?}\tend: {:?}", date_range.end);
             return None
         }
-        x.checked_add_months(Months::new(1))
+        next
     }).map(|x| {
         let end = x.checked_add_months(Months::new(1)).expect("Failed to add a month");
         format!("{}_{}.parquet", x.format("%Y-%m-%d"), end.format("%Y-%m-%d")).to_string()

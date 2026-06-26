@@ -12,19 +12,12 @@ pub fn UserInterface(
     set_filter: WriteSignal<Filter>,
     set_generate_img: WriteSignal<bool>,
 ) -> impl IntoView {
-    let _min_date = NaiveDate::from_ymd_opt(2014, 6, 1)
-        .expect("Failed to parse left hand side when finding min_date")
-        .format("%Y-%m-%d")
-        .to_string();
 
-    let _max_date = Utc::now()
-        .date_naive()
-        .format("%Y-%m-%d")
-        .to_string();
+    let filter = use_context::<ReadSignal<Filter>>().expect("Failed to get filter from context in UI");
 
-    let (start_date, _) = signal(NaiveDate::from_ymd_opt(2020, 1, 1).expect("Failed to create start date for filter").format("%Y-%m-%d").to_string());
+    let (start_date, _) = signal(filter.get_untracked().date_range.start.format("%Y-%m-%d").to_string());
     let start_date_element: NodeRef<html::Input> = NodeRef::new();
-    let (end_date, _) = signal(NaiveDate::from_ymd_opt(2020, 2, 1).expect("Failed to create end date for filter").format("%Y-%m-%d").to_string());
+    let (end_date, _) = signal(filter.get_untracked().date_range.end.format("%Y-%m-%d").to_string());
     let end_date_element: NodeRef<html::Input> = NodeRef::new();
 
     let doc = document();

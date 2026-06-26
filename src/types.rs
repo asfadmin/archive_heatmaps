@@ -35,7 +35,7 @@ pub struct Granule {
     pub weight: u64,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DateRange {
     pub start: NaiveDate,
     pub end: NaiveDate,
@@ -57,7 +57,7 @@ impl DateRange {
     ///  \
     /// Requires ranges to share exactly one temporal border: \
     ///  - Does not allow overlap or disjoint ranges
-    pub fn merge(&mut self, other: DateRange) -> Result<&mut DateRange, Box<dyn std::error::Error>> {
+    pub fn merge(&mut self, other: &DateRange) -> Result<(), Box<dyn std::error::Error>> {
         if self.start == other.end {
             self.start = other.start;
         } else if self.end == other.start {
@@ -65,13 +65,13 @@ impl DateRange {
         } else {
             return Err("Invalid merge attempt".into())
         }
-        Ok(self)
+        Ok(())
     }
 
     /// Returns all sections of other that are disjoint from self
-    pub fn get_disjoint(self, other: DateRange) -> Option<Vec<DateRange>> {
+    pub fn get_disjoint(&self, other: &DateRange) -> Option<Vec<DateRange>> {
         if self.end < other.start || other.end < self.start { // Non overlapping ranges
-            return Some(vec![other])
+            return Some(vec![other.clone()])
         }
         if self.start > other.start && self.end < other.end { // Self is a subset of other
             return Some(vec![
