@@ -17,7 +17,6 @@ use crate::ingest::async_duckdb::{AsyncDuckDBConnection, generate_duckdb_connect
 use crate::ingest::load::BufferStorage;
 use crate::ingest::load::Data;
 use crate::ingest::sql::generate_ingest_world_outline_sql;
-use crate::ingest::sql::generate_populate_sql;
 use crate::types::{self, DateRange};
 use crate::types::{Filter, Granule};
 
@@ -31,12 +30,7 @@ pub fn mesh_data(data_exterior: Data) -> Vec<BufferStorage> {
     match data_exterior {
         Data::Outline(outline_data) => {
             for poly in outline_data {
-                positions.push(
-                    poly.exterior()
-                        .points()
-                        .map(|x| (x.x(), x.y()))
-                        .collect()
-                );
+                positions.push(poly.exterior().points().map(|x| (x.x(), x.y())).collect());
                 weights.push(0);
             }
         }

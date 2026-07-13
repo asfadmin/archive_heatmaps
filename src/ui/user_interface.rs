@@ -1,9 +1,8 @@
+use chrono::Utc;
 use chrono::naive::NaiveDate;
 use leptos::wasm_bindgen::JsCast;
 use leptos::{html, prelude::*};
-use chrono::Utc;
 use types::Filter;
-
 
 use crate::types::{self, DateRange};
 
@@ -12,12 +11,26 @@ pub fn UserInterface(
     set_filter: WriteSignal<Filter>,
     set_generate_img: WriteSignal<bool>,
 ) -> impl IntoView {
+    let filter =
+        use_context::<ReadSignal<Filter>>().expect("Failed to get filter from context in UI");
 
-    let filter = use_context::<ReadSignal<Filter>>().expect("Failed to get filter from context in UI");
-
-    let (start_date, _) = signal(filter.get_untracked().date_range.start.format("%Y-%m-%d").to_string());
+    let (start_date, _) = signal(
+        filter
+            .get_untracked()
+            .date_range
+            .start
+            .format("%Y-%m-%d")
+            .to_string(),
+    );
     let start_date_element: NodeRef<html::Input> = NodeRef::new();
-    let (end_date, _) = signal(filter.get_untracked().date_range.end.format("%Y-%m-%d").to_string());
+    let (end_date, _) = signal(
+        filter
+            .get_untracked()
+            .date_range
+            .end
+            .format("%Y-%m-%d")
+            .to_string(),
+    );
     let end_date_element: NodeRef<html::Input> = NodeRef::new();
 
     let doc = document();
@@ -90,7 +103,7 @@ pub fn UserInterface(
         set_filter(types::Filter {
             product_type,
             platform_type,
-            date_range: DateRange::new(start_date, end_date).expect("Failed to create DateRange")
+            date_range: DateRange::new(start_date, end_date).expect("Failed to create DateRange"),
         })
     };
 

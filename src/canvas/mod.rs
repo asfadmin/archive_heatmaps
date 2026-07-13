@@ -94,7 +94,6 @@ pub fn Canvas(set_generate_img: leptos::prelude::WriteSignal<bool>) -> impl Into
         let data_loader = DataLoader::new(event_loop_proxy, set_ready, &filter()).await;
         // Anytime the filter signal changes the data loader now calls load data with the new signal
         Effect::new(move |_| data_loader.load_data(filter()));
-        
     });
 
     log!("Creating view!");

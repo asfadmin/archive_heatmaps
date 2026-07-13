@@ -1,10 +1,8 @@
-
 use arrow::ipc::Date;
 use chrono::NaiveDate;
 use geo::Polygon;
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
-
 
 // Enums defining possible filter options
 #[derive(Clone, Copy, Debug, PartialEq, Display)]
@@ -42,15 +40,12 @@ pub struct DateRange {
 }
 
 impl DateRange {
-    /// Checks that start is before end before constructing type
+    /// Checks that start < end before constructing type
     pub fn new(start: NaiveDate, end: NaiveDate) -> Result<Self, Box<dyn std::error::Error>> {
         if start > end {
             return Err("Start is after end, this is an invalid state for a DateRange".into());
         }
-        Ok(DateRange {
-            start,
-            end
-        })
+        Ok(DateRange { start, end })
     }
 
     /// Merge two date ranges \
@@ -63,39 +58,43 @@ impl DateRange {
         } else if self.end == other.start {
             self.end = other.end;
         } else {
-            return Err("Invalid merge attempt".into())
+            return Err("Invalid merge attempt".into());
         }
         Ok(())
     }
 
     /// Returns all sections of other that are disjoint from self
     pub fn get_disjoint(&self, other: &DateRange) -> Option<Vec<DateRange>> {
-        if self.end < other.start || other.end < self.start { // Non overlapping ranges
-            return Some(vec![other.clone()])
+        if self.end < other.start || other.end < self.start {
+            // Non overlapping ranges
+            return Some(vec![other.clone()]);
         }
-        if self.start > other.start && self.end < other.end { // Self is a subset of other
+        if self.start > other.start && self.end < other.end {
+            // Self is a subset of other
             return Some(vec![
                 DateRange {
-                    start:other.start,
-                    end: self.start
+                    start: other.start,
+                    end: self.start,
                 },
                 DateRange {
                     start: self.end,
-                    end: other.end
-                }
-            ])
+                    end: other.end,
+                },
+            ]);
         }
-        if self.end < other.end { // Self comes first and partially overlaps other
+        if self.end < other.end {
+            // Self comes first and partially overlaps other
             return Some(vec![DateRange {
                 start: self.end,
-                end: other.end
-            }])    
+                end: other.end,
+            }]);
         }
-        if self.start > other.start { // Other comes first and partially overlaps self
+        if self.start > other.start {
+            // Other comes first and partially overlaps self
             return Some(vec![DateRange {
                 start: other.start,
-                end: self.start
-            }])
+                end: self.start,
+            }]);
         }
         None
     }

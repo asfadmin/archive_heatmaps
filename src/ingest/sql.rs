@@ -1,37 +1,79 @@
 use std::iter::successors;
 
+use chrono::NaiveDate;
+use chrono::{Datelike, Months};
 use leptos::html::P;
-use chrono::Months;
 use leptos::logging::log;
-use crate::DateRange;
 
+use crate::DateRange;
 use crate::types::Filter;
 
+pub fn generate_create_sat_data_sql() -> String {
+    "CREATE TABLE sat_data (
+        geometry BLOB,
+        ancestors STRUCT(granule_name VARCHAR, platform_type VARCHAR, data_sensor_type VARCHAR, start_time TIMESTAMP)[]
+    );".to_string()
+}
+
 /// Create sql to read sat data from s3 into DuckDB based on the passed DateRange
-pub fn generate_populate_sql(date_range: &DateRange) -> String {
-    let missing: String = successors(Some(date_range.start), |x| {
+pub fn generate_populate_sat_data_sql(date_range: &DateRange) -> (String, DateRange) {
+    let range_start = NaiveDate::from_ymd_opt(date_range.start.year(), date_range.start.month(), 1)
+        .expect("Failed to create start month");
+    let mut range_end: NaiveDate = date_range.end;
+    let missing_months: Vec<NaiveDate> = successors(Some(range_start), |x| {
         log!("x: {x:?}\tend: {:?}", date_range.end);
         let next = x.checked_add_months(Months::new(1));
-        if let Some(n) = next && n >= date_range.end {
+        if let Some(n) = next
+            && n >= date_range.end
+        {
             log!("x: {x:?}\tend: {:?}", date_range.end);
-            return None
+            range_end = next.expect("Failed to get end month for final date range");
+            return None;
         }
+
         next
-    }).map(|x| {
-        let end = x.checked_add_months(Months::new(1)).expect("Failed to add a month");
-        format!("{}_{}.parquet", x.format("%Y-%m-%d"), end.format("%Y-%m-%d")).to_string()
-    }).enumerate()
-    .fold("[".to_string(), |mut acc, (i, s)| {
-        if i != 0 {
-            acc += ", ";
-        }
-        acc += &format!("'s3://archive-heatmap-storage/sat_data/{s}'");
-        acc
-    }) + "]";
-    log!("Missing: {missing}");
-    format!("CREATE TABLE sat_data AS 
+    })
+    .collect();
+
+    // Generate SQL to import missing data
+    let missing_files = missing_months
+        .iter()
+        .map(|x| {
+            let end = x
+                .checked_add_months(Months::new(1))
+                .expect("Failed to add a month");
+            format!(
+                "{}_{}.parquet",
+                x.format("%Y-%m-01"),
+                end.format("%Y-%m-01")
+            )
+            .to_string()
+        })
+        .enumerate()
+        .fold("[".to_string(), |mut acc, (i, s)| {
+            if i != 0 {
+                acc += ", ";
+            }
+            acc += &format!("'s3://archive-heatmap-storage/sat_data/{s}'");
+            acc
+        })
+        + "]";
+    log!("Missing: {missing_files}");
+    let sql = format!(
+        "INSERT INTO sat_data
      SELECT * 
-     FROM read_parquet({missing});")
+     FROM read_parquet({missing_files});"
+    );
+
+    // Create Vector representing the imported data, needed to clip
+    //  input range to file resolution, ie 2019-12-08 imports data
+    //  starting from 2019-12-01
+    let missing_range = DateRange {
+        start: range_start,
+        end: range_end,
+    };
+
+    (sql, missing_range)
 }
 
 pub fn generate_ingest_world_outline_sql() -> String {
