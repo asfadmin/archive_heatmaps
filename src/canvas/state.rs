@@ -191,12 +191,8 @@ impl State<'_> {
                 self.camera_storage = None;
             }
             // Size is only changed on export so we need a seperate check to not break on max weight pass
-            if self.size_storage.is_some() {
-                render_context.size = *self
-                    .size_storage
-                    .as_ref()
-                    .expect("Failed to get stored size in render");
-
+            if let Some(size_storage) = self.size_storage {
+                render_context.size = size_storage;
                 self.camera_storage = None;
             }
 

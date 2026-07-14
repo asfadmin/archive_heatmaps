@@ -27,26 +27,29 @@ pub async fn request(conn: &AsyncDuckDBConnection, filter: Filter) -> (Vec<Granu
                 .column(0)
                 .as_any()
                 .downcast_ref::<BinaryArray>()
-                .unwrap()
+                .expect("Sat_data geometry was not a BinaryArray")
                 .iter()
                 .zip(
                     batch
                         .column(1)
                         .as_any()
                         .downcast_ref::<Int64Array>()
-                        .unwrap(),
+                        .expect("Weights were not a Int64Array"),
                 )
                 .map(|(wkb_binary, weight)| {
                     use geo_traits::to_geo::ToGeoGeometry;
                     let poly = TryInto::<Polygon>::try_into(
-                        wkb::reader::read_wkb(&hex::decode(wkb_binary.unwrap()).unwrap())
-                            .unwrap()
-                            .to_geometry(),
+                        wkb::reader::read_wkb(
+                            &hex::decode(wkb_binary.expect("Failed to get [u8] from wkb"))
+                                .expect("Sat data geometry column was not hex encoded"),
+                        )
+                        .expect("Failed to convert sat_data geometry to geo::geometry")
+                        .to_geometry(),
                     )
-                    .unwrap();
+                    .expect("Failed to convert sat data to Polygon");
                     Granule {
                         geometry: poly,
-                        weight: weight.unwrap() as u64,
+                        weight: weight.expect("Failed to get weight for a polygon") as u64,
                     }
                 })
                 .collect::<Vec<Granule>>()
@@ -69,12 +72,16 @@ pub async fn request(conn: &AsyncDuckDBConnection, filter: Filter) -> (Vec<Granu
                 .column(0)
                 .as_any()
                 .downcast_ref::<BinaryArray>()
-                .unwrap()
+                .expect(
+                    "DuckDB did not return a BinaryArray for the geometry column of world outline",
+                )
                 .iter()
                 .flat_map(|wkb_binary| {
-                    match wkb::reader::read_wkb(wkb_binary.unwrap())
-                        .unwrap()
-                        .to_geometry()
+                    match wkb::reader::read_wkb(
+                        wkb_binary.expect("Failed to read wkb_binary from geometry column"),
+                    )
+                    .expect("Failed to convert wkb to geometry")
+                    .to_geometry()
                     {
                         geo::Geometry::MultiPolygon(multi_poly) => {
                             multi_poly.iter().cloned().collect::<Vec<Polygon>>()

@@ -56,7 +56,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                 .expect("ERROR: Failed to get window when creating HtmlCanvasElement")
                 .as_ref()
                 .canvas()
-                .unwrap(),
+                .expect("Failed to get HtmlCanvasElement from winit Window"),
         );
 
         log!("Canvas created");

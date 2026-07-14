@@ -1,14 +1,11 @@
 extern crate earcutr;
+use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::Rc;
 use std::sync::Mutex;
-use std::sync::atomic::{AtomicBool, AtomicUsize};
-use std::time::Duration;
-use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
-use std::cell::RefCell;
 
-use async_std::task::{sleep, yield_now};
 use geo::geometry::Polygon;
 use leptos::logging::log;
 use leptos::prelude::{GetUntracked, Set, Update, signal};
@@ -21,7 +18,7 @@ use crate::ingest::async_duckdb::{AsyncDuckDBConnection, generate_duckdb_connect
 use crate::ingest::mesh::mesh_data;
 use crate::ingest::sql::generate_ingest_world_outline_sql;
 use crate::ingest::sql::{generate_create_sat_data_sql, generate_populate_sat_data_sql};
-use crate::types::{self, DateRange};
+use crate::types::DateRange;
 use crate::types::{Filter, Granule};
 
 pub enum Data {
@@ -88,7 +85,7 @@ impl DataLoader {
             ingested_data: Mutex::new(vec![]),
             ingest_queue: Rc::new(Mutex::new(VecDeque::new())),
             ingest_flag: Rc::new(RefCell::new(AtomicBool::new(false))),
-            ingest_filter: Rc::new(RefCell::new(filter.clone()))
+            ingest_filter: Rc::new(RefCell::new(filter.clone())),
         }
     }
 
@@ -116,7 +113,7 @@ impl DataLoader {
                     } else {
                         acc.into_iter()
                             .flat_map(|mut y| {
-                                if let Err(_) = y.merge(&x) {
+                                if y.merge(&x).is_err() {
                                     log!("Failed to merge {x:?}, pushing to acc");
                                     return vec![y, x.clone()];
                                 } else {
@@ -132,8 +129,11 @@ impl DataLoader {
             }
             log!("Filter: {:?}", filter.date_range);
             log!("Missing: {missing:?}");
-            
-            let mut queue_guard = self.ingest_queue.lock().expect("Failed to lock ingest queue, mutex poisoned");
+
+            let mut queue_guard = self
+                .ingest_queue
+                .lock()
+                .expect("Failed to lock ingest queue, mutex poisoned");
             for range in missing {
                 // new_range is range clipped to file resolution so start: 2020-01-05, end: 2020-01-07
                 // becomes start: 2020-01-01, end 2020-02-01 since the smallest time unit we can ingest is one month
@@ -141,10 +141,10 @@ impl DataLoader {
                 for stmt in sql {
                     queue_guard.push_back(stmt);
                 }
-                
+
                 let mut merged = false;
                 for ingested_range in &mut (*data_guard) {
-                    if let Ok(_) = ingested_range.merge(&new_range) {
+                    if ingested_range.merge(&new_range).is_ok() {
                         merged = true;
                     }
                 }
@@ -159,7 +159,9 @@ impl DataLoader {
         *self.ingest_filter.borrow_mut() = filter.clone();
 
         if !(self.ingest_flag.borrow().load(Ordering::Acquire)) {
-            self.ingest_flag.borrow_mut().store(false, Ordering::Release);
+            self.ingest_flag
+                .borrow_mut()
+                .store(false, Ordering::Release);
             leptos::task::spawn_local(load_data_async(
                 self.event_loop_proxy.clone(),
                 self.active_requests,
@@ -170,7 +172,6 @@ impl DataLoader {
                 self.ingest_filter.clone(),
             ))
         }
-        
     }
 }
 
@@ -183,11 +184,14 @@ async fn load_data_async(
     ingest_flag: Rc<RefCell<AtomicBool>>,
     ingest_filter: Rc<RefCell<Filter>>,
 ) {
-
-    loop {  
-        let mut guard = ingest_queue.lock().expect("Failed to get lock for ingest queue, mutex poisoned");
-        let sql_vec = guard.pop_front().clone();
-        drop(guard);
+    loop {
+        let sql_vec: Option<String>;
+        {
+            let mut guard = ingest_queue
+                .lock()
+                .expect("Failed to get lock for ingest queue, mutex poisoned");
+            sql_vec = guard.pop_front().clone();
+        }
 
         if let Some(sql) = sql_vec {
             log!("SQL: {sql:?}");
@@ -209,8 +213,12 @@ async fn load_data_async(
     // Convert the data into a triangular mesh
     if active_requests.get_untracked() == 1 {
         // Request data from the server
-        let (data, outline_data) = request(&connection, ingest_filter.borrow().clone()).await;
-        
+        let filter: Filter;
+        {
+            filter = ingest_filter.borrow().clone();
+        }
+        let (data, outline_data) = request(&connection, filter).await;
+
         log!("Meshing data...");
         let meshed_data = mesh_data(Data::Heatmap(data));
         let meshed_outline_data = mesh_data(Data::Outline(outline_data));

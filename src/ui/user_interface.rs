@@ -88,13 +88,17 @@ pub fn UserInterface(
             &start_date_element
                 .read_untracked()
                 .as_ref()
-                .unwrap()
+                .expect("Failed to read start date element")
                 .value(),
             "%Y-%m-%d",
         )
         .expect("Failed to parse start date from HTML Input");
         let end_date = NaiveDate::parse_from_str(
-            &end_date_element.read_untracked().as_ref().unwrap().value(),
+            &end_date_element
+                .read_untracked()
+                .as_ref()
+                .expect("Failed to read end date element")
+                .value(),
             "%Y-%m-%d",
         )
         .expect("Failed to parse end date from HTML Input");

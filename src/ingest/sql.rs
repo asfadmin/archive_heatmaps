@@ -49,7 +49,8 @@ pub fn generate_populate_sat_data_sql(date_range: &DateRange) -> (Vec<String>, D
                 end.format("%Y-%m-01")
             )
             .to_string()
-        }).collect();
+        })
+        .collect();
 
     log!("Missing: {sql:?}");
 

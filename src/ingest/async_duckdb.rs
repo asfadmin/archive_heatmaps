@@ -31,7 +31,8 @@ impl AsyncDuckDBConnection {
     pub async fn query(&self, sql: &str) -> Result<Vec<RecordBatch>, js_sys::Error> {
         let res = self.bindings().run_query(self.conn()?, sql).await?.to_vec();
         let cursor = Cursor::new(res);
-        let reader = FileReader::try_new(cursor, None).unwrap();
+        let reader = FileReader::try_new(cursor, None)
+            .expect("Failed to create file reader around cursor for reading RecordBatches");
         let mut batches: Vec<RecordBatch> = Vec::new();
         for maybe_batch in reader {
             match maybe_batch {
@@ -72,7 +73,7 @@ pub async fn generate_duckdb_connection() -> Result<AsyncDuckDBConnection, JsVal
             return conn
         })()
         ")
-        .unwrap()
+        .expect("Failed to initialize DuckDB in JS")
         .dyn_into::<Promise>()?
         .await?
         .dyn_into::<AsyncDuckDBConnection>()

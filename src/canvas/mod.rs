@@ -80,8 +80,12 @@ pub fn Canvas(set_generate_img: leptos::prelude::WriteSignal<bool>) -> impl Into
         log!("Adding canvas to DOM");
         if let Some(div) = canvas_ref.get() {
             let es = external_state.borrow();
-            let canvas = es.canvas.as_ref().unwrap();
-            div.append_child(canvas).unwrap();
+            let canvas = es
+                .canvas
+                .as_ref()
+                .expect("Failed to get canvas from external state");
+            div.append_child(canvas)
+                .expect("Failed to append canvas to div");
             log!("Canvas added to DOM");
         } else {
             log!("Failed to get ref to div");
