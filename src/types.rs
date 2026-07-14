@@ -47,9 +47,9 @@ impl DateRange {
         Ok(DateRange { start, end })
     }
 
-    /// Merge two date ranges 
+    /// Merge two date ranges
     ///  
-    /// Requires ranges to share exactly one temporal border: 
+    /// Requires ranges to share exactly one temporal border:
     ///  - Does not allow overlaping or disjoint ranges
     pub fn merge(&mut self, other: &DateRange) -> Result<(), Box<dyn std::error::Error>> {
         if self.start == other.end {
