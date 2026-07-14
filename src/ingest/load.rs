@@ -75,11 +75,6 @@ impl DataLoader {
             .await
             .expect("Failed to create sat_data table");
 
-        let (pop_sql, _) = generate_populate_sat_data_sql(&filter.date_range);
-        connection
-            .query(&pop_sql)
-            .await
-            .expect("Failed to populate DuckDB wit satellite data");
         connection
             .query(&generate_ingest_world_outline_sql())
             .await
@@ -90,7 +85,7 @@ impl DataLoader {
             set_active_requests,
             set_ready,
             connection,
-            ingested_data: Mutex::new(vec![filter.date_range.clone()]),
+            ingested_data: Mutex::new(vec![]),
             ingest_queue: Rc::new(Mutex::new(VecDeque::new())),
             ingest_flag: Rc::new(RefCell::new(AtomicBool::new(false))),
             ingest_filter: Rc::new(RefCell::new(filter.clone()))
@@ -108,7 +103,7 @@ impl DataLoader {
                 .ingested_data
                 .lock()
                 .expect("Failed to get mutex lock for ingested data, mutex poisoned");
-            let missing: Vec<DateRange> = (*data_guard)
+            let mut missing: Vec<DateRange> = (*data_guard)
                 .iter()
                 .flat_map(|x| x.get_disjoint(&filter.date_range))
                 .flatten()
@@ -132,6 +127,9 @@ impl DataLoader {
                             .collect()
                     }
                 });
+            if data_guard.is_empty() {
+                missing = vec![filter.date_range.clone()];
+            }
             log!("Filter: {:?}", filter.date_range);
             log!("Missing: {missing:?}");
             
@@ -140,7 +138,10 @@ impl DataLoader {
                 // new_range is range clipped to file resolution so start: 2020-01-05, end: 2020-01-07
                 // becomes start: 2020-01-01, end 2020-02-01 since the smallest time unit we can ingest is one month
                 let (sql, new_range) = generate_populate_sat_data_sql(&range);
-                queue_guard.push_back(sql);
+                for stmt in sql {
+                    queue_guard.push_back(stmt);
+                }
+                
                 let mut merged = false;
                 for ingested_range in &mut (*data_guard) {
                     if let Ok(_) = ingested_range.merge(&new_range) {
@@ -183,17 +184,21 @@ async fn load_data_async(
     ingest_filter: Rc<RefCell<Filter>>,
 ) {
 
-    {  
+    loop {  
         let mut guard = ingest_queue.lock().expect("Failed to get lock for ingest queue, mutex poisoned");
         let sql_vec = guard.pop_front().clone();
         drop(guard);
 
         if let Some(sql) = sql_vec {
-            log!("SQL VEC: {sql:?}");
+            log!("SQL: {sql:?}");
 
             // Ingest Missing Data
             log!("Executing: {sql}");
-            connection.query(&sql).await.expect("Failed to ingest data");
+            if let Err(e) = connection.query(&sql).await {
+                log!("Error while ingesting data: {e:?}");
+            }
+        } else {
+            break;
         }
     }
 

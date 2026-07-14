@@ -10,8 +10,8 @@ extern "C" {
     #[wasm_bindgen(js_name = "AsyncDuckDB")]
     #[derive(Debug)]
     type AsyncDuckDB;
-    #[wasm_bindgen(method, js_name = "runQuery")]
-    async fn run_query(this: &AsyncDuckDB, conn: u32, text: &str) -> Uint8Array;
+    #[wasm_bindgen(method, catch, js_name = "runQuery")]
+    async fn run_query(this: &AsyncDuckDB, conn: u32, text: &str) -> Result<Uint8Array, JsValue>;
 
     #[wasm_bindgen(js_name = "AsyncDuckDBConnection")]
     #[derive(Debug)]
@@ -29,7 +29,7 @@ impl AsyncDuckDBConnection {
     }
 
     pub async fn query(&self, sql: &str) -> Result<Vec<RecordBatch>, js_sys::Error> {
-        let res = self.bindings().run_query(self.conn()?, sql).await.to_vec();
+        let res = self.bindings().run_query(self.conn()?, sql).await?.to_vec();
         let cursor = Cursor::new(res);
         let reader = FileReader::try_new(cursor, None).unwrap();
         let mut batches: Vec<RecordBatch> = Vec::new();

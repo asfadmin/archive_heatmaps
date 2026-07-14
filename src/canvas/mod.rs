@@ -93,6 +93,7 @@ pub fn Canvas(set_generate_img: leptos::prelude::WriteSignal<bool>) -> impl Into
     leptos::task::spawn_local(async move {
         let data_loader = DataLoader::new(event_loop_proxy, set_ready, &filter()).await;
         // Anytime the filter signal changes the data loader now calls load data with the new signal
+        // data_loader.load_data(filter());
         Effect::new(move |_| data_loader.load_data(filter()));
     });
 

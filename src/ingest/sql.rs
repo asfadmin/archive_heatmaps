@@ -15,7 +15,7 @@ pub fn generate_create_sat_data_sql() -> String {
 }
 
 /// Create sql to read sat data from s3 into DuckDB based on the passed DateRange
-pub fn generate_populate_sat_data_sql(date_range: &DateRange) -> (String, DateRange) {
+pub fn generate_populate_sat_data_sql(date_range: &DateRange) -> (Vec<String>, DateRange) {
     let range_start = NaiveDate::from_ymd_opt(date_range.start.year(), date_range.start.month(), 1)
         .expect("Failed to create start month");
     let mut range_end: NaiveDate = date_range.end;
@@ -35,34 +35,23 @@ pub fn generate_populate_sat_data_sql(date_range: &DateRange) -> (String, DateRa
     .collect();
 
     // Generate SQL to import missing data
-    let missing_files = missing_months
+    let sql: Vec<String> = missing_months
         .iter()
         .map(|x| {
             let end = x
                 .checked_add_months(Months::new(1))
                 .expect("Failed to add a month");
             format!(
-                "{}_{}.parquet",
+                "INSERT INTO sat_data
+                 SELECT * 
+                 FROM read_parquet('s3://archive-heatmap-storage/sat_data/{}_{}.parquet');",
                 x.format("%Y-%m-01"),
                 end.format("%Y-%m-01")
             )
             .to_string()
-        })
-        .enumerate()
-        .fold("[".to_string(), |mut acc, (i, s)| {
-            if i != 0 {
-                acc += ", ";
-            }
-            acc += &format!("'s3://archive-heatmap-storage/sat_data/{s}'");
-            acc
-        })
-        + "]";
-    log!("Missing: {missing_files}");
-    let sql = format!(
-        "INSERT INTO sat_data
-     SELECT * 
-     FROM read_parquet({missing_files});"
-    );
+        }).collect();
+
+    log!("Missing: {sql:?}");
 
     // Create Vector representing the imported data, needed to clip
     //  input range to file resolution, ie 2019-12-08 imports data
