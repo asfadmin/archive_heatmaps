@@ -2,17 +2,16 @@ extern crate earcutr;
 use std::collections::VecDeque;
 use std::rc::Rc;
 use std::sync::Mutex;
-use std::sync::atomic::{AtomicU16, AtomicUsize};
+use std::sync::atomic::{AtomicBool, AtomicUsize};
 use std::time::Duration;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
+use std::cell::RefCell;
 
-use async_std::task::sleep;
-use geo::geometry::{Coord, LineString, Polygon};
-use geo::{Simplify, TriangulateEarcut, coord};
+use async_std::task::{sleep, yield_now};
+use geo::geometry::Polygon;
 use leptos::logging::log;
 use leptos::prelude::{GetUntracked, Set, Update, signal};
-use leptos::reactive::owner::StorageAccess;
 use winit::event_loop::EventLoopProxy;
 
 use super::request::request;
@@ -45,7 +44,9 @@ pub struct DataLoader {
     pub set_ready: leptos::prelude::WriteSignal<bool>,
     pub connection: Rc<AsyncDuckDBConnection>,
     ingested_data: Mutex<Vec<DateRange>>,
-    ingest_semaphore: Arc<AtomicUsize>,
+    ingest_queue: Rc<Mutex<VecDeque<String>>>,
+    ingest_flag: Rc<RefCell<AtomicBool>>,
+    ingest_filter: Rc<RefCell<Filter>>,
 }
 
 impl DataLoader {
@@ -90,7 +91,9 @@ impl DataLoader {
             set_ready,
             connection,
             ingested_data: Mutex::new(vec![filter.date_range.clone()]),
-            ingest_semaphore: Arc::new(AtomicUsize::new(0))
+            ingest_queue: Rc::new(Mutex::new(VecDeque::new())),
+            ingest_flag: Rc::new(RefCell::new(AtomicBool::new(false))),
+            ingest_filter: Rc::new(RefCell::new(filter.clone()))
         }
     }
 
@@ -99,20 +102,19 @@ impl DataLoader {
         self.set_active_requests.update(|n| *n += 1);
         self.set_ready.set(false);
 
-        let mut sql_vec = Vec::new();
         {
             // Check for missing data in DuckDB
-            let mut guard = self
+            let mut data_guard = self
                 .ingested_data
                 .lock()
                 .expect("Failed to get mutex lock for ingested data, mutex poisoned");
-            let missing: Vec<DateRange> = (*guard)
+            let missing: Vec<DateRange> = (*data_guard)
                 .iter()
                 .flat_map(|x| x.get_disjoint(&filter.date_range))
                 .flatten()
                 .fold(Vec::<DateRange>::new(), |mut acc, x| {
                     log!("acc: {acc:?}");
-                    if acc.len() == 0 {
+                    if acc.is_empty() {
                         log!("First DateRange: {x:?}");
                         acc.push(x);
                         acc
@@ -125,7 +127,7 @@ impl DataLoader {
                                 } else {
                                     log!("Merged {x:?} and {y:?}")
                                 }
-                                return vec![y];
+                                vec![y]
                             })
                             .collect()
                     }
@@ -133,70 +135,83 @@ impl DataLoader {
             log!("Filter: {:?}", filter.date_range);
             log!("Missing: {missing:?}");
             
+            let mut queue_guard = self.ingest_queue.lock().expect("Failed to lock ingest queue, mutex poisoned");
             for range in missing {
                 // new_range is range clipped to file resolution so start: 2020-01-05, end: 2020-01-07
                 // becomes start: 2020-01-01, end 2020-02-01 since the smallest time unit we can ingest is one month
                 let (sql, new_range) = generate_populate_sat_data_sql(&range);
-                sql_vec.push(sql);
+                queue_guard.push_back(sql);
                 let mut merged = false;
-                for ingested_range in &mut (*guard) {
+                for ingested_range in &mut (*data_guard) {
                     if let Ok(_) = ingested_range.merge(&new_range) {
                         merged = true;
                     }
                 }
                 if !merged {
-                    guard.push(new_range);
+                    data_guard.push(new_range);
                 }
 
-                log!("New Ingested Data Range: {guard:?}");
+                log!("New Ingested Data Range: {data_guard:?}");
             }
-            self.ingest_semaphore.fetch_add(1, std::sync::atomic::Ordering::Acquire);
         }
 
-        leptos::task::spawn_local(load_data_async(
-            self.event_loop_proxy.clone(),
-            filter,
-            self.active_requests,
-            self.set_active_requests,
-            self.connection.clone(),
-            sql_vec,
-            self.ingest_semaphore.clone(),
-        ))
+        *self.ingest_filter.borrow_mut() = filter.clone();
+
+        if !(self.ingest_flag.borrow().load(Ordering::Acquire)) {
+            self.ingest_flag.borrow_mut().store(false, Ordering::Release);
+            leptos::task::spawn_local(load_data_async(
+                self.event_loop_proxy.clone(),
+                self.active_requests,
+                self.set_active_requests,
+                self.connection.clone(),
+                self.ingest_queue.clone(),
+                self.ingest_flag.clone(),
+                self.ingest_filter.clone(),
+            ))
+        }
+        
     }
 }
 
 async fn load_data_async(
     event_loop_proxy: EventLoopProxy<UserMessage<'static>>,
-    filter: types::Filter,
     active_requests: leptos::prelude::ReadSignal<u32>,
     set_active_requests: leptos::prelude::WriteSignal<u32>,
     connection: Rc<AsyncDuckDBConnection>,
-    sql_vec: Vec<String>,
-    ingest_semaphore: Arc<AtomicUsize>,
+    ingest_queue: Rc<Mutex<VecDeque<String>>>,
+    ingest_flag: Rc<RefCell<AtomicBool>>,
+    ingest_filter: Rc<RefCell<Filter>>,
 ) {
-    // Ingest Missing Data
-    for sql in sql_vec {
-        log!("Executing: {sql}");
-        connection.query(&sql).await.expect("Failed to ingest data");
+
+    {  
+        let mut guard = ingest_queue.lock().expect("Failed to get lock for ingest queue, mutex poisoned");
+        let sql_vec = guard.pop_front().clone();
+        drop(guard);
+
+        if let Some(sql) = sql_vec {
+            log!("SQL VEC: {sql:?}");
+
+            // Ingest Missing Data
+            log!("Executing: {sql}");
+            connection.query(&sql).await.expect("Failed to ingest data");
+        }
     }
 
-    // Wait for all threads to finish loading data before processing
-    ingest_semaphore.fetch_sub(1, Ordering::Release);
-    while ingest_semaphore.load(Ordering::Acquire) != 0 { }
-    log!("**************** All data loaded, proceeding! ****************");
-    // Request data from the server
-    let (data, outline_data) = request(&connection, filter).await;
+    // Unset ingest flag to allow future data loading
+    ingest_flag.borrow_mut().store(false, Ordering::Release);
 
     log!("Active Requests: {:?}", active_requests.get_untracked());
     // Convert the data into a triangular mesh
     if active_requests.get_untracked() == 1 {
+        // Request data from the server
+        let (data, outline_data) = request(&connection, ingest_filter.borrow().clone()).await;
+        
         log!("Meshing data...");
         let meshed_data = mesh_data(Data::Heatmap(data));
         let meshed_outline_data = mesh_data(Data::Outline(outline_data));
 
         // Send the triangular mesh to the event loop
         log!("Sending Mesh to event loop");
-        sleep(Duration::new(10, 0)).await;
         let _ = event_loop_proxy
             .send_event(UserMessage::IncomingData(meshed_data, meshed_outline_data));
     }

@@ -1,4 +1,3 @@
-use arrow::ipc::Date;
 use chrono::NaiveDate;
 use geo::Polygon;
 use serde::{Deserialize, Serialize};

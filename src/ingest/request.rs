@@ -10,7 +10,7 @@ use crate::{
 
 // Send a request to the service for data based on the filter
 pub async fn request(conn: &AsyncDuckDBConnection, filter: Filter) -> (Vec<Granule>, Vec<Polygon>) {
-    log!("Request started...");
+    log!("Request started...\n\t{:?}", filter.date_range);
 
     //////////////////////////////
     //  Process Satellite Data  //

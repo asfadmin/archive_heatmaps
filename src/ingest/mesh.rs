@@ -1,24 +1,12 @@
 extern crate earcutr;
 use std::collections::VecDeque;
-use std::rc::Rc;
-use std::time::Duration;
 
-use async_std::task::sleep;
 use geo::geometry::{Coord, LineString, Polygon};
 use geo::{Simplify, TriangulateEarcut, coord};
-use leptos::logging::log;
-use leptos::prelude::{GetUntracked, Set, Update, signal};
-use winit::event_loop::EventLoopProxy;
 
-use super::request::request;
-use crate::canvas::app::UserMessage;
 use crate::canvas::geometry::BlendVertex;
-use crate::ingest::async_duckdb::{AsyncDuckDBConnection, generate_duckdb_connection};
 use crate::ingest::load::BufferStorage;
 use crate::ingest::load::Data;
-use crate::ingest::sql::generate_ingest_world_outline_sql;
-use crate::types::{self, DateRange};
-use crate::types::{Filter, Granule};
 
 /// Converts the passed data into a triangular mesh using the earcutting algorithm,
 ///     this is done for a varying level of detail to allow for LODs, polygon simplification

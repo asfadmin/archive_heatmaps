@@ -2,7 +2,6 @@ use std::iter::successors;
 
 use chrono::NaiveDate;
 use chrono::{Datelike, Months};
-use leptos::html::P;
 use leptos::logging::log;
 
 use crate::DateRange;
