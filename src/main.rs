@@ -1,5 +1,12 @@
 #![feature(iter_next_chunk)]
 #![feature(iter_advance_by)]
+#![warn(
+     clippy::all,
+     clippy::restriction,
+     clippy::pedantic,
+     clippy::nursery,
+     clippy::cargo,
+ )]
 
 use canvas::Canvas;
 use chrono::NaiveDate;
@@ -14,7 +21,7 @@ mod types;
 mod ui;
 
 #[component]
-fn App() -> impl IntoView {
+fn Application() -> impl IntoView {
     // Default filter, used on startup
     let (filter, set_filter) = signal(types::Filter {
         product_type: vec![
@@ -49,5 +56,5 @@ fn App() -> impl IntoView {
 
 fn main() {
     console_error_panic_hook::set_once();
-    mount_to_body(App)
+    mount_to_body(Application);
 }
