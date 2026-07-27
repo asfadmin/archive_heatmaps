@@ -2,12 +2,18 @@
 #![feature(iter_advance_by)]
 #![warn(
     clippy::all,
-    clippy::restriction,
     clippy::pedantic,
     clippy::nursery,
     clippy::cargo
 )]
-#![allow(clippy::single_call_fn, clippy::same_name_method, clippy::expect_used)]
+#![allow(
+    clippy::single_call_fn,
+    clippy::same_name_method,
+    clippy::expect_used,
+    clippy::absolute_paths,
+    clippy::implicit_return,
+    clippy::too_many_lines,
+)]
 
 use canvas::Canvas;
 use chrono::NaiveDate;

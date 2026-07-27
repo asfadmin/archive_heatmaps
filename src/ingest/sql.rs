@@ -7,16 +7,17 @@ use leptos::logging::log;
 use crate::DateRange;
 use crate::types::Filter;
 
+///
 pub fn generate_create_sat_data_sql() -> String {
-    "CREATE TABLE sat_data (
+    return "CREATE TABLE sat_data (
         geometry GEOMETRY('EPSG:4326'),
         ancestors STRUCT(granule_name VARCHAR, platform_type VARCHAR, data_sensor_type VARCHAR, start_time TIMESTAMP)[]
-    );".to_string()
+    );".to_owned();
 }
 
-/// Create sql to read sat data from s3 into DuckDB based on the passed DateRange
+/// Create sql to read sat data from s3 into DuckDB based on the passed `DateRange`.
 pub fn generate_populate_sat_data_sql(date_range: &DateRange) -> (Vec<String>, DateRange) {
-    let maturity = std::env::var("DEPLOY_PREFIX").unwrap_or("dev".to_string());
+    let maturity = std::env::var("DEPLOY_PREFIX").unwrap_or_else(|_| "dev".to_string());
     let range_start = NaiveDate::from_ymd_opt(date_range.start.year(), date_range.start.month(), 1)
         .expect("Failed to create start month");
     let mut range_end: NaiveDate = date_range.end;
