@@ -4,11 +4,11 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use leptos::logging::log;
-use leptos::prelude::{GetUntracked, Set};
-use wasm_bindgen::JsCast;
+use leptos::prelude::{GetUntracked as _, Set as _};
+use wasm_bindgen::JsCast as _;
 use web_sys::HtmlAnchorElement;
 use web_sys::HtmlCanvasElement;
-use winit::platform::web::WindowExtWebSys;
+use winit::platform::web::WindowExtWebSys as _;
 use winit::{
     application::ApplicationHandler,
     dpi::{LogicalSize, PhysicalSize},
@@ -25,10 +25,11 @@ use super::texture::generate_copy_texture;
 use crate::canvas::png::generate_heatmap_image;
 use crate::ingest::load::BufferStorage;
 
+/// Winit app that creates a window to be drawn to with wgpu
 pub struct App<'a> {
-    pub state: State<'a>,
-    pub external_state: Rc<RefCell<ExternalState>>,
     pub event_loop_proxy: EventLoopProxy<UserMessage<'static>>,
+    pub external_state: Rc<RefCell<ExternalState>>,
+    pub state: State<'a>,
 }
 
 // The application handler instance doesnt allow for error handling
@@ -42,8 +43,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
         self.state.window = Some(Rc::new(
             event_loop
                 .create_window(
-                    Window::default_attributes()
-                        .with_inner_size(winit::dpi::PhysicalSize::new(400, 450)),
+                    Window::default_attributes().with_inner_size(PhysicalSize::new(400u32, 450u32)),
                 )
                 .expect("ERROR: Failed to create window"),
         ));
@@ -60,91 +60,6 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
         );
 
         log!("Canvas created");
-    }
-
-    fn window_event(
-        &mut self,
-        event_loop: &ActiveEventLoop,
-        _window_id: WindowId,
-        event: WindowEvent,
-    ) {
-        // regardless of the event, we must poll the current browser window size
-        // and resize the winit window (our canvas) to match
-        {
-            let window = self
-                .state
-                .window
-                .clone()
-                .expect("failed to get window in window event");
-            let browser_window =
-                web_sys::window().expect("failed to get browser window in window event");
-
-            let width = browser_window
-                .inner_width()
-                .expect("failed to get window inner width in window event")
-                .as_f64()
-                .expect("failed type conversion in window event") as u32;
-            let height = browser_window
-                .inner_height()
-                .expect("failed to get window inner height in window event")
-                .as_f64()
-                .expect("failed type conversion in window even") as u32;
-            let factor = window.scale_factor();
-            let logical = LogicalSize { width, height };
-            let PhysicalSize { width, height }: PhysicalSize<u32> = logical.to_physical(factor);
-
-            let _ = window.request_inner_size(PhysicalSize::new(width, height));
-        }
-
-        match event {
-            WindowEvent::CloseRequested => self.exiting(event_loop),
-
-            WindowEvent::RedrawRequested => {
-                // Continously re-render the surface if setup is complete
-                if self.state.init_stage == InitStage::Complete {
-                    match self.state.render() {
-                        Ok(_) => {}
-
-                        Err(wgpu::SurfaceError::OutOfMemory) => {
-                            log::error!("OutOfMemory");
-                            self.exiting(event_loop);
-                        }
-
-                        Err(e) => eprintln!("{e:?}",),
-                    }
-                }
-
-                self.state
-                    .window
-                    .as_ref()
-                    .expect("ERROR: Failed to get window when requesting redraw")
-                    .request_redraw();
-            }
-
-            WindowEvent::Resized(physical_size) => {
-                // Initialize setup of state when resized is first called, otherwise call state.resize
-                log!("Window resized");
-                if self.state.init_stage == InitStage::Incomplete {
-                    log!("Generating state...");
-                    leptos::task::spawn_local(super::render_context::generate_render_context(
-                        self.state
-                            .window
-                            .as_ref()
-                            .expect("ERROR: Failed to get window while generating render context")
-                            .clone(),
-                        self.event_loop_proxy.clone(),
-                    ));
-                } else {
-                    log!("Resizing");
-                    self.state.resize(physical_size);
-                }
-            }
-
-            // Any other event will be handled by the user input handler
-            _ => {
-                self.state.handle_input_event(event);
-            }
-        }
     }
 
     fn user_event(&mut self, _event_loop: &ActiveEventLoop, event: UserMessage<'static>) {
@@ -343,6 +258,91 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                 }
 
                 log!(".png downloaded");
+            }
+        }
+    }
+
+    fn window_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        _window_id: WindowId,
+        event: WindowEvent,
+    ) {
+        // regardless of the event, we must poll the current browser window size
+        // and resize the winit window (our canvas) to match
+        {
+            let window = self
+                .state
+                .window
+                .clone()
+                .expect("failed to get window in window event");
+            let browser_window =
+                web_sys::window().expect("failed to get browser window in window event");
+
+            let width = browser_window
+                .inner_width()
+                .expect("failed to get window inner width in window event")
+                .as_f64()
+                .expect("failed type conversion in window event") as u32;
+            let height = browser_window
+                .inner_height()
+                .expect("failed to get window inner height in window event")
+                .as_f64()
+                .expect("failed type conversion in window even") as u32;
+            let factor = window.scale_factor();
+            let logical = LogicalSize { width, height };
+            let PhysicalSize { width, height }: PhysicalSize<u32> = logical.to_physical(factor);
+
+            let _ = window.request_inner_size(PhysicalSize::new(width, height));
+        }
+
+        match event {
+            WindowEvent::CloseRequested => self.exiting(event_loop),
+
+            WindowEvent::RedrawRequested => {
+                // Continously re-render the surface if setup is complete
+                if self.state.init_stage == InitStage::Complete {
+                    match self.state.render() {
+                        Ok(_) => {}
+
+                        Err(wgpu::SurfaceError::OutOfMemory) => {
+                            log::error!("OutOfMemory");
+                            self.exiting(event_loop);
+                        }
+
+                        Err(e) => eprintln!("{e:?}",),
+                    }
+                }
+
+                self.state
+                    .window
+                    .as_ref()
+                    .expect("ERROR: Failed to get window when requesting redraw")
+                    .request_redraw();
+            }
+
+            WindowEvent::Resized(physical_size) => {
+                // Initialize setup of state when resized is first called, otherwise call state.resize
+                log!("Window resized");
+                if self.state.init_stage == InitStage::Incomplete {
+                    log!("Generating state...");
+                    leptos::task::spawn_local(super::render_context::generate_render_context(
+                        self.state
+                            .window
+                            .as_ref()
+                            .expect("ERROR: Failed to get window while generating render context")
+                            .clone(),
+                        self.event_loop_proxy.clone(),
+                    ));
+                } else {
+                    log!("Resizing");
+                    self.state.resize(physical_size);
+                }
+            }
+
+            // Any other event will be handled by the user input handler
+            _ => {
+                self.state.handle_input_event(event);
             }
         }
     }

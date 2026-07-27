@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use chrono::NaiveDate;
 use geo::Polygon;
 use serde::{Deserialize, Serialize};
@@ -40,7 +42,7 @@ pub struct DateRange {
 
 impl DateRange {
     /// Checks that start < end before constructing type
-    pub fn new(start: NaiveDate, end: NaiveDate) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new(start: NaiveDate, end: NaiveDate) -> Result<Self, Box<dyn Error>> {
         if start > end {
             return Err("Start is after end, this is an invalid state for a DateRange".into());
         }
@@ -51,7 +53,7 @@ impl DateRange {
     ///  
     /// Requires ranges to share exactly one temporal border:
     ///  - Does not allow overlaping or disjoint ranges
-    pub fn merge(&mut self, other: &DateRange) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn merge(&mut self, other: &DateRange) -> Result<(), Box<dyn Error>> {
         if self.start == other.end {
             self.start = other.start;
         } else if self.end == other.start {
@@ -102,7 +104,7 @@ impl DateRange {
 // Describes a heatmap to generate
 #[derive(Clone)]
 pub struct Filter {
+    pub date_range: DateRange,
     pub product_type: Vec<ProductTypes>,
     pub platform_type: Vec<PlatformType>,
-    pub date_range: DateRange,
 }

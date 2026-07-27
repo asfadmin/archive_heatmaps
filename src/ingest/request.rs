@@ -2,6 +2,7 @@ use arrow::array::{BinaryArray, Int64Array};
 use geo::Polygon;
 use geo_traits::to_geo::ToGeoGeometry;
 use leptos::logging::log;
+use wkb::reader::read_wkb;
 
 use crate::{
     ingest::{async_duckdb::AsyncDuckDBConnection, sql::generate_sql},
@@ -39,12 +40,9 @@ pub async fn request(conn: &AsyncDuckDBConnection, filter: Filter) -> (Vec<Granu
                 .map(|(wkb_binary, weight)| {
                     use geo_traits::to_geo::ToGeoGeometry;
                     let poly = TryInto::<Polygon>::try_into(
-                        wkb::reader::read_wkb(
-                            &hex::decode(wkb_binary.expect("Failed to get [u8] from wkb"))
-                                .expect("Sat data geometry column was not hex encoded"),
-                        )
-                        .expect("Failed to convert sat_data geometry to geo::geometry")
-                        .to_geometry(),
+                        read_wkb(&wkb_binary.expect("Failed to get [u8] from wkb"))
+                            .expect("Failed to convert sat_data geometry to geo::geometry")
+                            .to_geometry(),
                     )
                     .expect("Failed to convert sat data to Polygon");
                     Granule {
@@ -77,7 +75,7 @@ pub async fn request(conn: &AsyncDuckDBConnection, filter: Filter) -> (Vec<Granu
                 )
                 .iter()
                 .flat_map(|wkb_binary| {
-                    match wkb::reader::read_wkb(
+                    match read_wkb(
                         wkb_binary.expect("Failed to read wkb_binary from geometry column"),
                     )
                     .expect("Failed to convert wkb to geometry")

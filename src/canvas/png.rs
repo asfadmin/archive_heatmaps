@@ -58,8 +58,8 @@ pub fn generate_heatmap_image(render_context: &mut RenderContext, filter: Filter
     let raw_image_data: Vec<u8> = image::DynamicImage::from(output_img).to_rgba8().into_raw();
 
     // Encode the generated ImageBuffer into a png
-    let mut png_encoded = Vec::<u8>::new();
-    let png_encoder = PngEncoder::new(&mut png_encoded);
+    let mut png_bytes = Vec::<u8>::new();
+    let png_encoder = PngEncoder::new(&mut png_bytes);
     let _result = png_encoder.write_image(
         raw_image_data.as_slice(),
         output_img_width,
@@ -68,7 +68,7 @@ pub fn generate_heatmap_image(render_context: &mut RenderContext, filter: Filter
     );
 
     // Encode the png in base64 to allow for download from an html anchor tag
-    base64::engine::general_purpose::STANDARD.encode(&png_encoded)
+    base64::engine::general_purpose::STANDARD.encode(&png_bytes)
 }
 
 pub fn generate_export_image(
@@ -126,14 +126,14 @@ pub fn generate_export_image(
 
     // These numbers correspond to the ratio of each color on the export colormap, ie num_pixels_of_color/length_of_texture
     let legend_weights = [
-        0.004166667,
-        0.010416667,
-        0.010416667,
-        0.020833333,
-        0.022916667,
+        0.004_166_667,
+        0.010_416_667,
+        0.010_416_667,
+        0.020_833_333,
+        0.022_916_667,
         0.075,
         0.15,
-        0.714583,
+        0.714_583,
     ];
 
     // Adds numbers to the legend, each range is added individually to allow

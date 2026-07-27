@@ -1,5 +1,5 @@
 use chrono::naive::NaiveDate;
-use leptos::wasm_bindgen::JsCast;
+use leptos::wasm_bindgen::JsCast as _;
 use leptos::{html, prelude::*};
 use types::Filter;
 
@@ -84,7 +84,7 @@ pub fn UserInterface(
         }
 
         // Gets the selected start and end dates
-        let start_date = NaiveDate::parse_from_str(
+        let start_date_naive = NaiveDate::parse_from_str(
             &start_date_element
                 .read_untracked()
                 .as_ref()
@@ -93,7 +93,7 @@ pub fn UserInterface(
             "%Y-%m-%d",
         )
         .expect("Failed to parse start date from HTML Input");
-        let end_date = NaiveDate::parse_from_str(
+        let end_date_naive = NaiveDate::parse_from_str(
             &end_date_element
                 .read_untracked()
                 .as_ref()
@@ -106,8 +106,9 @@ pub fn UserInterface(
         set_filter(types::Filter {
             product_type,
             platform_type,
-            date_range: DateRange::new(start_date, end_date).expect("Failed to create DateRange"),
-        })
+            date_range: DateRange::new(start_date_naive, end_date_naive)
+                .expect("Failed to create DateRange"),
+        });
     };
 
     view! {
@@ -217,7 +218,7 @@ pub fn UserInterface(
                                     class="datepicker"
                                     node_ref=end_date_element
                                     prop:value=end_date
-                                    on:change=on_update.clone()
+                                    on:change=on_update
                                 />
                             </td>
                         </tr>

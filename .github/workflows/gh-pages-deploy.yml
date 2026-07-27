@@ -11,6 +11,9 @@ jobs:
   build-and-deploy:
     concurrency: ci-${{ github.ref }} # Recommended if you intend to make multiple deployments in quick succession.
     runs-on: ubuntu-latest
+    env:
+      DEPLOY_PREFIX: "prod" # Temp value, should be removed when proper maturity level deployments are working
+
     steps:
       - name: Checkout 🛎️
         uses: actions/checkout@v4

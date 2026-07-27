@@ -43,10 +43,7 @@ impl InputState {
 
         match event {
             // Update drag delta based on the change in cursor position
-            CursorMoved {
-                device_id: _,
-                position,
-            } => {
+            CursorMoved { position, .. } => {
                 if self.is_mouse_button_pressed(MouseButton::Left) {
                     self.mouse_drag_delta.x += position.x - self.cursor_position.x;
                     self.mouse_drag_delta.y += position.y - self.cursor_position.y;
@@ -55,11 +52,7 @@ impl InputState {
             }
 
             // Add/remove a mouse button press from the list of currently pressed buttons
-            MouseInput {
-                device_id: _,
-                state,
-                button,
-            } => {
+            MouseInput { state, button, .. } => {
                 use ElementState::*;
 
                 match state {
@@ -74,11 +67,7 @@ impl InputState {
             }
 
             // Track the change in the mouse wheel scroll
-            MouseWheel {
-                device_id: _,
-                delta,
-                phase: _,
-            } => {
+            MouseWheel { delta, .. } => {
                 use MouseScrollDelta::*;
 
                 match delta {
@@ -93,11 +82,7 @@ impl InputState {
             }
 
             // Add/Remove the keyboard key from the list of pressed keys
-            KeyboardInput {
-                device_id: _,
-                event,
-                is_synthetic: _,
-            } => {
+            KeyboardInput { event, .. } => {
                 use ElementState::*;
 
                 match event.state {

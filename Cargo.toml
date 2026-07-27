@@ -5,6 +5,8 @@ name = "heatmap-client"
 version = "0.1.0"
 edition = "2024"
 forced-target = "wasm32-unknown-unknown"
+description = "A leptos app to generate heatmaps of the Sentinel-1 Data Archive"
+repository = "https://github.com/asfadmin/archive_heatmaps"
 
 [dependencies]
 async-std = "1.12.0"

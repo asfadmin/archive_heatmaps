@@ -1,24 +1,25 @@
 #![feature(iter_next_chunk)]
 #![feature(iter_advance_by)]
 #![warn(
-     clippy::all,
-     clippy::restriction,
-     clippy::pedantic,
-     clippy::nursery,
-     clippy::cargo,
- )]
+    clippy::all,
+    clippy::restriction,
+    clippy::pedantic,
+    clippy::nursery,
+    clippy::cargo
+)]
+#![allow(clippy::single_call_fn, clippy::same_name_method, clippy::expect_used)]
 
 use canvas::Canvas;
 use chrono::NaiveDate;
 use leptos::{mount::mount_to_body, prelude::*};
 use ui::user_interface::UserInterface;
 
-use crate::types::DateRange;
-
 mod canvas;
 mod ingest;
 mod types;
 mod ui;
+
+use crate::types::DateRange;
 
 #[component]
 fn Application() -> impl IntoView {
@@ -34,9 +35,9 @@ fn Application() -> impl IntoView {
             types::PlatformType::Sentinel1B,
         ],
         date_range: DateRange::new(
-            NaiveDate::from_ymd_opt(2020, 1, 1)
+            NaiveDate::from_ymd_opt(2026, 6, 1)
                 .expect("Failed to create start date when creating filter signal"),
-            NaiveDate::from_ymd_opt(2020, 2, 1)
+            NaiveDate::from_ymd_opt(2026, 7, 1)
                 .expect("Failed to create end date when creating filter signal"),
         )
         .expect("Failed to create DateRange"),

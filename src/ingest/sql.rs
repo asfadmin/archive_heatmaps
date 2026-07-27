@@ -9,13 +9,14 @@ use crate::types::Filter;
 
 pub fn generate_create_sat_data_sql() -> String {
     "CREATE TABLE sat_data (
-        geometry BLOB,
+        geometry GEOMETRY('EPSG:4326'),
         ancestors STRUCT(granule_name VARCHAR, platform_type VARCHAR, data_sensor_type VARCHAR, start_time TIMESTAMP)[]
     );".to_string()
 }
 
 /// Create sql to read sat data from s3 into DuckDB based on the passed DateRange
 pub fn generate_populate_sat_data_sql(date_range: &DateRange) -> (Vec<String>, DateRange) {
+    let maturity = std::env::var("DEPLOY_PREFIX").unwrap_or("dev".to_string());
     let range_start = NaiveDate::from_ymd_opt(date_range.start.year(), date_range.start.month(), 1)
         .expect("Failed to create start month");
     let mut range_end: NaiveDate = date_range.end;
@@ -44,7 +45,9 @@ pub fn generate_populate_sat_data_sql(date_range: &DateRange) -> (Vec<String>, D
             format!(
                 "INSERT INTO sat_data
                  SELECT * 
-                 FROM read_parquet('s3://archive-heatmap-storage/sat_data/{}_{}.parquet');",
+                 FROM read_parquet('s3://archive-heatmap-storage-{maturity}/sat_data/monthly/{}/{}/{}_{}.parquet');",
+                x.format("%Y"),
+                x.format("%m"),
                 x.format("%Y-%m-01"),
                 end.format("%Y-%m-01")
             )
@@ -66,10 +69,12 @@ pub fn generate_populate_sat_data_sql(date_range: &DateRange) -> (Vec<String>, D
 }
 
 pub fn generate_ingest_world_outline_sql() -> String {
-    "CREATE TABLE world_outline AS
-     SELECT * 
-     FROM read_parquet('s3://archive-heatmap-storage/world_continents.parquet');"
-        .to_string()
+    let maturity = std::env::var("DEPLOY_PREFIX").unwrap_or("dev".to_string());
+    format!(
+        "CREATE TABLE world_outline AS
+        SELECT * 
+        FROM read_parquet('s3://archive-heatmap-storage-{maturity}/world_continents.parquet');"
+    )
 }
 
 /// Create sql to generate a Heatmap based on a filter and data already in DuckDB
@@ -95,7 +100,7 @@ pub fn generate_sql(filter: &Filter) -> String {
     format!(
         "
     SELECT
-        geometry,
+        ST_AsWKB(geometry),
         len(list_filter(ancestors, lambda x: 
             x.start_time > '{}' AND               -- Start Time
             x.start_time < '{}' AND               -- End Time

@@ -1,6 +1,8 @@
-// We allow expect for the whole module as winit makes it nearly impossible
-// to properly manage error handling.
-#![allow(clippy::expect_used)]
+//! Module contains a Canvas Component that has an HTML Canvas that is drawn to using wgpu
+#![allow(
+    clippy::expect_used,
+    reason = "We allow expect for the whole module as winit makes it nearly impossible to properly manage error handling."
+)]
 
 pub mod app;
 mod camera;
