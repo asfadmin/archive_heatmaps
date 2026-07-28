@@ -1,10 +1,9 @@
 use std::error::Error;
-use leptos::{prelude::ReadSignal, reactive::traits::DefinedAt};
+use leptos::prelude::ReadSignal;
 use chrono::NaiveDate;
 use geo::Polygon;
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
-use leptos::prelude::GetUntracked;
 
 // Enums defining possible filter options
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Display)]

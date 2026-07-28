@@ -2,14 +2,12 @@ use chrono::naive::NaiveDate;
 use leptos::wasm_bindgen::JsCast as _;
 use leptos::{html, prelude::*};
 use types::Filter;
-use leptos::logging::log;
 
 use crate::types::{self, DateRange, ReadySignal};
 
 #[component]
 pub fn UserInterface(
     set_filter: WriteSignal<Filter>,
-    set_generate_img: WriteSignal<bool>,
 ) -> impl IntoView {
     let filter =
         use_context::<ReadSignal<Filter>>().expect("Failed to get filter from context in UI");

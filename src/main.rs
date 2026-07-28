@@ -4,7 +4,7 @@
 use canvas::Canvas;
 use chrono::NaiveDate;
 use leptos::{mount::mount_to_body, prelude::*};
-use ui::user_interface::UserInterface;
+use ui::{user_interface::UserInterface, disclaimer::Disclaimer};
 
 mod canvas;
 mod ingest;
@@ -47,7 +47,8 @@ fn Application() -> impl IntoView {
 
     view! {
         <div>
-            <UserInterface set_filter set_generate_img/>
+            <Disclaimer/>
+            <UserInterface set_filter/>
             <Canvas set_generate_img set_ready/>
         </div>
     }

@@ -42,6 +42,36 @@ input[type="checkbox"]:checked {
   background-color: #fc9167;
 }
 
+.blur {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: #4947470b;
+    backdrop-filter: blur(10px);
+    height: 100%;
+    width: 100%;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+}
+
+.disclaimer {
+    position: relative;
+    display: grid;
+    place-items: center;
+    z-index: 2;
+    padding: 5mm;
+    border-radius: 5mm;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    background: #303030;
+}
+
+.disclaimer-text {
+    text-align: center;
+}
+
 .user_interface {
     position: absolute;
     z-index: 1;
@@ -77,6 +107,17 @@ input[type="checkbox"]:checked {
 
 .button:active {
     background-color: #b3aeae;
+}
+
+.exit-button {
+    position: absolute;
+    left: 94%;
+    top: 5%;
+    color: black;
+    background-color: #fc9167;
+    border-width: 2px;
+    border-color: #fc9167;
+    border-radius: 50%;
 }
 
 p {
