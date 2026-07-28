@@ -4,4 +4,6 @@ __pycache__
 .vscode
 target/
 heatmap-client/dist/
-*sat_data.geojson
+*sat_data.*
+dist
+assets/duckdb-browser.mjs

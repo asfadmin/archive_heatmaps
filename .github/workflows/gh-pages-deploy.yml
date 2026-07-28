@@ -2,8 +2,6 @@ name: Build and Deploy to GitHub Pages
 on: 
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
   workflow_dispatch:
 
 permissions:
@@ -13,6 +11,9 @@ jobs:
   build-and-deploy:
     concurrency: ci-${{ github.ref }} # Recommended if you intend to make multiple deployments in quick succession.
     runs-on: ubuntu-latest
+    env:
+      DEPLOY_PREFIX: "test" # Temp value, should be removed when proper maturity level deployments are working
+
     steps:
       - name: Checkout 🛎️
         uses: actions/checkout@v4
@@ -21,20 +22,14 @@ jobs:
       - name: Install nightly Rust
         uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: "nightly-2025-02-01"
+          toolchain: "nightly-2026-05-14"
           components: clippy, rustfmt
 
       - name: Add WASM target
         run: rustup target add wasm32-unknown-unknown
 
-      - name: lint
-        run: cargo clippy & cargo fmt
-
       - name: Download and install Trunk binary
-        run: wget -qO- https://github.com/trunk-rs/trunk/releases/download/v0.18.4/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf-
-
-      - name: Print env var
-        run: cat "heatmap-client/Trunk.toml"
+        run: wget -qO- https://github.com/trunk-rs/trunk/releases/download/v0.21.14/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf-
 
       - name: Build with Trunk
         # "${GITHUB_REPOSITORY#*/}" evaluates into the name of the repository
@@ -42,9 +37,9 @@ jobs:
         # this is necessary for github pages where the site is deployed to username.github.io/repo_name and all files must be requested
         # relatively as favicon.ico. if we skip public-url option, the href paths will instead request username.github.io/favicon.ico which
         # will obviously return error 404 not found.
-        run: ./trunk build --release --config="heatmap-client/Trunk.toml" --public-url="${GITHUB_REPOSITORY#*/}"
+        run: ./trunk build --release --config="Trunk.toml" --public-url="${GITHUB_REPOSITORY#*/}"
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: heatmap-client/dist # The folder the action should deploy.
+          folder: dist # The folder the action should deploy.
