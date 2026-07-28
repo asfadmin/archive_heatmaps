@@ -4,14 +4,14 @@
 use canvas::Canvas;
 use chrono::NaiveDate;
 use leptos::{mount::mount_to_body, prelude::*};
-use ui::{user_interface::UserInterface, disclaimer::Disclaimer};
+use ui::{disclaimer::Disclaimer, user_interface::UserInterface};
 
 mod canvas;
 mod ingest;
 mod types;
 mod ui;
 
-use crate::types::{DateRange, ReadySignal, GeneratePngSignal};
+use crate::types::{DateRange, GeneratePngSignal, ReadySignal};
 
 #[component]
 fn Application() -> impl IntoView {

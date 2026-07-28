@@ -1,17 +1,15 @@
-use leptos::{view, component, IntoView, prelude::*};
-
-
+use leptos::{IntoView, component, prelude::*, view};
 
 #[component]
 pub fn Disclaimer() -> impl IntoView {
     let (dismissed, set_dismissed) = signal(false);
     view! {
         <Show when=move || { !dismissed() }>
-            <div 
+            <div
                 class="blur"
             >
                 <div class="disclaimer">
-                    <button 
+                    <button
                         class="exit-button"
                         on:click=move |_| set_dismissed(true)
                     >

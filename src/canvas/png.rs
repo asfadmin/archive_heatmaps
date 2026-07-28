@@ -3,8 +3,8 @@ use image::ImageEncoder;
 use image::codecs::png::PngEncoder;
 use image::{ImageBuffer, Rgba};
 use leptos::logging::log;
-use text_to_png::TextRenderer;
 use leptos::prelude::ReadSignal;
+use text_to_png::TextRenderer;
 
 use super::render_context::RenderContext;
 use crate::types::{Filter, PlatformType, ProductTypes};

@@ -203,7 +203,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                 render_context.max_weight_context.value = Some(max);
 
                 render_context.copy_context.buffer.unmap();
-                
+
                 // Turn off the loading wheel
                 self.external_state.borrow_mut().set_ready.set(true);
             }

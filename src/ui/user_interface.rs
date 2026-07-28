@@ -6,9 +6,7 @@ use types::Filter;
 use crate::types::{self, DateRange, ReadySignal};
 
 #[component]
-pub fn UserInterface(
-    set_filter: WriteSignal<Filter>,
-) -> impl IntoView {
+pub fn UserInterface(set_filter: WriteSignal<Filter>) -> impl IntoView {
     let filter =
         use_context::<ReadSignal<Filter>>().expect("Failed to get filter from context in UI");
 

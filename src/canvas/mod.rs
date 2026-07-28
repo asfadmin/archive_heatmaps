@@ -34,13 +34,16 @@ use crate::types::{self, GeneratePngSignal, ReadySignal};
 
 /// Component to display a heatmap generated using wgpu and wgsl shaders
 #[component]
-pub fn Canvas(set_generate_img: leptos::prelude::WriteSignal<bool>, set_ready: leptos::prelude::WriteSignal<bool>) -> impl IntoView {
+pub fn Canvas(
+    set_generate_img: leptos::prelude::WriteSignal<bool>,
+    set_ready: leptos::prelude::WriteSignal<bool>,
+) -> impl IntoView {
     // Signal from the UI containing the filter
     let filter = use_context::<ReadSignal<types::Filter>>()
         .expect("ERROR: Failed to get filter read signal context in Canvas()");
 
-    let ReadySignal(ready) = use_context::<ReadySignal>()
-            .expect("ERROR: Failed to get ready read signal in canvas");
+    let ReadySignal(ready) =
+        use_context::<ReadySignal>().expect("ERROR: Failed to get ready read signal in canvas");
 
     let GeneratePngSignal(generate_img) = use_context::<GeneratePngSignal>()
         .expect("ERROR: Failed to get generate_png read signal in Canvas()");
