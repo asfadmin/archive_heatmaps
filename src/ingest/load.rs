@@ -160,9 +160,10 @@ impl DataLoader {
         *self.ingest_filter.borrow_mut() = filter;
 
         if !(self.ingest_flag.borrow().load(Ordering::Acquire)) {
+            // Disallow further threads until we finish loading data
             self.ingest_flag
                 .borrow_mut()
-                .store(false, Ordering::Release);
+                .store(true, Ordering::Release);
             leptos::task::spawn_local(load_data_async(
                 self.event_loop_proxy.clone(),
                 self.active_requests.clone(),

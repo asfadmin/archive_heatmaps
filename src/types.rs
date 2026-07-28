@@ -1,9 +1,10 @@
 use std::error::Error;
-
+use leptos::{prelude::ReadSignal, reactive::traits::DefinedAt};
 use chrono::NaiveDate;
 use geo::Polygon;
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
+use leptos::prelude::GetUntracked;
 
 // Enums defining possible filter options
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Display)]
@@ -108,3 +109,22 @@ pub struct Filter {
     pub product_type: Vec<ProductTypes>,
     pub platform_type: Vec<PlatformType>,
 }
+
+#[derive(Clone)]
+pub struct ReadySignal(pub ReadSignal<bool>);
+
+#[derive(Clone)]
+pub struct GeneratePngSignal(pub ReadSignal<bool>);
+
+// impl GetUntracked for GeneratePngSignal {
+//     type Value = bool;
+//     fn try_get_untracked(&self) -> Option<Self::Value> {
+//         self.0.try_get_untracked()
+//     }
+// }
+
+// impl DefinedAt for GeneratePngSignal {
+//     fn defined_at(&self) -> Option<&'static std::panic::Location<'static>> {
+//         self.0.defined_at()
+//     }
+// }

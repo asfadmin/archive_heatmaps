@@ -30,25 +30,25 @@ use winit::platform::web::EventLoopExtWebSys;
 
 use crate::canvas::png::{ExportContext, InitStage};
 use crate::ingest::load::DataLoader;
-use crate::types;
+use crate::types::{self, GeneratePngSignal, ReadySignal};
 
 /// Component to display a heatmap generated using wgpu and wgsl shaders
 #[component]
-pub fn Canvas(set_generate_img: leptos::prelude::WriteSignal<bool>) -> impl IntoView {
+pub fn Canvas(set_generate_img: leptos::prelude::WriteSignal<bool>, set_ready: leptos::prelude::WriteSignal<bool>) -> impl IntoView {
     // Signal from the UI containing the filter
     let filter = use_context::<ReadSignal<types::Filter>>()
         .expect("ERROR: Failed to get filter read signal context in Canvas()");
 
-    let generate_img = use_context::<ReadSignal<bool>>()
+    let ReadySignal(ready) = use_context::<ReadySignal>()
+            .expect("ERROR: Failed to get ready read signal in canvas");
+
+    let GeneratePngSignal(generate_img) = use_context::<GeneratePngSignal>()
         .expect("ERROR: Failed to get generate_png read signal in Canvas()");
 
     // Create event loop that can handle UserMessage events
     let event_loop = EventLoop::<UserMessage>::with_user_event()
         .build()
         .expect("ERROR: Failed to create event loop");
-
-    // Determines if the loading bar is displayed or not, false is displayed, true is hidden
-    let (ready, set_ready) = signal(false);
 
     // The canvas element will be stored here once it has been created
     let external_state = Rc::new(RefCell::new(ExternalState {

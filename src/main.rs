@@ -11,7 +11,7 @@ mod ingest;
 mod types;
 mod ui;
 
-use crate::types::DateRange;
+use crate::types::{DateRange, ReadySignal, GeneratePngSignal};
 
 #[component]
 fn Application() -> impl IntoView {
@@ -38,13 +38,17 @@ fn Application() -> impl IntoView {
     });
     provide_context(filter);
 
+    // Determines if the loading bar is displayed or not, false is displayed, true is hidden
+    let (ready, set_ready) = signal(false);
+    provide_context(ReadySignal(ready));
+
     let (generate_img, set_generate_img) = signal(false);
-    provide_context(generate_img);
+    provide_context(GeneratePngSignal(generate_img));
 
     view! {
         <div>
             <UserInterface set_filter set_generate_img/>
-            <Canvas set_generate_img/>
+            <Canvas set_generate_img set_ready/>
         </div>
     }
 }

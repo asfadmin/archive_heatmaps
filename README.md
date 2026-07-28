@@ -32,7 +32,7 @@ The goal of this project is to rewrite and consolidate the existing codebases fo
 The service has a startup time, if you attempt to access the client before the service is running the client will be locked into a loading screen until you reload. You can check if the service is ready by checking the processes CPU usage, it should be close to 0%. The service should log `Service Running!` in the console when it is close to finsihed with setup.
 
 ### Using the client
-1. A release build of the client is available [here](https://asfadmin.github.io/archive_heatmaps/)
+1. A release build of the client is available [here](https://asfadmin.github.iUserMessageo/archive_heatmaps/)
 2. Once you are on the page select the date range, product type, and platform you would like to generate a heatmap for. Note that while the page may allow you to select ranges outside of those you generated `sat_data.geojson` with any data from those ranges will not be included. 
 3. After the new selection of data has loaded click `Export to PNG` and wait for the file to download.
 

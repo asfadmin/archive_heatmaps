@@ -4,6 +4,7 @@ use image::codecs::png::PngEncoder;
 use image::{ImageBuffer, Rgba};
 use leptos::logging::log;
 use text_to_png::TextRenderer;
+use leptos::prelude::ReadSignal;
 
 use super::render_context::RenderContext;
 use crate::types::{Filter, PlatformType, ProductTypes};
@@ -374,7 +375,7 @@ pub enum InitStage {
 /// Contains a tracker for the state of png generation and the image that was generated
 #[derive(Clone)]
 pub struct ExportContext {
-    pub generate_img: leptos::prelude::ReadSignal<bool>,
+    pub generate_img: ReadSignal<bool>,
     pub set_generate_img: leptos::prelude::WriteSignal<bool>,
     pub stage: InitStage,
     pub base64_png: Option<String>,

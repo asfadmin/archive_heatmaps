@@ -12,7 +12,7 @@ Below is an example of the expected output:
     The GPU is leveraged to generate these heatmaps, a large portion of the code is getting wgpu to play nicley in wasm
 
     Basic flow of control for initial startup is depicted below
-![heatmap_client_flow_of_control(4)(3)](https://github.com/user-attachments/assets/799ecdba-9f0a-4383-b056-747497c42bf0)
+![heatmap_client_flow_of_control(4)(3)](https://github.com/user-attachments/asUserMessagesets/799ecdba-9f0a-4383-b056-747497c42bf0)
 
 `./src/ingest` requests data from the server located in the heatmap-service directory
 

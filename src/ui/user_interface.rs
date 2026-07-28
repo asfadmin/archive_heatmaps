@@ -2,8 +2,9 @@ use chrono::naive::NaiveDate;
 use leptos::wasm_bindgen::JsCast as _;
 use leptos::{html, prelude::*};
 use types::Filter;
+use leptos::logging::log;
 
-use crate::types::{self, DateRange};
+use crate::types::{self, DateRange, ReadySignal};
 
 #[component]
 pub fn UserInterface(
@@ -12,6 +13,9 @@ pub fn UserInterface(
 ) -> impl IntoView {
     let filter =
         use_context::<ReadSignal<Filter>>().expect("Failed to get filter from context in UI");
+
+    let ReadySignal(ready) =
+        use_context::<ReadySignal>().expect("Failed to get ready read signal from context in UI");
 
     let (start_date, _) = signal(
         filter
@@ -35,7 +39,7 @@ pub fn UserInterface(
     let doc = document();
 
     // Run when an element of the UI changes, updates the filter signal
-    let on_update = move |_: web_sys::Event| {
+    let on_update = move |_| {
         let mut product_type = Vec::new();
 
         // If there is a checked button in granule_type append its value to the filter_string
@@ -120,7 +124,6 @@ pub fn UserInterface(
                     <div id="product_types">
                         <p>Products</p>
                         <input
-                            on:input=on_update.clone()
                             class="checkbox"
                             type="checkbox"
                             id="grd"
@@ -133,7 +136,6 @@ pub fn UserInterface(
                         </label>
                         <br/>
                         <input
-                            on:input=on_update.clone()
                             class="checkbox"
                             type="checkbox"
                             id="slc"
@@ -146,7 +148,6 @@ pub fn UserInterface(
                         </label>
                         <br/>
                         <input
-                            on:input=on_update.clone()
                             class="checkbox"
                             type="checkbox"
                             id="ocn"
@@ -162,7 +163,6 @@ pub fn UserInterface(
                     <div id="platform_types">
                         <p>Platforms</p>
                         <input
-                            on:input=on_update.clone()
                             class="checkbox"
                             type="checkbox"
                             id="s1-a"
@@ -175,7 +175,6 @@ pub fn UserInterface(
                         </label>
                         <br/>
                         <input
-                            on:input=on_update.clone()
                             class="checkbox"
                             type="checkbox"
                             id="s1-b"
@@ -188,7 +187,6 @@ pub fn UserInterface(
                         </label>
                         <br/>
                         <input
-                            on:input=on_update.clone()
                             class="checkbox"
                             type="checkbox"
                             id="s1-c"
@@ -201,7 +199,6 @@ pub fn UserInterface(
                         </label>
                         <br/>
                         <input
-                            on:input=on_update.clone()
                             class="checkbox"
                             type="checkbox"
                             id="s1-d"
@@ -230,7 +227,6 @@ pub fn UserInterface(
                                     class="datepicker"
                                     node_ref=start_date_element
                                     prop:value=start_date
-                                    on:change=on_update.clone()
                                 />
                             </td>
                         </tr>
@@ -246,21 +242,29 @@ pub fn UserInterface(
                                     class="datepicker"
                                     node_ref=end_date_element
                                     prop:value=end_date
-                                    on:change=on_update
                                 />
                             </td>
                         </tr>
                     </table>
                 </div>
+                <div id="submit">
+                    <input
+                        type="button"
+                        value="Submit"
+                        class="button"
+                        disabled=move || !ready()
+                        on:click=on_update
+                    />
+                </div>
             </form>
-            <div>
-                <a
-                    class="button"
-                    on:click= move |_| {set_generate_img(true)}
-                >
-                    Export to PNG
-                </a>
-            </div>
+            // <div>
+            //     <a
+            //         class="button"
+            //         on:click= move |_| {set_generate_img(true)}
+            //     >
+            //         Export to PNG
+            //     </a>
+            // </div>
         </div>
     }
 }

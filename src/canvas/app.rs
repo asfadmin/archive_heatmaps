@@ -130,20 +130,20 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                 }
 
                 log!("Done Generating Buffers");
-
-                // Turn off the loading wheel
-                self.external_state.borrow_mut().set_ready.set(true);
             }
 
             // This is part of getting the max weight of a set of data, to get data from the GPU
             //    you have to map a buffer to the CPU, this is done asynchronously so we fire off
             //    a custom event on mapping completion
             UserMessage::MaxWeightMapped => {
+                log!("Getting Max weight");
                 let render_context = self
                     .state
                     .render_context
                     .as_mut()
                     .expect("Failed to get render context in UserMessage::BufferMapped");
+
+                log!("Got render_context");
 
                 // We read the data contained in the buffer and convert it from &[u8] to Vec<u8>
                 let raw_bytes: Vec<u8> = (&*render_context
@@ -152,6 +152,8 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                     .slice(..)
                     .get_mapped_range())
                     .into();
+
+                log!("Read buffer onto CPU");
 
                 // The buffer is formated for f32 but we pulled a Vec<u8>, we must reform the Vec<f32> from the bytes
                 let mut red_data: Vec<f32> = Vec::new();
@@ -201,6 +203,9 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                 render_context.max_weight_context.value = Some(max);
 
                 render_context.copy_context.buffer.unmap();
+                
+                // Turn off the loading wheel
+                self.external_state.borrow_mut().set_ready.set(true);
             }
 
             // This handles copying data to CPU when the buffer is mapped during the export render pass
