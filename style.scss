@@ -110,14 +110,25 @@ input[type="checkbox"]:checked {
 }
 
 .exit-button {
+    
     position: absolute;
     left: 94%;
     top: 5%;
+
     color: black;
     background-color: #fc9167;
-    border-width: 2px;
-    border-color: #fc9167;
+
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
+    border-width: 2px;
+    border-color: #db734b;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    padding-bottom: 4px;
 }
 
 p {

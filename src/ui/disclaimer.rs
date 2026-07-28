@@ -15,12 +15,12 @@ pub fn Disclaimer() -> impl IntoView {
                         class="exit-button"
                         on:click=move |_| set_dismissed(true)
                     >
-                        X
+                        "×"
                     </button>
                     <h1 class="disclaimer-text">
                         Disclaimer: <br/>
-                        This is an early iteraton of this product, expect to see bugs! <br/>
-                        Data is not guaranteed to be accurate in realtime.
+                        This product is in early development, expect to see bugs! <br/>
+                        Generated data is not guaranteed to be accurate.
                     </h1>
                 </div>
             </div>
