@@ -15,11 +15,13 @@ pub fn Disclaimer() -> impl IntoView {
                     >
                         "×"
                     </button>
-                    <h1 class="disclaimer-text">
-                        Disclaimer: <br/>
+                    <h3 class="disclaimer-text header">
+                        Disclaimer
+                    </h3>
+                    <span class="disclaimer-text">
                         This product is in early development, expect to see bugs! <br/>
                         Generated data is not guaranteed to be accurate.
-                    </h1>
+                    </span>
                 </div>
             </div>
         </Show>
