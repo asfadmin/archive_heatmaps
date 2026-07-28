@@ -20,14 +20,14 @@ pub struct InputState {
 
 impl InputState {
     // Returns the amount of change in scroll delta since last function call
-    pub fn consume_scroll_delta(&mut self) -> f64 {
+    pub const fn consume_scroll_delta(&mut self) -> f64 {
         let delta = self.mouse_scroll_delta;
         self.mouse_scroll_delta = 0.0;
         delta
     }
 
     // Returns the amount of change in cursor position since last function call
-    pub fn consume_drag_delta(&mut self) -> PhysicalPosition<f64> {
+    pub const fn consume_drag_delta(&mut self) -> PhysicalPosition<f64> {
         let delta = self.mouse_drag_delta;
         self.mouse_drag_delta = PhysicalPosition::new(0.0, 0.0);
         delta
@@ -39,7 +39,7 @@ impl InputState {
 
     // Performs the specified action for the given window event
     pub fn eat_event(&mut self, event: WindowEvent) {
-        use WindowEvent::*;
+        use WindowEvent::{CursorMoved, KeyboardInput, ModifiersChanged, MouseInput, MouseWheel};
 
         match event {
             // Update drag delta based on the change in cursor position
@@ -53,7 +53,7 @@ impl InputState {
 
             // Add/remove a mouse button press from the list of currently pressed buttons
             MouseInput { state, button, .. } => {
-                use ElementState::*;
+                use ElementState::{Pressed, Released};
 
                 match state {
                     Pressed => {
@@ -68,11 +68,11 @@ impl InputState {
 
             // Track the change in the mouse wheel scroll
             MouseWheel { delta, .. } => {
-                use MouseScrollDelta::*;
+                use MouseScrollDelta::{LineDelta, PixelDelta};
 
                 match delta {
                     LineDelta(_x, y) => {
-                        self.mouse_scroll_delta += (y * 10.0) as f64;
+                        self.mouse_scroll_delta += f64::from(y * 10.0);
                     }
 
                     PixelDelta(position) => {
@@ -83,7 +83,7 @@ impl InputState {
 
             // Add/Remove the keyboard key from the list of pressed keys
             KeyboardInput { event, .. } => {
-                use ElementState::*;
+                use ElementState::{Pressed, Released};
 
                 match event.state {
                     Pressed => {

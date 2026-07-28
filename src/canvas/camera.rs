@@ -28,9 +28,9 @@ impl CameraContext {
     ) -> Self {
         // Create a default camera
         let camera = Camera {
-            aspect: config.width as f64 / config.height as f64,
-            width: config.width as f64,
-            height: config.height as f64,
+            aspect: f64::from(config.width) / f64::from(config.height),
+            width: f64::from(config.width),
+            height: f64::from(config.height),
             position: (0.0, 0.0).into(),
             zoom: 1.0,
         };
@@ -72,7 +72,7 @@ impl CameraContext {
             label: Some("camera_bind_group"),
         });
 
-        CameraContext {
+        Self {
             camera,
             camera_uniform,
             camera_buffer,
@@ -83,13 +83,13 @@ impl CameraContext {
 
     pub fn run_camera_logic(&mut self, input_state: &mut InputState) {
         // Updates the zoom of the camera
-        self.update_camera(CameraEvent::Zoom(
+        self.update_camera(&CameraEvent::Zoom(
             input_state.consume_scroll_delta() * self.camera.zoom * 0.001,
             (input_state.cursor_position.x, input_state.cursor_position.y).into(),
         ));
         // Updates the position of the camera
         let drag_delta = input_state.consume_drag_delta();
-        self.update_camera(CameraEvent::Translate(
+        self.update_camera(&CameraEvent::Translate(
             self.mouse_coordinate_convert((drag_delta.x, drag_delta.y).into()),
         ));
 
@@ -107,13 +107,13 @@ impl CameraContext {
         coordinate / self.camera.zoom
     }
 
-    pub fn update_camera(&mut self, camera_event: CameraEvent) {
-        match camera_event {
+    pub fn update_camera(&mut self, camera_event: &CameraEvent) {
+        match *camera_event {
             CameraEvent::Resize(width, height) => {
-                let aspect = width as f64 / height as f64;
-                self.update_camera(CameraEvent::AspectRatio(aspect));
-                self.camera.width = width as f64;
-                self.camera.height = height as f64;
+                let aspect = f64::from(width) / f64::from(height);
+                self.update_camera(&CameraEvent::AspectRatio(aspect));
+                self.camera.width = f64::from(width);
+                self.camera.height = f64::from(height);
             }
 
             CameraEvent::AspectRatio(aspect) => {
@@ -142,7 +142,7 @@ impl CameraContext {
 
                 self.camera.zoom += zoom;
                 pos = self.mouse_coordinate_convert(pos);
-                self.update_camera(CameraEvent::Translate(pos - pos * scale_factor));
+                self.update_camera(&CameraEvent::Translate(pos - pos * scale_factor));
             }
 
             // Moves the camera around, ensures the camera stays within bounds of the heatmap
@@ -185,7 +185,7 @@ impl CameraContext {
 
                 self.camera.zoom = 5.0;
 
-                self.update_camera(CameraEvent::Resize(1800, 900));
+                self.update_camera(&CameraEvent::Resize(1800, 900));
 
                 self.rebuild_view_matrix();
             }
@@ -202,7 +202,7 @@ impl CameraContext {
             &self.camera_buffer,
             0,
             bytemuck::cast_slice(&[self.camera_uniform]),
-        )
+        );
     }
 }
 

@@ -1,19 +1,5 @@
 #![feature(iter_next_chunk)]
 #![feature(iter_advance_by)]
-#![warn(
-    clippy::all,
-    clippy::pedantic,
-    clippy::nursery,
-    clippy::cargo
-)]
-#![allow(
-    clippy::single_call_fn,
-    clippy::same_name_method,
-    clippy::expect_used,
-    clippy::absolute_paths,
-    clippy::implicit_return,
-    clippy::too_many_lines,
-)]
 
 use canvas::Canvas;
 use chrono::NaiveDate;
@@ -39,6 +25,8 @@ fn Application() -> impl IntoView {
         platform_type: vec![
             types::PlatformType::Sentinel1A,
             types::PlatformType::Sentinel1B,
+            types::PlatformType::Sentinel1C,
+            types::PlatformType::Sentinel1D,
         ],
         date_range: DateRange::new(
             NaiveDate::from_ymd_opt(2026, 6, 1)

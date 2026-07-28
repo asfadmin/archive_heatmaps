@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use strum_macros::Display;
 
 // Enums defining possible filter options
-#[derive(Clone, Copy, Debug, PartialEq, Display)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Display)]
 pub enum ProductTypes {
     #[strum(to_string = "GRD")]
     GroundRangeDetected,
@@ -16,7 +16,7 @@ pub enum ProductTypes {
     Ocean,
 }
 
-#[derive(Deserialize, Serialize, Clone, Copy, Debug, PartialEq, Display)]
+#[derive(Deserialize, Serialize, Clone, Copy, Debug, PartialEq, Eq, Display)]
 pub enum PlatformType {
     #[strum(to_string = "SA")]
     Sentinel1A,
@@ -46,14 +46,14 @@ impl DateRange {
         if start > end {
             return Err("Start is after end, this is an invalid state for a DateRange".into());
         }
-        Ok(DateRange { start, end })
+        Ok(Self { start, end })
     }
 
     /// Merge two date ranges
     ///  
     /// Requires ranges to share exactly one temporal border:
     ///  - Does not allow overlaping or disjoint ranges
-    pub fn merge(&mut self, other: &DateRange) -> Result<(), Box<dyn Error>> {
+    pub fn merge(&mut self, other: &Self) -> Result<(), Box<dyn Error>> {
         if self.start == other.end {
             self.start = other.start;
         } else if self.end == other.start {
@@ -65,7 +65,7 @@ impl DateRange {
     }
 
     /// Returns all sections of other that are disjoint from self
-    pub fn get_disjoint(&self, other: &DateRange) -> Option<Vec<DateRange>> {
+    pub fn get_disjoint(&self, other: &Self) -> Option<Vec<Self>> {
         if self.end < other.start || other.end < self.start {
             // Non overlapping ranges
             return Some(vec![other.clone()]);
@@ -73,11 +73,11 @@ impl DateRange {
         if self.start > other.start && self.end < other.end {
             // Self is a subset of other
             return Some(vec![
-                DateRange {
+                Self {
                     start: other.start,
                     end: self.start,
                 },
-                DateRange {
+                Self {
                     start: self.end,
                     end: other.end,
                 },
@@ -85,14 +85,14 @@ impl DateRange {
         }
         if self.end < other.end {
             // Self comes first and partially overlaps other
-            return Some(vec![DateRange {
+            return Some(vec![Self {
                 start: self.end,
                 end: other.end,
             }]);
         }
         if self.start > other.start {
             // Other comes first and partially overlaps self
-            return Some(vec![DateRange {
+            return Some(vec![Self {
                 start: other.start,
                 end: self.start,
             }]);

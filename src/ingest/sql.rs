@@ -1,3 +1,4 @@
+use std::fmt::Write;
 use std::iter::successors;
 
 use chrono::NaiveDate;
@@ -7,15 +8,15 @@ use leptos::logging::log;
 use crate::DateRange;
 use crate::types::Filter;
 
-///
+/// Generate sql to create table to store satellite data
 pub fn generate_create_sat_data_sql() -> String {
-    return "CREATE TABLE sat_data (
+    "CREATE TABLE sat_data (
         geometry GEOMETRY('EPSG:4326'),
         ancestors STRUCT(granule_name VARCHAR, platform_type VARCHAR, data_sensor_type VARCHAR, start_time TIMESTAMP)[]
-    );".to_owned();
+    );".to_owned()
 }
 
-/// Create sql to read sat data from s3 into DuckDB based on the passed `DateRange`.
+/// Create sql to read sat data from s3 into `DuckDB` based on the passed `DateRange`.
 pub fn generate_populate_sat_data_sql(date_range: &DateRange) -> (Vec<String>, DateRange) {
     let maturity = std::env::var("DEPLOY_PREFIX").unwrap_or_else(|_| "dev".to_string());
     let range_start = NaiveDate::from_ymd_opt(date_range.start.year(), date_range.start.month(), 1)
@@ -52,7 +53,6 @@ pub fn generate_populate_sat_data_sql(date_range: &DateRange) -> (Vec<String>, D
                 x.format("%Y-%m-01"),
                 end.format("%Y-%m-01")
             )
-            .to_string()
         })
         .collect();
 
@@ -70,7 +70,7 @@ pub fn generate_populate_sat_data_sql(date_range: &DateRange) -> (Vec<String>, D
 }
 
 pub fn generate_ingest_world_outline_sql() -> String {
-    let maturity = std::env::var("DEPLOY_PREFIX").unwrap_or("dev".to_string());
+    let maturity = std::env::var("DEPLOY_PREFIX").unwrap_or_else(|_| "dev".to_string());
     format!(
         "CREATE TABLE world_outline AS
         SELECT * 
@@ -78,23 +78,23 @@ pub fn generate_ingest_world_outline_sql() -> String {
     )
 }
 
-/// Create sql to generate a Heatmap based on a filter and data already in DuckDB
+/// Create sql to generate a Heatmap based on a filter and data already in `DuckDB`
 pub fn generate_sql(filter: &Filter) -> String {
     let mut plat_str = "(".to_string();
     filter.platform_type.iter().enumerate().for_each(|(i, x)| {
         if i > 0 {
             plat_str += ", ";
         }
-        plat_str += &format!("'{}'", x);
+        let _ = write!(plat_str, "'{x}'");
     });
     plat_str += ")";
 
     let mut prod_str = "(".to_string();
     filter.product_type.iter().enumerate().for_each(|(i, x)| {
         if i > 0 {
-            prod_str += ", "
+            prod_str += ", ";
         }
-        prod_str += &format!("'{}'", x);
+        let _ = write!(prod_str, "'{x}'");
     });
     prod_str += ")";
 

@@ -25,7 +25,7 @@ impl AsyncDuckDBConnection {
         js_sys::Reflect::get(self, &"_conn".into())?
             .as_f64()
             .map(|x| x as u32)
-            .ok_or("Failed to get connection number for AsyncDuckDBConnection".into())
+            .ok_or_else(|| "Failed to get connection number for AsyncDuckDBConnection".into())
     }
 
     pub async fn query(&self, sql: &str) -> Result<Vec<RecordBatch>, js_sys::Error> {

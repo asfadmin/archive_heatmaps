@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use std::sync::Arc;
 
 use leptos::logging::log;
 use winit::window::Window;
@@ -18,7 +19,7 @@ use super::texture::{
 
 // Stores all the things we need to set up wgpu and run render passes,
 pub struct RenderContext<'a> {
-    pub surface: wgpu::Surface<'a>,
+    pub surface: Rc<wgpu::Surface<'a>>,
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
     pub config: wgpu::SurfaceConfiguration,
@@ -37,9 +38,9 @@ pub struct RenderContext<'a> {
     pub max_weight_context: MaxWeightContext,
 }
 
-/// Create a new RenderContext
+/// Create a new `RenderContext`
 pub async fn generate_render_context(
-    window: Rc<Window>,
+    window: Arc<Window>,
     event_loop_proxy: EventLoopProxy<UserMessage<'_>>,
 ) {
     // Default starting size, gets changed as soon as WindowEvent::Resize is fired
@@ -49,17 +50,19 @@ pub async fn generate_render_context(
     // Set up surface //
     ////////////////////
 
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+    let instance = Rc::new(wgpu::Instance::new(wgpu::InstanceDescriptor {
         #[cfg(not(target_arch = "wasm32"))]
         backends: wgpu::Backends::PRIMARY,
         #[cfg(target_arch = "wasm32")]
         backends: wgpu::Backends::GL,
         ..Default::default()
-    });
+    }));
 
-    let surface = instance
-        .create_surface(window.clone())
-        .expect("Failed to create surface");
+    let surface = Rc::new(
+        instance
+            .create_surface(window.clone())
+            .expect("Failed to create surface"),
+    );
 
     //////////////////////////
     // Get device and queue //
@@ -104,7 +107,7 @@ pub async fn generate_render_context(
         .formats
         .iter()
         .copied()
-        .find(|f| f.is_srgb())
+        .find(wgpu::TextureFormat::is_srgb)
         .unwrap_or(surface_caps.formats[0]);
 
     let config = wgpu::SurfaceConfiguration {
@@ -214,7 +217,7 @@ pub struct MaxWeightContext {
     pub value: Option<f32>,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum MaxWeightState {
     Empty,
     InProgress,

@@ -1,7 +1,7 @@
 // Contains the state struct which stores information needed for wgpu
 //  to render a shader
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use leptos::logging::log;
 use leptos::prelude::GetUntracked;
@@ -25,8 +25,8 @@ use crate::types;
 pub struct State<'a> {
     pub render_context: Option<RenderContext<'a>>,
     pub geometry: Option<Geometry>,
-    pub window: Option<Rc<Window>>,
-    pub input_state: InputState,
+    pub window: Option<Arc<Window>>,
+    pub input: InputState,
     pub init_stage: InitStage,
     pub event_loop_proxy: Option<EventLoopProxy<UserMessage<'static>>>,
     pub filter: Option<leptos::prelude::ReadSignal<types::Filter>>,
@@ -38,7 +38,7 @@ pub struct State<'a> {
 impl State<'_> {
     // Process any user input on the heatmap
     pub fn handle_input_event(&mut self, event: WindowEvent) {
-        self.input_state.eat_event(event);
+        self.input.eat_event(event);
     }
 
     // Configures the surface based on the passed physical size
@@ -51,7 +51,7 @@ impl State<'_> {
 
             render_context
                 .camera_context
-                .update_camera(CameraEvent::Resize(new_size.width, new_size.height));
+                .update_camera(&CameraEvent::Resize(new_size.width, new_size.height));
 
             // Ensure new render surface size is within the maximum supported
             // texture size by the graphics card.
@@ -160,7 +160,7 @@ impl State<'_> {
             // run camera logic
             render_context
                 .camera_context
-                .run_camera_logic(&mut self.input_state);
+                .run_camera_logic(&mut self.input);
 
             // If we have not calculated the max weight or generated the png set the camera
             // to cover the entire screen, save the old camera
@@ -179,7 +179,7 @@ impl State<'_> {
 
                 render_context
                     .camera_context
-                    .update_camera(CameraEvent::EntireView);
+                    .update_camera(&CameraEvent::EntireView);
             }
             // Restore any saved values
             else if self.camera_storage.is_some() {

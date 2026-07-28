@@ -35,10 +35,10 @@ pub struct BufferStorage {
 
 // Struct that is responsible for submitting storing/subsetting data with DuckDB
 pub struct DataLoader {
-    pub event_loop_proxy: EventLoopProxy<UserMessage<'static>>,
-    pub active_requests: leptos::prelude::ReadSignal<u32>,
-    pub set_active_requests: leptos::prelude::WriteSignal<u32>,
-    pub set_ready: leptos::prelude::WriteSignal<bool>,
+    pub event_loop_proxy: Rc<EventLoopProxy<UserMessage<'static>>>,
+    pub active_requests: Rc<leptos::prelude::ReadSignal<u32>>,
+    pub set_active_requests: Rc<leptos::prelude::WriteSignal<u32>>,
+    pub set_ready: Rc<leptos::prelude::WriteSignal<bool>>,
     pub connection: Rc<AsyncDuckDBConnection>,
     ingested_data: Mutex<Vec<DateRange>>,
     ingest_queue: Rc<Mutex<VecDeque<String>>>,
@@ -76,11 +76,11 @@ impl DataLoader {
             .query(&generate_ingest_world_outline_sql())
             .await
             .expect("Failed to ingest world outlines in DuckDB");
-        DataLoader {
-            event_loop_proxy,
-            active_requests,
-            set_active_requests,
-            set_ready,
+        Self {
+            event_loop_proxy: Rc::new(event_loop_proxy),
+            active_requests: Rc::new(active_requests),
+            set_active_requests: Rc::new(set_active_requests),
+            set_ready: Rc::new(set_ready),
             connection,
             ingested_data: Mutex::new(vec![]),
             ingest_queue: Rc::new(Mutex::new(VecDeque::new())),
@@ -100,33 +100,34 @@ impl DataLoader {
                 .ingested_data
                 .lock()
                 .expect("Failed to get mutex lock for ingested data, mutex poisoned");
-            let mut missing: Vec<DateRange> = (*data_guard)
-                .iter()
-                .flat_map(|x| x.get_disjoint(&filter.date_range))
-                .flatten()
-                .fold(Vec::<DateRange>::new(), |mut acc, x| {
-                    log!("acc: {acc:?}");
-                    if acc.is_empty() {
-                        log!("First DateRange: {x:?}");
-                        acc.push(x);
-                        acc
-                    } else {
-                        acc.into_iter()
-                            .flat_map(|mut y| {
-                                if y.merge(&x).is_err() {
-                                    log!("Failed to merge {x:?}, pushing to acc");
-                                    return vec![y, x.clone()];
-                                } else {
-                                    log!("Merged {x:?} and {y:?}")
-                                }
-                                vec![y]
-                            })
-                            .collect()
-                    }
-                });
-            if data_guard.is_empty() {
-                missing = vec![filter.date_range.clone()];
-            }
+            let missing: Vec<DateRange> = if data_guard.is_empty() {
+                vec![filter.date_range.clone()]
+            } else {
+                (*data_guard)
+                    .iter()
+                    .filter_map(|x| x.get_disjoint(&filter.date_range))
+                    .flatten()
+                    .fold(Vec::<DateRange>::new(), |mut acc, x| {
+                        log!("acc: {acc:?}");
+                        if acc.is_empty() {
+                            log!("First DateRange: {x:?}");
+                            acc.push(x);
+                            acc
+                        } else {
+                            acc.into_iter()
+                                .flat_map(|mut y| {
+                                    if y.merge(&x).is_err() {
+                                        log!("Failed to merge {x:?}, pushing to acc");
+                                        return vec![y, x.clone()];
+                                    }
+                                    log!("Merged {x:?} and {y:?}");
+                                    vec![y]
+                                })
+                                .collect()
+                        }
+                    })
+            };
+
             log!("Filter: {:?}", filter.date_range);
             log!("Missing: {missing:?}");
 
@@ -156,7 +157,7 @@ impl DataLoader {
             }
         }
 
-        *self.ingest_filter.borrow_mut() = filter.clone();
+        *self.ingest_filter.borrow_mut() = filter;
 
         if !(self.ingest_flag.borrow().load(Ordering::Acquire)) {
             self.ingest_flag
@@ -164,21 +165,21 @@ impl DataLoader {
                 .store(false, Ordering::Release);
             leptos::task::spawn_local(load_data_async(
                 self.event_loop_proxy.clone(),
-                self.active_requests,
-                self.set_active_requests,
+                self.active_requests.clone(),
+                self.set_active_requests.clone(),
                 self.connection.clone(),
                 self.ingest_queue.clone(),
                 self.ingest_flag.clone(),
                 self.ingest_filter.clone(),
-            ))
+            ));
         }
     }
 }
 
 async fn load_data_async(
-    event_loop_proxy: EventLoopProxy<UserMessage<'static>>,
-    active_requests: leptos::prelude::ReadSignal<u32>,
-    set_active_requests: leptos::prelude::WriteSignal<u32>,
+    event_loop_proxy: Rc<EventLoopProxy<UserMessage<'static>>>,
+    active_requests: Rc<leptos::prelude::ReadSignal<u32>>,
+    set_active_requests: Rc<leptos::prelude::WriteSignal<u32>>,
     connection: Rc<AsyncDuckDBConnection>,
     ingest_queue: Rc<Mutex<VecDeque<String>>>,
     ingest_flag: Rc<RefCell<AtomicBool>>,

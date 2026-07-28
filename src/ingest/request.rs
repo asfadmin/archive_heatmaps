@@ -40,7 +40,7 @@ pub async fn request(conn: &AsyncDuckDBConnection, filter: Filter) -> (Vec<Granu
                 .map(|(wkb_binary, weight)| {
                     use geo_traits::to_geo::ToGeoGeometry;
                     let poly = TryInto::<Polygon>::try_into(
-                        read_wkb(&wkb_binary.expect("Failed to get [u8] from wkb"))
+                        read_wkb(wkb_binary.expect("Failed to get [u8] from wkb"))
                             .expect("Failed to convert sat_data geometry to geo::geometry")
                             .to_geometry(),
                     )
@@ -54,7 +54,7 @@ pub async fn request(conn: &AsyncDuckDBConnection, filter: Filter) -> (Vec<Granu
         })
         .collect();
 
-    log!("{gran_vec:?}");
+    log!("Granule Data: {gran_vec:?}");
 
     ////////////////////////////////
     //  Ingest World Border Data  //
@@ -91,7 +91,7 @@ pub async fn request(conn: &AsyncDuckDBConnection, filter: Filter) -> (Vec<Granu
                 .collect::<Vec<Polygon>>()
         })
         .collect();
-    log!("{outline_vec:?}");
+    log!("Outline Data: {outline_vec:?}");
 
     // Deserialize the json into a HeatmapData struct
     log!("Data succesfully deserialized");

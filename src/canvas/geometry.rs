@@ -45,8 +45,8 @@ pub struct Geometry {
 impl Geometry {
     pub fn generate_buffers(
         render_context: &RenderContext,
-        buffer_data: Vec<BufferStorage>,
-        outline_data: Vec<BufferStorage>,
+        buffer_data: &[BufferStorage],
+        outline_data: &[BufferStorage],
     ) -> Self {
         //////////////////////////////
         // Set up buffers to render //
@@ -77,7 +77,7 @@ impl Geometry {
 
         let rectangle_num_indices = RECTANGLE_INDICES.len() as u32;
 
-        Geometry {
+        Self {
             lod_layers,
             outline_layers,
             rectangle_layer: BufferLayer {
@@ -92,7 +92,7 @@ impl Geometry {
 // Stores each Level of Detail into its own BufferLayer to be used in the blend render pass
 fn gen_lod_layers(
     render_context: &RenderContext,
-    buffer_data: Vec<BufferStorage>,
+    buffer_data: &[BufferStorage],
     label: &str,
 ) -> Vec<BufferLayer> {
     let mut lod_layers: Vec<BufferLayer> = Vec::new();
@@ -122,7 +122,7 @@ fn gen_lod_layers(
             vertex_buffer: lod_vertex_buffer,
             index_buffer: lod_index_buffer,
             num_indices: lod_num_indices,
-        })
+        });
     }
 
     lod_layers
@@ -192,9 +192,9 @@ pub struct BlendVertex {
 
 impl BlendVertex {
     ///Create a vertex descriptor
-    pub fn desc() -> wgpu::VertexBufferLayout<'static> {
+    pub const fn desc() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<BlendVertex>() as wgpu::BufferAddress,
+            array_stride: std::mem::size_of::<Self>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &[
                 wgpu::VertexAttribute {
@@ -220,9 +220,9 @@ pub struct Vertex {
 }
 
 impl Vertex {
-    pub fn desc() -> wgpu::VertexBufferLayout<'static> {
+    pub const fn desc() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+            array_stride: std::mem::size_of::<Self>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &[wgpu::VertexAttribute {
                 offset: 0,

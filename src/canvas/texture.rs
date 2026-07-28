@@ -188,7 +188,7 @@ pub fn generate_copy_texture(
     size: winit::dpi::PhysicalSize<u32>,
 ) -> wgpu::Texture {
     // Buffer size must be a multiple of 256 to map to CPU
-    let tex_width = ceil((size.width as f64) / 256.0) as u32 * 256;
+    let tex_width = ceil(f64::from(size.width) / 256.0) as u32 * 256;
 
     let texture_size = wgpu::Extent3d {
         width: tex_width,

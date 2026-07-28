@@ -2,6 +2,7 @@
 
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::Arc;
 
 use leptos::logging::log;
 use leptos::prelude::{GetUntracked as _, Set as _};
@@ -40,7 +41,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
     // This is run on initial startup, creates a window and stores it in the state, also stores
     //     the windows canvas in external state
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        self.state.window = Some(Rc::new(
+        self.state.window = Some(Arc::new(
             event_loop
                 .create_window(
                     Window::default_attributes().with_inner_size(PhysicalSize::new(400u32, 450u32)),
@@ -73,7 +74,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                     window: self.state.window.clone(),
                     init_stage: InitStage::Complete,
                     geometry: None,
-                    input_state: self.state.input_state.clone(),
+                    input: self.state.input.clone(),
                     event_loop_proxy: Some(self.event_loop_proxy.clone()),
                     filter: self.state.filter,
                     camera_storage: None,
@@ -107,8 +108,8 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
 
                 self.state.geometry = Some(Geometry::generate_buffers(
                     render_context,
-                    data,
-                    outline_data,
+                    &data,
+                    &outline_data,
                 ));
 
                 render_context.copy_context.texture =
@@ -162,18 +163,16 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                     // NOTE: We may be able to change rgba32float to r32float but I think this was one of the annoying
                     //    places where we have to waste space to be able to copy to CPU
                     // The texture we stored in the buffer was rgba32Float but only had red data so we skip the g, b, a channels
-                    match raw_iter.advance_by(4 * 3) {
-                        Ok(_) => {}
-                        Err(_) => {
-                            panic!("Rgba32Float texture was malformed, size not a multiple of 16")
-                        }
-                    }
+                    assert!(
+                        raw_iter.advance_by(4 * 3).is_ok(),
+                        "Rgba32Float texture was malformed, size not a multiple of 16"
+                    );
                 }
 
                 // Find the max value in the Vec<f32> we just created
                 let mut max = 0.0;
 
-                for value in red_data.iter() {
+                for value in &red_data {
                     if value > &max {
                         max = *value;
                     }
@@ -207,7 +206,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
             // This handles copying data to CPU when the buffer is mapped during the export render pass
             UserMessage::ExportMapped => {
                 // Default to an empty data set if we have not generated png and fail to get render_context
-                let mut base64_encoded_png: String = "".to_owned();
+                let mut base64_encoded_png: String = String::new();
 
                 // If we have generated the png for this data before use the stored base64_encoding
                 if let Some(base64_png) = &self
@@ -217,7 +216,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                     .expect("Failed to get export_context")
                     .base64_png
                 {
-                    base64_encoded_png = base64_png.to_string();
+                    base64_encoded_png.clone_from(base64_png);
                 } else if let Some(render_context) = self.state.render_context.as_mut() {
                     // Grab the current filter, this is needed to generate the text on the output img
                     let filter = self
@@ -227,7 +226,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                         .get_untracked();
 
                     // We have not generated a png yet, do so
-                    base64_encoded_png = generate_heatmap_image(render_context, filter);
+                    base64_encoded_png = generate_heatmap_image(render_context, &filter);
 
                     // Save the image we generated so we dont need to regenerate for the same data
                     self.state
@@ -303,14 +302,14 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                 // Continously re-render the surface if setup is complete
                 if self.state.init_stage == InitStage::Complete {
                     match self.state.render() {
-                        Ok(_) => {}
+                        Ok(()) => {}
 
                         Err(wgpu::SurfaceError::OutOfMemory) => {
                             log::error!("OutOfMemory");
                             self.exiting(event_loop);
                         }
 
-                        Err(e) => eprintln!("{e:?}",),
+                        Err(e) => eprintln!("{e:?}"),
                     }
                 }
 

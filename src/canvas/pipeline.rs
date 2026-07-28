@@ -1,3 +1,5 @@
+use wgpu::PipelineCompilationOptions;
+
 use super::camera::CameraContext;
 use crate::canvas::geometry::BlendVertex;
 use crate::canvas::geometry::Vertex;
@@ -22,12 +24,12 @@ pub fn generate_blend_pipeline(
             module: &blend_shader,
             entry_point: "vs_main",
             buffers: &[BlendVertex::desc()],
-            compilation_options: Default::default(),
+            compilation_options: PipelineCompilationOptions::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: &blend_shader,
             entry_point: "fs_main",
-            compilation_options: Default::default(),
+            compilation_options: PipelineCompilationOptions::default(),
             targets: &[Some(wgpu::ColorTargetState {
                 format: wgpu::TextureFormat::R16Float,
                 blend: Some(wgpu::BlendState {
@@ -95,12 +97,12 @@ pub fn generate_display_colormap_pipeline(
             module: &colormap_shader,
             entry_point: "vs_main",
             buffers: &[Vertex::desc()],
-            compilation_options: Default::default(),
+            compilation_options: PipelineCompilationOptions::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: &colormap_shader,
             entry_point: "fs_main",
-            compilation_options: Default::default(),
+            compilation_options: PipelineCompilationOptions::default(),
             targets: &[Some(wgpu::ColorTargetState {
                 format: config.format,
                 blend: Some(wgpu::BlendState::ALPHA_BLENDING),
@@ -158,12 +160,12 @@ pub fn generate_export_colormap_pipeline(
             module: &colormap_shader,
             entry_point: "vs_main",
             buffers: &[Vertex::desc()],
-            compilation_options: Default::default(),
+            compilation_options: PipelineCompilationOptions::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: &colormap_shader,
             entry_point: "fs_main",
-            compilation_options: Default::default(),
+            compilation_options: PipelineCompilationOptions::default(),
             targets: &[Some(wgpu::ColorTargetState {
                 format: config.format,
                 blend: None,
@@ -209,12 +211,12 @@ pub fn generate_outline_pipeline(
             module: &outline_shader,
             entry_point: "vs_main",
             buffers: &[BlendVertex::desc()],
-            compilation_options: Default::default(),
+            compilation_options: PipelineCompilationOptions::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: &outline_shader,
             entry_point: "fs_main",
-            compilation_options: Default::default(),
+            compilation_options: PipelineCompilationOptions::default(),
             targets: &[Some(wgpu::ColorTargetState {
                 format: wgpu::TextureFormat::Rgba8UnormSrgb,
                 blend: None,
@@ -261,12 +263,12 @@ pub fn generate_export_pipeline(
             module: &export_shader,
             entry_point: "vs_main",
             buffers: &[Vertex::desc()],
-            compilation_options: Default::default(),
+            compilation_options: PipelineCompilationOptions::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: &export_shader,
             entry_point: "fs_main",
-            compilation_options: Default::default(),
+            compilation_options: PipelineCompilationOptions::default(),
             targets: &[Some(wgpu::ColorTargetState {
                 format: wgpu::TextureFormat::Rgba32Float,
                 blend: None,

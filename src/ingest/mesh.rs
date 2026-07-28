@@ -55,20 +55,20 @@ pub fn mesh_data(data_exterior: Data) -> Vec<BufferStorage> {
         })
         .collect();
 
-    let mut level = 0.0;
-    while level <= 0.4 {
+    let mut level: usize = 0;
+    while level <= 2 {
         let mut weights = VecDeque::from(weights.clone());
         let mut total_vertices: Vec<BlendVertex> = Vec::new();
         let mut indices: Vec<u32> = Vec::new();
 
-        for poly in polygons.iter_mut() {
-            let simplified = poly.simplify(&level);
+        for poly in &mut polygons {
+            let simplified = poly.simplify(&(0.2 * level as f64));
             // Run the ear cutting algorithm, triangles contains a list of indices after
             let triangles_raw = simplified.earcut_triangles_raw();
 
             // Append current indices to the end of prior indices with offset
             let offset = total_vertices.len();
-            for indice in triangles_raw.triangle_indices.iter() {
+            for indice in &triangles_raw.triangle_indices {
                 indices.push(
                     (indice + offset)
                         .try_into()
@@ -88,7 +88,7 @@ pub fn mesh_data(data_exterior: Data) -> Vec<BufferStorage> {
                         triangles_raw.vertices[i + 1] as f32,
                         0.0,
                     ],
-                    weight: weight as u32,
+                    weight: u32::try_from(weight).expect("Failed to convert weight to u32"),
                 });
 
                 i += 2;
@@ -106,7 +106,7 @@ pub fn mesh_data(data_exterior: Data) -> Vec<BufferStorage> {
             num_indices,
         });
 
-        level += 0.2;
+        level += 1;
     }
     lods
 }

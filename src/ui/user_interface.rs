@@ -78,6 +78,8 @@ pub fn UserInterface(
                 match val {
                     0 => platform_type.push(types::PlatformType::Sentinel1A),
                     1 => platform_type.push(types::PlatformType::Sentinel1B),
+                    2 => platform_type.push(types::PlatformType::Sentinel1C),
+                    3 => platform_type.push(types::PlatformType::Sentinel1D),
                     _ => (),
                 }
             }
@@ -183,6 +185,32 @@ pub fn UserInterface(
                         />
                         <label class="text" for="s1-b">
                             "S1B"
+                        </label>
+                        <br/>
+                        <input
+                            on:input=on_update.clone()
+                            class="checkbox"
+                            type="checkbox"
+                            id="s1-c"
+                            name="sat_selection"
+                            value=2
+                            checked
+                        />
+                        <label class="text" for="s1-c">
+                            "S1C"
+                        </label>
+                        <br/>
+                        <input
+                            on:input=on_update.clone()
+                            class="checkbox"
+                            type="checkbox"
+                            id="s1-d"
+                            name="sat_selection"
+                            value=3
+                            checked
+                        />
+                        <label class="text" for="s1-d">
+                            "S1D"
                         </label>
                         <br/>
                     </div>

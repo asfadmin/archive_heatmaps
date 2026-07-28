@@ -9,7 +9,7 @@ use super::render_context::RenderContext;
 use crate::types::{Filter, PlatformType, ProductTypes};
 
 /// Generate the final png that will be exported
-pub fn generate_heatmap_image(render_context: &mut RenderContext, filter: Filter) -> String {
+pub fn generate_heatmap_image(render_context: &mut RenderContext, filter: &Filter) -> String {
     // We read the data contained in the buffer and convert it from &[u8] to Vec<u8>
     let raw_bytes: Vec<u8> = (&*render_context
         .copy_context
@@ -74,7 +74,7 @@ pub fn generate_heatmap_image(render_context: &mut RenderContext, filter: Filter
 pub fn generate_export_image(
     colormap_img: &ImageBuffer<Rgba<f32>, Vec<f32>>,
     max_weight: f32,
-    filter: Filter,
+    filter: &Filter,
 ) -> ImageBuffer<Rgba<f32>, Vec<f32>> {
     let colormap_img_width = 3083;
     let colormap_img_height = 1551;
@@ -145,7 +145,7 @@ pub fn generate_export_image(
     let mut layer = 0;
     let mut last_upper = 1.0; // Everywhere with color on the heatmap has >=1 images
     while layer < 7 {
-        let upper = ((max_weight * legend_weights[layer]) + last_upper).ceil();
+        let upper = max_weight.mul_add(legend_weights[layer], last_upper).ceil();
         let text_data = text_renderer
             .render_text_to_png_data(
                 format!("{:?}-{:?}", last_upper as u32, upper as u32),
@@ -161,7 +161,7 @@ pub fn generate_export_image(
             &mut legend_img,
             &text_img,
             x_coord,
-            y_initial + (font_size * layer as i64),
+            y_initial + (font_size * i64::try_from(layer).expect("Cast from usize to i64 wrapped")),
         );
 
         last_upper = upper;
@@ -182,7 +182,9 @@ pub fn generate_export_image(
         &mut legend_img,
         &text_img,
         x_coord,
-        y_initial + (font_size * layer as i64),
+        y_initial
+            + (font_size
+                * i64::try_from(layer).expect("Layer wrapped when casting to usize to i64")),
     );
 
     /////////////////////////////////
@@ -311,13 +313,13 @@ fn center_img(destination_width: u32, text: &ImageBuffer<Rgba<f32>, Vec<f32>>) -
 //      1. Platform
 //      2. Start Year
 //      3. End Year
-fn filter_to_text(filter: Filter) -> (String, String, String, String) {
-    let mut product_string = "".to_owned();
+fn filter_to_text(filter: &Filter) -> (String, String, String, String) {
+    let mut product_string = String::new();
     for product_type in filter.product_type.iter().enumerate() {
         if product_type.0 != 0 && product_type.0 < filter.product_type.len() - 1 {
-            product_string += ", "
+            product_string += ", ";
         } else if product_type.0 == filter.product_type.len() - 1 {
-            product_string += " and "
+            product_string += " and ";
         }
         match product_type.1 {
             ProductTypes::GroundRangeDetected => product_string += "GRD",
@@ -326,12 +328,12 @@ fn filter_to_text(filter: Filter) -> (String, String, String, String) {
         }
     }
 
-    let mut platform_string = "".to_owned();
+    let mut platform_string = String::new();
     for platform_type in filter.platform_type.iter().enumerate() {
         if platform_type.0 != 0 && platform_type.0 < filter.platform_type.len() - 1 {
-            platform_string += ", "
+            platform_string += ", ";
         } else if platform_type.0 == filter.platform_type.len() - 1 {
-            platform_string += " and "
+            platform_string += " and ";
         }
         match platform_type.1 {
             PlatformType::Sentinel1A => platform_string += "Sentinel-1A",
