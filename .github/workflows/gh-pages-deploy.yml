@@ -27,6 +27,11 @@ jobs:
           toolchain: "nightly-2026-05-14"
           components: clippy, rustfmt
 
+      - name: Cache Rust Dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target"
+
       - name: Add WASM target
         run: rustup target add wasm32-unknown-unknown
 
