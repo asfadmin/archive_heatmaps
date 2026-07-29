@@ -128,4 +128,3 @@ pub struct PopupTitle(pub ReadSignal<String>);
 
 #[derive(Clone)]
 pub struct PopupBody(pub ReadSignal<String>);
-

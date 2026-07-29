@@ -10,7 +10,7 @@ pub fn Legend() -> impl IntoView {
     provide_context(ExpansionSignal(expanded));
 
     view! {
-        <div 
+        <div
             class="user-interface legend"
             class:floater-closed=move || !expanded()
         >

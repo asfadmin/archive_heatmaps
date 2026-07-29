@@ -3,9 +3,9 @@ use leptos::wasm_bindgen::JsCast as _;
 use leptos::{html, prelude::*};
 use types::Filter;
 
-use crate::ui::expansion_button::ExpansionButton;
 use crate::types::ExpansionSignal;
 use crate::types::{self, DateRange, ReadySignal};
+use crate::ui::expansion_button::ExpansionButton;
 
 #[component]
 pub fn UserInterface(
@@ -153,7 +153,7 @@ pub fn UserInterface(
     };
 
     view! {
-        <div 
+        <div
             class="user-interface"
             class:floater-closed=move || !expanded()
         >

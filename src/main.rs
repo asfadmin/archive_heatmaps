@@ -4,7 +4,7 @@
 use canvas::Canvas;
 use chrono::NaiveDate;
 use leptos::{mount::mount_to_body, prelude::*};
-use ui::{popup::Popup, user_interface::UserInterface, legend::Legend};
+use ui::{legend::Legend, popup::Popup, user_interface::UserInterface};
 
 mod canvas;
 mod ingest;
