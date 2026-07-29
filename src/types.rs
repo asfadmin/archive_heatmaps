@@ -121,7 +121,11 @@ pub struct ReadySignal(pub ReadSignal<bool>);
 pub struct GeneratePngSignal(pub ReadSignal<bool>);
 
 #[derive(Clone)]
+pub struct ExpansionSignal(pub ReadSignal<bool>);
+
+#[derive(Clone)]
 pub struct PopupTitle(pub ReadSignal<String>);
 
 #[derive(Clone)]
 pub struct PopupBody(pub ReadSignal<String>);
+

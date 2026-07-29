@@ -24,7 +24,7 @@ pub fn Popup() -> impl IntoView {
             >
                 <div class="popup">
                     <button
-                        class="exit-button"
+                        class="popup-button popup-button-open"
                         on:click=move |_| set_dismissed(true)
                     >
                         "×"
@@ -38,13 +38,3 @@ pub fn Popup() -> impl IntoView {
         </Show>
     }
 }
-
-/*
-<h3 class="popup-text header">
-    Disclaimer
-</h3>
-<span class="popup-text">
-    This product is in early development, expect to see bugs! <br/>
-    Generated data is not guaranteed to be accurate.
-</span>
-*/

@@ -78,13 +78,25 @@ input[type="checkbox"]:checked {
     text-align: center;
 }
 
-.user_interface {
+.legend {
+    position: absolute;
+    bottom: 5mm;
+    display: flex;
+    padding: 5px;
+}
+
+.user-interface {
     position: absolute;
     z-index: 1;
     padding: 5mm;
     border-radius: 5mm;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
     background: #303030;
+}
+
+.floater-closed {
+    padding: 2mm;
+    border-radius: 50%;
 }
 
 #form {
@@ -115,12 +127,7 @@ input[type="checkbox"]:checked {
     background-color: #b3aeae;
 }
 
-.exit-button {
-    
-    position: absolute;
-    top: 5px;
-    right: 5px;
-
+.popup-button {
     color: black;
     background-color: #fc9167;
 
@@ -137,8 +144,15 @@ input[type="checkbox"]:checked {
     padding-bottom: 4px;
 }
 
-.exit-button:active {
+.popup-button:active {
     background-color: #f8a685
+}
+
+.popup-button-open {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    margin: 1mm;
 }
 
 p {

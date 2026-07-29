@@ -4,7 +4,7 @@
 use canvas::Canvas;
 use chrono::NaiveDate;
 use leptos::{mount::mount_to_body, prelude::*};
-use ui::{popup::Popup, user_interface::UserInterface};
+use ui::{popup::Popup, user_interface::UserInterface, legend::Legend};
 
 mod canvas;
 mod ingest;
@@ -62,6 +62,7 @@ fn Application() -> impl IntoView {
             <Popup/>
             <UserInterface set_filter set_title set_body/>
             <Canvas set_generate_img set_ready/>
+            <Legend/>
         </div>
     }
 }
