@@ -32,6 +32,10 @@ pub fn UserInterface(set_filter: WriteSignal<Filter>) -> impl IntoView {
     );
     let end_date_element: NodeRef<html::Input> = NodeRef::new();
 
+    let max_date = chrono::Utc::now().date_naive().format("%Y-%m-%d").to_string();
+    let min_date = NaiveDate::from_ymd_opt(2014, 6, 1)
+                .expect("Failed to create min date in UI").format("%Y-%m-%d").to_string();
+
     let doc = document();
 
     // Run when an element of the UI changes, updates the filter signal
@@ -60,6 +64,11 @@ pub fn UserInterface(set_filter: WriteSignal<Filter>) -> impl IntoView {
             }
         }
 
+        if product_type.is_empty() {
+            // TO-DO: Add feedback to user about why the query is not valid
+            return
+        }
+
         let mut platform_type = Vec::new();
 
         // If there is a checked button in sat_selection append its value to the filter_string
@@ -85,6 +94,11 @@ pub fn UserInterface(set_filter: WriteSignal<Filter>) -> impl IntoView {
             }
         }
 
+        if platform_type.is_empty() {
+            // TO-DO: Add feedback to user about why the query is not valid
+            return
+        }
+
         // Gets the selected start and end dates
         let start_date_naive = NaiveDate::parse_from_str(
             &start_date_element
@@ -104,6 +118,11 @@ pub fn UserInterface(set_filter: WriteSignal<Filter>) -> impl IntoView {
             "%Y-%m-%d",
         )
         .expect("Failed to parse end date from HTML Input");
+
+        if start_date_naive > end_date_naive {
+            // TO-DO: Add feedback to user about why the query is not valid
+            return
+        }
 
         set_filter(types::Filter {
             product_type,
@@ -223,6 +242,8 @@ pub fn UserInterface(set_filter: WriteSignal<Filter>) -> impl IntoView {
                                     class="datepicker"
                                     node_ref=start_date_element
                                     prop:value=start_date
+                                    max=max_date.clone()
+                                    min=min_date.clone()
                                 />
                             </td>
                         </tr>
@@ -238,6 +259,8 @@ pub fn UserInterface(set_filter: WriteSignal<Filter>) -> impl IntoView {
                                     class="datepicker"
                                     node_ref=end_date_element
                                     prop:value=end_date
+                                    max=max_date
+                                    min=min_date
                                 />
                             </td>
                         </tr>
@@ -246,7 +269,7 @@ pub fn UserInterface(set_filter: WriteSignal<Filter>) -> impl IntoView {
                 <div id="submit">
                     <input
                         type="button"
-                        value="Submit"
+                        value="Generate Heatmap!"
                         class="button"
                         disabled=move || !ready()
                         on:click=on_update
