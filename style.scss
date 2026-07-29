@@ -57,7 +57,7 @@ input[type="checkbox"]:checked {
 
 }
 
-.disclaimer {
+.popup {
     position: relative;
     display: grid;
     place-items: center;
@@ -74,7 +74,7 @@ input[type="checkbox"]:checked {
     margin: 5px;
 }
 
-.disclaimer-text {
+.popup-text {
     text-align: center;
 }
 

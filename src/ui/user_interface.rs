@@ -6,7 +6,7 @@ use types::Filter;
 use crate::types::{self, DateRange, ReadySignal};
 
 #[component]
-pub fn UserInterface(set_filter: WriteSignal<Filter>) -> impl IntoView {
+pub fn UserInterface(set_filter: WriteSignal<Filter>, set_title: WriteSignal<String>, set_body: WriteSignal<String>) -> impl IntoView {
     let filter =
         use_context::<ReadSignal<Filter>>().expect("Failed to get filter from context in UI");
 
@@ -66,6 +66,8 @@ pub fn UserInterface(set_filter: WriteSignal<Filter>) -> impl IntoView {
 
         if product_type.is_empty() {
             // TO-DO: Add feedback to user about why the query is not valid
+            set_title("Invalid Filter".to_string());
+            set_body("Include at least 1 product type".to_string());
             return
         }
 
@@ -96,6 +98,8 @@ pub fn UserInterface(set_filter: WriteSignal<Filter>) -> impl IntoView {
 
         if platform_type.is_empty() {
             // TO-DO: Add feedback to user about why the query is not valid
+            set_title("Invalid Filter".to_string());
+            set_body("Include at least 1 platform type".to_string());
             return
         }
 
@@ -121,6 +125,8 @@ pub fn UserInterface(set_filter: WriteSignal<Filter>) -> impl IntoView {
 
         if start_date_naive > end_date_naive {
             // TO-DO: Add feedback to user about why the query is not valid
+            set_title("Invalid Filter".to_string());
+            set_body("Start Date must be before End Date".to_string());
             return
         }
 

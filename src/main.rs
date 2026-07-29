@@ -4,14 +4,14 @@
 use canvas::Canvas;
 use chrono::NaiveDate;
 use leptos::{mount::mount_to_body, prelude::*};
-use ui::{disclaimer::Disclaimer, user_interface::UserInterface};
+use ui::{popup::Popup, user_interface::UserInterface};
 
 mod canvas;
 mod ingest;
 mod types;
 mod ui;
 
-use crate::types::{DateRange, GeneratePngSignal, ReadySignal};
+use crate::types::{DateRange, GeneratePngSignal, PopupBody, PopupTitle, ReadySignal};
 
 #[component]
 fn Application() -> impl IntoView {
@@ -45,10 +45,18 @@ fn Application() -> impl IntoView {
     let (generate_img, set_generate_img) = signal(false);
     provide_context(GeneratePngSignal(generate_img));
 
+    let (title, set_title) = signal("Disclaimer".to_string());
+    provide_context(PopupTitle(title));
+
+    let (body, set_body) = signal("This product is in early development, expect to see bugs! <br/>
+    Generated data is not guaranteed to be accurate.".to_string());
+    provide_context(PopupBody(body));
+
+
     view! {
         <div>
-            <Disclaimer/>
-            <UserInterface set_filter/>
+            <Popup/>
+            <UserInterface set_filter set_title set_body/>
             <Canvas set_generate_img set_ready/>
         </div>
     }
