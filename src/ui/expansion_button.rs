@@ -1,4 +1,3 @@
-use leptos::logging::log;
 use leptos::{IntoView, component, prelude::*, view};
 
 use crate::types::ExpansionSignal;
@@ -8,10 +7,7 @@ pub fn ExpansionButton(set_expanded: WriteSignal<bool>) -> impl IntoView {
     let ExpansionSignal(expanded) =
         use_context::<ExpansionSignal>().expect("Failed to get expanded signal in ExpansionButton");
 
-    let expansion_symbol = move || match expanded() {
-        true => "-",
-        false => "+",
-    };
+    let expansion_symbol = move || if expanded() { "-" } else { "+" };
 
     view! {
         <button

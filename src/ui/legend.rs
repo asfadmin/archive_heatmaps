@@ -1,4 +1,3 @@
-use leptos::logging::log;
 use leptos::{IntoView, component, prelude::*, view};
 
 use crate::types::ExpansionSignal;

@@ -1,4 +1,3 @@
-use leptos::logging::log;
 use leptos::{IntoView, component, prelude::*, view};
 
 use crate::types::{PopupBody, PopupTitle};
@@ -32,7 +31,7 @@ pub fn Popup() -> impl IntoView {
                     <h3 class="popup-text header">
                         {title}
                     </h3>
-                    <span class="popup-text" inner_html=move || body()/>
+                    <span class="popup-text" inner_html=body/>
                 </div>
             </div>
         </Show>
