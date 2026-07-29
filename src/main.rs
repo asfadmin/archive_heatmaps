@@ -45,11 +45,15 @@ fn Application() -> impl IntoView {
     let (generate_img, set_generate_img) = signal(false);
     provide_context(GeneratePngSignal(generate_img));
 
-    let (title, set_title) = signal("Disclaimer".to_string());
+    let (title, set_title) = signal("Disclaimers".to_string());
     provide_context(PopupTitle(title));
 
-    let (body, set_body) = signal("This product is in early development, expect to see bugs! <br/>
-    Generated data is not guaranteed to be accurate.".to_string());
+    let (body, set_body) = signal(
+        "This product is in early development, expect to see bugs! <br/><br/>
+        Generated data is not guaranteed to be accurate. <br/><br/>
+        On encountering a crash the app will hang. <br/>
+        Check the dev console if the page becomes unresponsive.".to_string()
+    );
     provide_context(PopupBody(body));
 
 
