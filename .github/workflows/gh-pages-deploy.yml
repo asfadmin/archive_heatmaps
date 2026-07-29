@@ -25,6 +25,11 @@ jobs:
           toolchain: "nightly-2026-05-14"
           components: clippy, rustfmt
 
+      - name: Cache Rust Dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target"
+
       - name: Add WASM target
         run: rustup target add wasm32-unknown-unknown
 
@@ -37,7 +42,7 @@ jobs:
         # this is necessary for github pages where the site is deployed to username.github.io/repo_name and all files must be requested
         # relatively as favicon.ico. if we skip public-url option, the href paths will instead request username.github.io/favicon.ico which
         # will obviously return error 404 not found.
-        run: ./trunk build --release --config="Trunk.toml" --public-url="${GITHUB_REPOSITORY#*/}"
+        run: ./trunk build --release --config="Trunk.toml" --public-url="/${{ github.event.repository.name }}/"
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
