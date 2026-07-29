@@ -6,7 +6,11 @@ use types::Filter;
 use crate::types::{self, DateRange, ReadySignal};
 
 #[component]
-pub fn UserInterface(set_filter: WriteSignal<Filter>, set_title: WriteSignal<String>, set_body: WriteSignal<String>) -> impl IntoView {
+pub fn UserInterface(
+    set_filter: WriteSignal<Filter>,
+    set_title: WriteSignal<String>,
+    set_body: WriteSignal<String>,
+) -> impl IntoView {
     let filter =
         use_context::<ReadSignal<Filter>>().expect("Failed to get filter from context in UI");
 
@@ -32,9 +36,14 @@ pub fn UserInterface(set_filter: WriteSignal<Filter>, set_title: WriteSignal<Str
     );
     let end_date_element: NodeRef<html::Input> = NodeRef::new();
 
-    let max_date = chrono::Utc::now().date_naive().format("%Y-%m-%d").to_string();
+    let max_date = chrono::Utc::now()
+        .date_naive()
+        .format("%Y-%m-%d")
+        .to_string();
     let min_date = NaiveDate::from_ymd_opt(2014, 6, 1)
-                .expect("Failed to create min date in UI").format("%Y-%m-%d").to_string();
+        .expect("Failed to create min date in UI")
+        .format("%Y-%m-%d")
+        .to_string();
 
     let doc = document();
 
@@ -68,7 +77,7 @@ pub fn UserInterface(set_filter: WriteSignal<Filter>, set_title: WriteSignal<Str
             // TO-DO: Add feedback to user about why the query is not valid
             set_title("Invalid Filter".to_string());
             set_body("Include at least 1 product type".to_string());
-            return
+            return;
         }
 
         let mut platform_type = Vec::new();
@@ -100,7 +109,7 @@ pub fn UserInterface(set_filter: WriteSignal<Filter>, set_title: WriteSignal<Str
             // TO-DO: Add feedback to user about why the query is not valid
             set_title("Invalid Filter".to_string());
             set_body("Include at least 1 platform type".to_string());
-            return
+            return;
         }
 
         // Gets the selected start and end dates
@@ -127,7 +136,7 @@ pub fn UserInterface(set_filter: WriteSignal<Filter>, set_title: WriteSignal<Str
             // TO-DO: Add feedback to user about why the query is not valid
             set_title("Invalid Filter".to_string());
             set_body("Start Date must be before End Date".to_string());
-            return
+            return;
         }
 
         set_filter(types::Filter {

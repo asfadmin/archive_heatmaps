@@ -52,10 +52,10 @@ fn Application() -> impl IntoView {
         "This product is in early development, expect to see bugs! <br/><br/>
         Generated data is not guaranteed to be accurate. <br/><br/>
         On encountering a crash the app will hang. <br/>
-        Check the dev console if the page becomes unresponsive.".to_string()
+        Check the dev console if the page becomes unresponsive."
+            .to_string(),
     );
     provide_context(PopupBody(body));
-
 
     view! {
         <div>

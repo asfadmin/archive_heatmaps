@@ -1,12 +1,12 @@
-use leptos::{IntoView, component, prelude::*, view};
 use leptos::logging::log;
+use leptos::{IntoView, component, prelude::*, view};
 
-use crate::types::{PopupTitle, PopupBody};
+use crate::types::{PopupBody, PopupTitle};
 
 #[component]
 pub fn Popup() -> impl IntoView {
-
-    let PopupTitle(title) = use_context::<PopupTitle>().expect("Failed to get title signal in Popup");
+    let PopupTitle(title) =
+        use_context::<PopupTitle>().expect("Failed to get title signal in Popup");
     let PopupBody(body) = use_context::<PopupBody>().expect("Failed to get body signal in Popup");
 
     let (dismissed, set_dismissed) = signal(false);
@@ -38,7 +38,6 @@ pub fn Popup() -> impl IntoView {
         </Show>
     }
 }
-
 
 /*
 <h3 class="popup-text header">
