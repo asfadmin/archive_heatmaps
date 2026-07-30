@@ -149,6 +149,7 @@ input[type="checkbox"]:checked {
     border-radius: 2mm;
     padding-left: 2mm;
     padding-right: 2mm;
+    cursor: pointer;
 }
 
 .button:active {
@@ -164,6 +165,7 @@ input[type="checkbox"]:checked {
     border-radius: 50%;
     border-width: 2px;
     border-color: #db734b;
+    cursor: pointer;
 
     display: flex;
     justify-content: center;

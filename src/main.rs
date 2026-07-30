@@ -5,6 +5,7 @@ use canvas::Canvas;
 use chrono::NaiveDate;
 use leptos::{mount::mount_to_body, prelude::*};
 use ui::{legend::Legend, popup::Popup, user_interface::UserInterface};
+
 use crate::types::MaxWeightSignal;
 
 mod canvas;
