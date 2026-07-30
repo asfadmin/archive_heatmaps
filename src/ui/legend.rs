@@ -24,20 +24,40 @@ pub fn Legend() -> impl IntoView {
         370,
         450,
     ];
-    let legend_weights_len = 7;
+    
 
     let colormap_bytes = include_bytes!("../../assets/magma.png");
     let colormap_image = image::load_from_memory(colormap_bytes)
         .expect("ERROR: Failed to generate image from colormap_bytes")
         .to_rgba8();
 
-    let colors_vec: Vec<(usize, String, _)> = legend_weights.iter().enumerate().map(|(i, x)| {
-        log!("Color vec {i}");
-        let weight = move || ((x*max_weight() as u32) as f32)/(480.0*1.32)
-        let pixel = colormap_image.get_pixel(*x, 0).0;
-        (i, format!("background-color: #{:02x}{:02x}{:02x}", pixel[0], pixel[1], pixel[2]), weight)
-    }).collect();
+    let colors_vec: Vec<(usize, String)> = legend_weights.iter().enumerate().map(|(i, x)| {
 
+        let pixel = colormap_image.get_pixel(*x, 0).0;
+        
+
+        (i, format!("background-color: #{:02x}{:02x}{:02x}", pixel[0], pixel[1], pixel[2]))
+    }).collect();
+    let legend_len = colors_vec.len() - 1;
+
+    let cloned_colors = colors_vec.clone();
+    let weights = move || {
+        let max = max_weight();
+
+        let weights_vec = legend_weights.iter().map(|x| {
+            ((x*(max) as u32) as f32)/(480.0*1.32)
+        }).collect::<Vec<f32>>();
+
+        cloned_colors.iter().map(|x| {
+            match x.0 {
+                0 => {format!("< {}", weights_vec[x.0])}
+                i if i == legend_len => {format!("> {}", weights_vec[x.0])}
+                _ => {format!("{} - {}", weights_vec[x.0 - 1], weights_vec[x.0])}
+            }  
+        }).collect::<Vec<String>>()
+    };  
+
+    let (weights_sig, _ ) = signal(weights);
     let (colors, _) = signal(colors_vec);
 
     view! {
@@ -57,12 +77,8 @@ pub fn Legend() -> impl IntoView {
                                     class="legend-box"
                                     style=x.1
                                 ></div>
-                                <p>{
-                                    log!("Handling: {}", x.0);
-                                    match x.0 {
-                                        0 => {format!("< {}", x.2())}
-                                        legend_weights_len => {format!("> {}", x.2())}
-                                        _ => {format!("{} - {}", x.2(), x.2())}
+                                <p>{ move || {
+                                        format!("{}", weights_sig()()[x.0])
                                     }
                                 }</p>
                             }
