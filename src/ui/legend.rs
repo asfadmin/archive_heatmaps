@@ -1,7 +1,3 @@
-use std::rc::Rc;
-use std::sync::Arc;
-
-use leptos::logging::log;
 use leptos::{IntoView, component, prelude::*, view};
 
 use crate::MaxWeightSignal;
@@ -20,32 +16,26 @@ pub fn Legend() -> impl IntoView {
 
     // List of weights to use for the legend
     let weights = move || {
-        log!("Updating Weights Signal");
         let max = max_weight();
-        log!("Max weight in signal: {max}");
         let granularity = 8;
         match max {
-            i if i <= granularity => (1..i).map(|n| n).collect::<Vec<u32>>(),
-            i @ _ => (1..granularity)
-                .map(|n| {
-                    (i as f32 * ((n as f32) / granularity as f32)) as u32
-                })
+            i if i <= granularity => (1..i).collect::<Vec<u32>>(),
+            i => (1..granularity)
+                .map(|n| (i as f32 * ((n as f32) / granularity as f32)) as u32)
                 .collect::<Vec<u32>>(),
         }
         .iter()
         .filter_map(|x| {
             let scaled_weight = match x {
                 n @ 0..10 => *n as usize,
-                n => ((*n as f64 / 5.0).round() * 5.0) as usize,
+                n => ((f64::from(*n) / 5.0).round() * 5.0) as usize,
             };
             let val = calc_tex_coord(scaled_weight as f32, max as f32);
-            log!("Weight: {scaled_weight}\tTex Coord: {val}");
             if val > 0 && val < 480 {
                 Some(scaled_weight)
             } else {
                 None
             }
-
         })
         .enumerate()
         .collect::<Vec<(usize, usize)>>()
@@ -68,11 +58,9 @@ pub fn Legend() -> impl IntoView {
                         each=move || weights()
                         key=|x| x.0 + x.1
                         children=move |(i, x)| {
-                            log!("Handling: {}", i);
                             let wvec = weights();
-                            log!("wvec: {wvec:?}");
                             let row = format!("{}", i + 2);
-                            
+
                             // Reading the image every time the signal update feels bad...
                             let colormap_bytes = include_bytes!("../../assets/magma.png");
                             let colormap_image = image::load_from_memory(colormap_bytes)
@@ -88,34 +76,7 @@ pub fn Legend() -> impl IntoView {
                                 pixel[0], pixel[1], pixel[2]
                             );
 
-                            let legend_text = match i {
-                                0 => {
-                                    if x > 1 {
-                                        format!("<= {}", x)
-                                    } else {
-                                        format!("{x}")
-                                    }
-                                }
-                                i if i+1 == wvec.len() => {
-                                    let last = wvec[i-1].1;
-                                    if x-last > 1 {
-                                        format!("> {}", wvec[i-1].1)
-                                    } else {
-                                        format!("{x}")
-                                    }
-                                    
-                                }
-                                _ => {
-                                    let last = wvec[i-1].1;
-                                    if x-last > 1 {
-                                        format!("{} - {}", last+1, x)
-                                    } else {
-                                        format!("{x}")
-                                    }
-                                }
-                            };
-
-                            log!("legend_text: {legend_text:?}");
+                            let legend_text = create_legend_text(i, x, &wvec);
 
                             view!{
                                 <div
@@ -132,5 +93,34 @@ pub fn Legend() -> impl IntoView {
                 </div>
             </Show>
         </div>
+    }
+}
+
+/// Format weight into text for the legend.
+fn create_legend_text(i: usize, weight: usize, wvec: &[(usize, usize)]) -> String {
+    match i {
+        0 => {
+            if weight > 1 {
+                format!("<= {weight}")
+            } else {
+                format!("{weight}")
+            }
+        }
+        i if i + 1 == wvec.len() => {
+            let last = wvec[i - 1].1;
+            if weight - last > 1 {
+                format!("> {}", wvec[i - 1].1)
+            } else {
+                format!("{weight}")
+            }
+        }
+        _ => {
+            let last = wvec[i - 1].1;
+            if weight - last > 1 {
+                format!("{} - {weight}", last + 1)
+            } else {
+                format!("{weight}")
+            }
+        }
     }
 }
