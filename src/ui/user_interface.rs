@@ -3,15 +3,24 @@ use leptos::wasm_bindgen::JsCast as _;
 use leptos::{html, prelude::*};
 use types::Filter;
 
+use crate::types::ExpansionSignal;
 use crate::types::{self, DateRange, ReadySignal};
+use crate::ui::expansion_button::ExpansionButton;
 
 #[component]
-pub fn UserInterface(set_filter: WriteSignal<Filter>) -> impl IntoView {
+pub fn UserInterface(
+    set_filter: WriteSignal<Filter>,
+    set_title: WriteSignal<String>,
+    set_body: WriteSignal<String>,
+) -> impl IntoView {
     let filter =
         use_context::<ReadSignal<Filter>>().expect("Failed to get filter from context in UI");
 
     let ReadySignal(ready) =
         use_context::<ReadySignal>().expect("Failed to get ready read signal from context in UI");
+
+    let (expanded, set_expanded) = signal(true);
+    provide_context(ExpansionSignal(expanded));
 
     let (start_date, _) = signal(
         filter
@@ -31,6 +40,15 @@ pub fn UserInterface(set_filter: WriteSignal<Filter>) -> impl IntoView {
             .to_string(),
     );
     let end_date_element: NodeRef<html::Input> = NodeRef::new();
+
+    let max_date = chrono::Utc::now()
+        .date_naive()
+        .format("%Y-%m-%d")
+        .to_string();
+    let min_date = NaiveDate::from_ymd_opt(2014, 6, 1)
+        .expect("Failed to create min date in UI")
+        .format("%Y-%m-%d")
+        .to_string();
 
     let doc = document();
 
@@ -60,6 +78,13 @@ pub fn UserInterface(set_filter: WriteSignal<Filter>) -> impl IntoView {
             }
         }
 
+        if product_type.is_empty() {
+            // TO-DO: Add feedback to user about why the query is not valid
+            set_title("Invalid Filter".to_string());
+            set_body("Include at least 1 product type".to_string());
+            return;
+        }
+
         let mut platform_type = Vec::new();
 
         // If there is a checked button in sat_selection append its value to the filter_string
@@ -85,6 +110,13 @@ pub fn UserInterface(set_filter: WriteSignal<Filter>) -> impl IntoView {
             }
         }
 
+        if platform_type.is_empty() {
+            // TO-DO: Add feedback to user about why the query is not valid
+            set_title("Invalid Filter".to_string());
+            set_body("Include at least 1 platform type".to_string());
+            return;
+        }
+
         // Gets the selected start and end dates
         let start_date_naive = NaiveDate::parse_from_str(
             &start_date_element
@@ -105,6 +137,13 @@ pub fn UserInterface(set_filter: WriteSignal<Filter>) -> impl IntoView {
         )
         .expect("Failed to parse end date from HTML Input");
 
+        if start_date_naive > end_date_naive {
+            // TO-DO: Add feedback to user about why the query is not valid
+            set_title("Invalid Filter".to_string());
+            set_body("Start Date must be before End Date".to_string());
+            return;
+        }
+
         set_filter(types::Filter {
             product_type,
             platform_type,
@@ -114,145 +153,155 @@ pub fn UserInterface(set_filter: WriteSignal<Filter>) -> impl IntoView {
     };
 
     view! {
-        <div class="user_interface">
-            <form id="form">
-                <div id="checkboxes">
-                    <div id="product_types">
-                        <p>Products</p>
-                        <input
-                            class="checkbox"
-                            type="checkbox"
-                            id="grd"
-                            name="granule_type"
-                            value=0
-                            checked
-                        />
-                        <label class="text" for="grd">
-                            "GRD"
-                        </label>
-                        <br/>
-                        <input
-                            class="checkbox"
-                            type="checkbox"
-                            id="slc"
-                            name="granule_type"
-                            value=1
-                            checked
-                        />
-                        <label class="text" for="slc">
-                            "SLC"
-                        </label>
-                        <br/>
-                        <input
-                            class="checkbox"
-                            type="checkbox"
-                            id="ocn"
-                            name="granule_type"
-                            value=2
-                            checked
-                        />
-                        <label class="text" for="ocn">
-                            "OCN"
-                        </label>
+        <div
+            class="user-interface"
+            class:floater-closed=move || !expanded()
+        >
+            <ExpansionButton set_expanded/>
+            <Show when=move || { expanded() }>
+                <form id="form">
+                    <div id="checkboxes">
+                        <div id="product_types">
+                            <p>Products</p>
+                            <input
+                                class="checkbox"
+                                type="checkbox"
+                                id="grd"
+                                name="granule_type"
+                                value=0
+                                checked
+                            />
+                            <label class="text" for="grd">
+                                "GRD"
+                            </label>
+                            <br/>
+                            <input
+                                class="checkbox"
+                                type="checkbox"
+                                id="slc"
+                                name="granule_type"
+                                value=1
+                                checked
+                            />
+                            <label class="text" for="slc">
+                                "SLC"
+                            </label>
+                            <br/>
+                            <input
+                                class="checkbox"
+                                type="checkbox"
+                                id="ocn"
+                                name="granule_type"
+                                value=2
+                                checked
+                            />
+                            <label class="text" for="ocn">
+                                "OCN"
+                            </label>
+                        </div>
+
+                        <div id="platform_types">
+                            <p>Platforms</p>
+                            <input
+                                class="checkbox"
+                                type="checkbox"
+                                id="s1-a"
+                                name="sat_selection"
+                                value=0
+                                checked
+                            />
+                            <label class="text" for="s1-a">
+                                "S1A"
+                            </label>
+                            <br/>
+                            <input
+                                class="checkbox"
+                                type="checkbox"
+                                id="s1-b"
+                                name="sat_selection"
+                                value=1
+                                checked
+                            />
+                            <label class="text" for="s1-b">
+                                "S1B"
+                            </label>
+                            <br/>
+                            <input
+                                class="checkbox"
+                                type="checkbox"
+                                id="s1-c"
+                                name="sat_selection"
+                                value=2
+                                checked
+                            />
+                            <label class="text" for="s1-c">
+                                "S1C"
+                            </label>
+                            <br/>
+                            <input
+                                class="checkbox"
+                                type="checkbox"
+                                id="s1-d"
+                                name="sat_selection"
+                                value=3
+                                checked
+                            />
+                            <label class="text" for="s1-d">
+                                "S1D"
+                            </label>
+                            <br/>
+                        </div>
                     </div>
 
-                    <div id="platform_types">
-                        <p>Platforms</p>
-                        <input
-                            class="checkbox"
-                            type="checkbox"
-                            id="s1-a"
-                            name="sat_selection"
-                            value=0
-                            checked
-                        />
-                        <label class="text" for="s1-a">
-                            "S1A"
-                        </label>
-                        <br/>
-                        <input
-                            class="checkbox"
-                            type="checkbox"
-                            id="s1-b"
-                            name="sat_selection"
-                            value=1
-                            checked
-                        />
-                        <label class="text" for="s1-b">
-                            "S1B"
-                        </label>
-                        <br/>
-                        <input
-                            class="checkbox"
-                            type="checkbox"
-                            id="s1-c"
-                            name="sat_selection"
-                            value=2
-                            checked
-                        />
-                        <label class="text" for="s1-c">
-                            "S1C"
-                        </label>
-                        <br/>
-                        <input
-                            class="checkbox"
-                            type="checkbox"
-                            id="s1-d"
-                            name="sat_selection"
-                            value=3
-                            checked
-                        />
-                        <label class="text" for="s1-d">
-                            "S1D"
-                        </label>
-                        <br/>
+                    <div id="date_range">
+                        <table>
+                            <tr>
+                                <td>
+                                    <label class="text" for="start_date">
+                                        Start Date
+                                    </label>
+                                </td>
+                                <td>
+                                    <input
+                                        type="date"
+                                        class="datepicker"
+                                        node_ref=start_date_element
+                                        prop:value=start_date
+                                        max=max_date.clone()
+                                        min=min_date.clone()
+                                    />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <label class="text" for="end_date">
+                                        End Date
+                                    </label>
+                                </td>
+                                <td>
+                                    <input
+                                        type="date"
+                                        class="datepicker"
+                                        node_ref=end_date_element
+                                        prop:value=end_date
+                                        max=max_date.clone()
+                                        min=min_date.clone()
+                                    />
+                                </td>
+                            </tr>
+                        </table>
                     </div>
-                </div>
-
-                <div id="date_range">
-                    <table>
-                        <tr>
-                            <td>
-                                <label class="text" for="start_date">
-                                    Start Date
-                                </label>
-                            </td>
-                            <td>
-                                <input
-                                    type="date"
-                                    class="datepicker"
-                                    node_ref=start_date_element
-                                    prop:value=start_date
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <label class="text" for="end_date">
-                                    End Date
-                                </label>
-                            </td>
-                            <td>
-                                <input
-                                    type="date"
-                                    class="datepicker"
-                                    node_ref=end_date_element
-                                    prop:value=end_date
-                                />
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-                <div id="submit">
-                    <input
-                        type="button"
-                        value="Submit"
-                        class="button"
-                        disabled=move || !ready()
-                        on:click=on_update
-                    />
-                </div>
-            </form>
+                    <div id="submit">
+                        <input
+                            type="button"
+                            value="Generate Heatmap!"
+                            class="button"
+                            disabled=move || !ready()
+                            on:click=on_update.clone()
+                        />
+                    </div>
+                </form>
+            </Show>
             // <div>
             //     <a
             //         class="button"

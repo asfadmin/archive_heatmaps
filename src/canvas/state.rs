@@ -33,6 +33,7 @@ pub struct State<'a> {
     pub camera_storage: Option<Camera>,
     pub size_storage: Option<PhysicalSize<u32>>,
     pub export_context: Option<ExportContext>,
+    pub set_max_weight: Option<leptos::prelude::WriteSignal<u32>>,
 }
 
 impl State<'_> {

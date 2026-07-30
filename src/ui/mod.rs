@@ -1,3 +1,5 @@
 //! Module contains User Interface for app
-pub mod disclaimer;
+mod expansion_button;
+pub mod legend;
+pub mod popup;
 pub mod user_interface;

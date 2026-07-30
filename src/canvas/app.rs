@@ -80,6 +80,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                     camera_storage: None,
                     size_storage: None,
                     export_context: self.state.export_context.clone(),
+                    set_max_weight: self.state.set_max_weight,
                 };
 
                 // Resize configures the surface based on current canvas size
@@ -206,6 +207,12 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
 
                 // Turn off the loading wheel
                 self.external_state.borrow_mut().set_ready.set(true);
+                self.state
+                    .set_max_weight
+                    .expect("Failed to get set_max_weight to write max to")(
+                    max as u32
+                );
+                log!("Updated max_weight signal with {max}");
             }
 
             // This handles copying data to CPU when the buffer is mapped during the export render pass

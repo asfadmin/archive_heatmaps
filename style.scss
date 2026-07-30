@@ -57,7 +57,7 @@ input[type="checkbox"]:checked {
 
 }
 
-.disclaimer {
+.popup {
     position: relative;
     display: grid;
     place-items: center;
@@ -74,17 +74,57 @@ input[type="checkbox"]:checked {
     margin: 5px;
 }
 
-.disclaimer-text {
+.popup-text {
     text-align: center;
 }
 
-.user_interface {
+.legend {
+    position: absolute;
+    bottom: 5mm;
+    z-index: 1;
+    display: flex;
+    border-radius: 5mm;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    background: #303030;
+    padding-left: 5mm;
+    padding-right: 10mm;
+    padding-bottom: 5mm;
+}
+
+.legend-container {
+    display: grid;
+    grid-template-columns: 30px 1fr;
+    align-items: center;
+    gap: 1mm;
+    row-gap: 1mm;
+}
+
+.legend-header {
+    grid-row: 1;
+    grid-column: 1 / 3;
+    margin-top: 3mm;
+    margin-bottom: 1.5mm;
+}
+
+.legend-box {
+    width: 30px;
+    height: 20px;
+    border-radius: 1mm;
+    grid-column: 1;
+}
+
+.user-interface {
     position: absolute;
     z-index: 1;
     padding: 5mm;
     border-radius: 5mm;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
     background: #303030;
+}
+
+.floater-closed {
+    padding: 2mm;
+    border-radius: 50%;
 }
 
 #form {
@@ -109,18 +149,14 @@ input[type="checkbox"]:checked {
     border-radius: 2mm;
     padding-left: 2mm;
     padding-right: 2mm;
+    cursor: pointer;
 }
 
 .button:active {
     background-color: #b3aeae;
 }
 
-.exit-button {
-    
-    position: absolute;
-    left: 94%;
-    top: 5%;
-
+.popup-button {
     color: black;
     background-color: #fc9167;
 
@@ -129,6 +165,7 @@ input[type="checkbox"]:checked {
     border-radius: 50%;
     border-width: 2px;
     border-color: #db734b;
+    cursor: pointer;
 
     display: flex;
     justify-content: center;
@@ -137,8 +174,15 @@ input[type="checkbox"]:checked {
     padding-bottom: 4px;
 }
 
-.exit-button:active {
+.popup-button:active {
     background-color: #f8a685
+}
+
+.popup-button-open {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    margin: 1mm;
 }
 
 p {

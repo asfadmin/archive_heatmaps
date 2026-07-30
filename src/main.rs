@@ -4,14 +4,16 @@
 use canvas::Canvas;
 use chrono::NaiveDate;
 use leptos::{mount::mount_to_body, prelude::*};
-use ui::{disclaimer::Disclaimer, user_interface::UserInterface};
+use ui::{legend::Legend, popup::Popup, user_interface::UserInterface};
+
+use crate::types::MaxWeightSignal;
 
 mod canvas;
 mod ingest;
 mod types;
 mod ui;
 
-use crate::types::{DateRange, GeneratePngSignal, ReadySignal};
+use crate::types::{DateRange, GeneratePngSignal, PopupBody, PopupTitle, ReadySignal};
 
 #[component]
 fn Application() -> impl IntoView {
@@ -45,11 +47,27 @@ fn Application() -> impl IntoView {
     let (generate_img, set_generate_img) = signal(false);
     provide_context(GeneratePngSignal(generate_img));
 
+    let (title, set_title) = signal("Disclaimers".to_string());
+    provide_context(PopupTitle(title));
+
+    let (body, set_body) = signal(
+        "This product is in early development, expect to see bugs! <br/><br/>
+        Generated data is not guaranteed to be accurate. <br/><br/>
+        On encountering a crash the app will hang. <br/>
+        Check the dev console if the page becomes unresponsive."
+            .to_string(),
+    );
+    provide_context(PopupBody(body));
+
+    let (max_weight, set_max_weight) = signal(0u32);
+    provide_context(MaxWeightSignal(max_weight));
+
     view! {
         <div>
-            <Disclaimer/>
-            <UserInterface set_filter/>
-            <Canvas set_generate_img set_ready/>
+            <Popup/>
+            <UserInterface set_filter set_title set_body/>
+            <Canvas set_generate_img set_ready set_max_weight/>
+            <Legend/>
         </div>
     }
 }

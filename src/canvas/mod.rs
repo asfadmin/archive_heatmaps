@@ -37,6 +37,7 @@ use crate::types::{self, GeneratePngSignal, ReadySignal};
 pub fn Canvas(
     set_generate_img: leptos::prelude::WriteSignal<bool>,
     set_ready: leptos::prelude::WriteSignal<bool>,
+    set_max_weight: leptos::prelude::WriteSignal<u32>,
 ) -> impl IntoView {
     // Signal from the UI containing the filter
     let filter = use_context::<ReadSignal<types::Filter>>()
@@ -69,6 +70,7 @@ pub fn Canvas(
                 base64_png: None,
             }),
             filter: Some(filter),
+            set_max_weight: Some(set_max_weight),
             ..Default::default()
         },
         event_loop_proxy: event_loop.create_proxy(),

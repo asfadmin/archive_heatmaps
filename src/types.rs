@@ -110,21 +110,24 @@ pub struct Filter {
     pub platform_type: Vec<PlatformType>,
 }
 
+////////////////////////////////////////
+//  New Type Definitions for Signals  //
+////////////////////////////////////////
+
 #[derive(Clone)]
 pub struct ReadySignal(pub ReadSignal<bool>);
 
 #[derive(Clone)]
 pub struct GeneratePngSignal(pub ReadSignal<bool>);
 
-// impl GetUntracked for GeneratePngSignal {
-//     type Value = bool;
-//     fn try_get_untracked(&self) -> Option<Self::Value> {
-//         self.0.try_get_untracked()
-//     }
-// }
+#[derive(Clone)]
+pub struct ExpansionSignal(pub ReadSignal<bool>);
 
-// impl DefinedAt for GeneratePngSignal {
-//     fn defined_at(&self) -> Option<&'static std::panic::Location<'static>> {
-//         self.0.defined_at()
-//     }
-// }
+#[derive(Clone)]
+pub struct MaxWeightSignal(pub ReadSignal<u32>);
+
+#[derive(Clone)]
+pub struct PopupTitle(pub ReadSignal<String>);
+
+#[derive(Clone)]
+pub struct PopupBody(pub ReadSignal<String>);
