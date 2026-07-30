@@ -124,6 +124,9 @@ pub struct GeneratePngSignal(pub ReadSignal<bool>);
 pub struct ExpansionSignal(pub ReadSignal<bool>);
 
 #[derive(Clone)]
+pub struct MaxWeightSignal(pub ReadSignal<u32>);
+
+#[derive(Clone)]
 pub struct PopupTitle(pub ReadSignal<String>);
 
 #[derive(Clone)]

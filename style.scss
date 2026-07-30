@@ -85,6 +85,20 @@ input[type="checkbox"]:checked {
     padding: 5px;
 }
 
+.legend-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+    place-items: center;
+}
+
+.legend-box {
+    width: 30px;
+    height: 20px;
+    border-radius: 5mm;
+    grid-column: 1;
+}
+
 .user-interface {
     position: absolute;
     z-index: 1;

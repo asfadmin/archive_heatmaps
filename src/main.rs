@@ -5,6 +5,7 @@ use canvas::Canvas;
 use chrono::NaiveDate;
 use leptos::{mount::mount_to_body, prelude::*};
 use ui::{legend::Legend, popup::Popup, user_interface::UserInterface};
+use crate::types::MaxWeightSignal;
 
 mod canvas;
 mod ingest;
@@ -57,11 +58,14 @@ fn Application() -> impl IntoView {
     );
     provide_context(PopupBody(body));
 
+    let (max_weight, set_max_weight) = signal(0u32);
+    provide_context(MaxWeightSignal(max_weight));
+
     view! {
         <div>
             <Popup/>
             <UserInterface set_filter set_title set_body/>
-            <Canvas set_generate_img set_ready/>
+            <Canvas set_generate_img set_ready set_max_weight/>
             <Legend/>
         </div>
     }
