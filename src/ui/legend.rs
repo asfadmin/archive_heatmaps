@@ -40,47 +40,60 @@ pub fn Legend() -> impl IntoView {
     }).collect();
     let legend_len = colors_vec.len() - 1;
 
-    let cloned_colors = colors_vec.clone();
     let weights = move || {
         let max = max_weight();
 
-        let weights_vec = legend_weights.iter().map(|x| {
-            ((x*(max) as u32) as f32)/(480.0*1.32)
-        }).collect::<Vec<f32>>();
-
-        cloned_colors.iter().map(|x| {
-            match x.0 {
-                0 => {format!("< {}", weights_vec[x.0])}
-                i if i == legend_len => {format!("> {}", weights_vec[x.0])}
-                _ => {format!("{} - {}", weights_vec[x.0 - 1], weights_vec[x.0])}
-            }  
-        }).collect::<Vec<String>>()
+        legend_weights.iter().map(|x| {
+            let val = (((x*(max) as u32) as f32)/(480.0*1.32)) as usize;
+            match val {
+            n @ 0..10 => n,
+            n => {
+                ((n as f64 / 5.0).round() * 5.0) as usize
+            }
+        }
+        }).collect::<Vec<usize>>()
     };  
 
+    // Feels bad to wrap a derived signal in a signal to avoid type errors...
     let (weights_sig, _ ) = signal(weights);
     let (colors, _) = signal(colors_vec);
 
     view! {
         <div
-            class="user-interface legend"
+            class="legend"
             class:floater-closed=move || !expanded()
         >
             <ExpansionButton set_expanded/>
             <Show when=move || { expanded() }>
                 <div class="legend-container">
+                    <h3
+                        class="legend-header"
+                    >
+                        Acquisitions
+                    </h3>
                     <For
                         each=move || colors()
                         key=|x| x.0
                         children=move |x| {
+                            let row = format!("{}", x.0 + 2);
                             view!{
                                 <div 
                                     class="legend-box"
                                     style=x.1
+                                    style:grid-row=row.clone()
                                 ></div>
-                                <p>{ move || {
-                                        format!("{}", weights_sig()()[x.0])
+                                <span
+                                    style:grid-row=row
+                                >{ move || {
+                                        let weights_vec = weights_sig()();
+                                        log!("Handling: {}", x.0);
+                                        match x.0 {
+                                            0 => {format!("< {}", weights_vec[x.0])}
+                                            i if i == legend_len => {format!("> {}", weights_vec[x.0])}
+                                            _ => {format!("{} - {}", weights_vec[x.0 - 1], weights_vec[x.0])}
+                                        }
                                     }
-                                }</p>
+                                }</span>
                             }
                         }
                     />
