@@ -17,7 +17,7 @@ pub fn Legend() -> impl IntoView {
     // List of weights to use for the legend
     let weights = move || {
         let max = max_weight();
-        let granularity = 8;
+        let granularity = 8; // Maximum number of legend entries
         match max {
             i if i <= granularity => (1..i).collect::<Vec<u32>>(),
             i => (1..granularity)
@@ -37,8 +37,7 @@ pub fn Legend() -> impl IntoView {
                 None
             }
         })
-        .enumerate()
-        .collect::<Vec<(usize, usize)>>()
+        .collect::<Vec<usize>>()
     };
 
     view! {
@@ -55,7 +54,7 @@ pub fn Legend() -> impl IntoView {
                         Acquisitions
                     </h3>
                     <For
-                        each=move || weights()
+                        each=move || { weights().iter().enumerate().map(|(i, x)| (i, *x)).collect::<Vec<(usize, usize)>>() }
                         key=|x| x.0 + x.1
                         children=move |(i, x)| {
                             let wvec = weights();
@@ -97,7 +96,7 @@ pub fn Legend() -> impl IntoView {
 }
 
 /// Format weight into text for the legend.
-fn create_legend_text(i: usize, weight: usize, wvec: &[(usize, usize)]) -> String {
+fn create_legend_text(i: usize, weight: usize, wvec: &[usize]) -> String {
     match i {
         0 => {
             if weight > 1 {
@@ -107,15 +106,15 @@ fn create_legend_text(i: usize, weight: usize, wvec: &[(usize, usize)]) -> Strin
             }
         }
         i if i + 1 == wvec.len() => {
-            let last = wvec[i - 1].1;
+            let last = wvec[i - 1];
             if weight - last > 1 {
-                format!("> {}", wvec[i - 1].1)
+                format!("> {}", wvec[i - 1])
             } else {
                 format!("{weight}")
             }
         }
         _ => {
-            let last = wvec[i - 1].1;
+            let last = wvec[i - 1];
             if weight - last > 1 {
                 format!("{} - {weight}", last + 1)
             } else {
