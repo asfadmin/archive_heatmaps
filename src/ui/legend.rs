@@ -13,6 +13,28 @@ pub fn Legend() -> impl IntoView {
     let MaxWeightSignal(max_weight) =
         use_context::<MaxWeightSignal>().expect("Failed to get max weight signal in Legend");
 
+    let calc_tex_coord = |x: f32, max: f32| {
+        (((x*1.32)/max) * 480.0) as u32
+    };
+
+
+    // List of evenly distributed weights that can be mapped to tex coords
+    let weight_samples = move || {
+        let granularity = 8;
+        match max_weight() {
+            i if i <= granularity => (1..i).map(|n| n).collect::<Vec<u32>>(),
+            i @ _ => (1..granularity)
+                .filter_map(|n| {
+                    let weight = (i as f32 * ((n as f32) / granularity as f32)) as u32;
+                    let val = calc_tex_coord(weight as f32, i as f32);
+                    log!("Weight: {weight}\tTex Coord: {val}");
+                    if val > 0 && val < 480 { Some(weight) } else { None }
+                })
+                .collect::<Vec<u32>>(),
+        }
+    };
+
+    // List of tex coords we can map to weights
     let legend_weights: &[u32; 8] = &[30, 80, 130, 170, 230, 300, 370, 450];
 
     let colormap_bytes = include_bytes!("../../assets/magma.png");
@@ -39,6 +61,7 @@ pub fn Legend() -> impl IntoView {
 
     let weights = move || {
         let max = max_weight();
+        log!("Weight Samples: {:?}", weight_samples());
 
         legend_weights
             .iter()
