@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <link rel="stylesheet" href="https://heatmaps-live.sp.asf.alaska.edu/style-14e45dee33ad3c8a.css" integrity="sha384-tMa9+l4Yv+Tc0btV/HMDIxKgyANn0flKO8xbYsLe5IVbBfOC9IYeM3Ze/t3oJcGV"/>
+    <title>SAR Density Map</title>
+    <link rel="stylesheet" href="https://heatmaps-live.sp.asf.alaska.edu/style-15132c5d6cbce.css" integrity="sha384-VLe86tvrFPnM4BwsrGMcSsNW4r1267x0t+eAXHOLoELPcTSZmtycGpp97VWoD0Wp"/>
+    <link rel="icon" href="https://heatmaps-live.sp.asf.alaska.edu/favicon-e560cf5acf3ccc91.svg" integrity="sha384-IlQL+Q2AJXbvsF+FWDCp7cax7BdijIp8uUKKN5sqAAm38s4fccCibHGjOIICF/ZT"/>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
@@ -12,12 +14,12 @@
         }
       }
     </script>
-  <link rel="modulepreload" href="https://heatmaps-live.sp.asf.alaska.edu/heatmap-client-d71138136e197303.js" crossorigin="anonymous" integrity="sha384-YgKw9vRKQo0JqoiG0eblWntQvBYGTOriXaZjBXI+EAT54MSKug7dTD5l3dyzdvbf"><link rel="modulepreload" href="https://heatmaps-live.sp.asf.alaska.edu/snippets/heatmap-client-752fa26ee35a9ffd/assets/duckdb-browser.mjs" crossorigin="anonymous" integrity="sha384-RF03w8tOAjB/EQNjGGUEKpOIypX5Zxl4HqZZFRA1ji5N0Uf+HMhcy2iUF5a+c73k"><link rel="preload" href="https://heatmaps-live.sp.asf.alaska.edu/heatmap-client-d71138136e197303_bg.wasm" crossorigin="anonymous" integrity="sha384-dSDdOwTy3Rq212Fm8Uyz+qCZJJJJmQcjhK4J01LiLUxM2wrD0VNmRDKVkTJeTc34" as="fetch" type="application/wasm"></head>
+  <link rel="modulepreload" href="https://heatmaps-live.sp.asf.alaska.edu/heatmap-client-27e13805047a4d82.js" crossorigin="anonymous" integrity="sha384-VhtK85L+Odp/BytZHzp1GyTTZuw4HqysM5JcAazbY6xT7635C51hpkCzaAkEz8Vv"><link rel="modulepreload" href="https://heatmaps-live.sp.asf.alaska.edu/snippets/heatmap-client-752fa26ee35a9ffd/assets/duckdb-browser.mjs" crossorigin="anonymous" integrity="sha384-RF03w8tOAjB/EQNjGGUEKpOIypX5Zxl4HqZZFRA1ji5N0Uf+HMhcy2iUF5a+c73k"><link rel="preload" href="https://heatmaps-live.sp.asf.alaska.edu/heatmap-client-27e13805047a4d82_bg.wasm" crossorigin="anonymous" integrity="sha384-/XcmU8XglUMFbUH4dEw8+vSMfo3WAXixIv9NLOfPaKJSX6pAN/3/uWR6PSk4RaXc" as="fetch" type="application/wasm"></head>
   <body>
   
 <script type="module">
-import init, * as bindings from 'https://heatmaps-live.sp.asf.alaska.edu/heatmap-client-d71138136e197303.js';
-const wasm = await init({ module_or_path: 'https://heatmaps-live.sp.asf.alaska.edu/heatmap-client-d71138136e197303_bg.wasm' });
+import init, * as bindings from 'https://heatmaps-live.sp.asf.alaska.edu/heatmap-client-27e13805047a4d82.js';
+const wasm = await init({ module_or_path: 'https://heatmaps-live.sp.asf.alaska.edu/heatmap-client-27e13805047a4d82_bg.wasm' });
 
 
 window.wasmBindings = bindings;
