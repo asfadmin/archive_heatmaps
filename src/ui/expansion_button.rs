@@ -19,5 +19,3 @@ pub fn ExpansionButton(set_expanded: WriteSignal<bool>) -> impl IntoView {
         </button>
     }
 }
-
-// +

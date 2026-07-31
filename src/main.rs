@@ -4,7 +4,7 @@
 use canvas::Canvas;
 use chrono::NaiveDate;
 use leptos::{mount::mount_to_body, prelude::*};
-use ui::{legend::Legend, popup::Popup, user_interface::UserInterface};
+use ui::{legend::Legend, popup::Popup, user_interface::UserInterface, feedback::Feedback};
 
 use crate::types::MaxWeightSignal;
 
@@ -68,6 +68,7 @@ fn Application() -> impl IntoView {
             <UserInterface set_filter set_title set_body/>
             <Canvas set_generate_img set_ready set_max_weight/>
             <Legend/>
+            <Feedback/>
         </div>
     }
 }

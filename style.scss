@@ -225,3 +225,40 @@ td {
     transform: rotate(360deg);
 }
 } 
+
+
+.feedback {
+    position: absolute;
+    bottom: 5mm;
+    right: 5mm;
+    z-index: 1;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    background: #303030;
+    padding: 2mm;
+    border-radius: 50%;
+}
+
+.feedback-button {
+    color: black;
+    background-color: #fc9167;
+
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border-width: 3px;
+    border-color: #db734b;
+    border-style: outset;
+    cursor: pointer;
+    text-decoration: none;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    padding-bottom: 4px;
+}
+
+.feedback-button:active {
+    background-color: #f8a685;
+    border-style: inset;
+}

@@ -3,3 +3,4 @@ mod expansion_button;
 pub mod legend;
 pub mod popup;
 pub mod user_interface;
+pub mod feedback;
