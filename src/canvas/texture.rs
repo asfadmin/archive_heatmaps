@@ -93,8 +93,8 @@ pub fn generate_colormaps(
     device: &wgpu::Device,
     queue: &wgpu::Queue,
 ) -> (TextureContext, TextureContext) {
-    let display_colormap_bytes = include_bytes!("../../assets/magma.png");
-    let export_colormap_bytes = include_bytes!("../../assets/export_colormap.png");
+    let display_colormap_bytes:&[u8; _] = &[0];
+    let export_colormap_bytes: &[u8; _] = &[0];
 
     (
         generate_colormap_texture(device, queue, display_colormap_bytes),
