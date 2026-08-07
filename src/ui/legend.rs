@@ -61,7 +61,7 @@ pub fn Legend() -> impl IntoView {
                             let row = format!("{}", i + 2);
 
                             // Reading the image every time the signal update feels bad...
-                            let colormap_bytes = include_bytes!("../../assets/magma.png");
+                            let colormap_bytes = include_bytes!("../../assets/plasma.png");
                             let colormap_image = image::load_from_memory(colormap_bytes)
                                 .expect("ERROR: Failed to generate image from colormap_bytes")
                                 .to_rgba8();

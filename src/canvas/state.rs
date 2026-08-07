@@ -397,7 +397,7 @@ impl State<'_> {
                     .texture
                     .create_view(&wgpu::TextureViewDescriptor::default());
 
-                active_colormap = &render_context.colormap_texture_context.1.bind_group;
+                active_colormap = &render_context.colormap_texture_context.bind_group;
                 active_colormap_render_pipeline = &render_context.export_colormap_render_pipeline;
 
                 log!("Generating .png");
@@ -410,7 +410,7 @@ impl State<'_> {
                     .texture
                     .create_view(&wgpu::TextureViewDescriptor::default());
 
-                active_colormap = &render_context.colormap_texture_context.0.bind_group;
+                active_colormap = &render_context.colormap_texture_context.bind_group;
                 active_colormap_render_pipeline = &render_context.display_colormap_render_pipeline;
             }
 
