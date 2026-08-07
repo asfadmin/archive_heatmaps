@@ -6,6 +6,7 @@ The goal of this project is to rewrite and consolidate the existing codebases fo
 
 ## Architecture Diagram
 <img width="8709" height="5347" alt="Interactive-Heatmap-Architecture-Diagram" src="https://github.com/user-attachments/assets/fce662c7-6f12-4c30-ae51-9985e305f796" />
+
 ## Using the Client
 1. A release build of the client is available at https://heatmaps-live.sp.asf.alaska.edu/
 2. Once you are on the page select the date range, product type, and platform you would like to generate a heatmap for and press submit!
