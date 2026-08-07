@@ -32,7 +32,7 @@ pub struct RenderContext<'a> {
     pub export_render_pipeline: wgpu::RenderPipeline,
     pub camera_context: CameraContext,
     pub blend_texture_context: TextureContext,
-    pub colormap_texture_context: (TextureContext, TextureContext),
+    pub colormap_texture_context: TextureContext,
     pub export_texture_context: TextureContext,
     pub copy_context: CopyContext,
     pub max_weight_context: MaxWeightContext,
@@ -158,7 +158,7 @@ pub async fn generate_render_context(
     let display_colormap_render_pipeline = generate_display_colormap_pipeline(
         &device,
         (
-            &colormap_texture_context.0.bind_group_layout,
+            &colormap_texture_context.bind_group_layout,
             &blend_texture_context.bind_group_layout,
             &max_weight_context.uniform_buffer.bind_group_layout,
         ),
@@ -167,7 +167,7 @@ pub async fn generate_render_context(
     let export_colormap_render_pipeline = generate_export_colormap_pipeline(
         &device,
         (
-            &colormap_texture_context.0.bind_group_layout,
+            &colormap_texture_context.bind_group_layout,
             &blend_texture_context.bind_group_layout,
             &max_weight_context.uniform_buffer.bind_group_layout,
         ),

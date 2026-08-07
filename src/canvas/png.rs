@@ -114,7 +114,7 @@ pub fn generate_export_image(
     ///////////////////////
 
     // Renders text into a png we can overlay on the rest of our image
-    let text_renderer = TextRenderer::try_new_with_ttf_font_data(&[0])
+    let text_renderer = TextRenderer::try_new_with_ttf_font_data([0])
     .expect("ERROR: Failed to read times new roman font when creating text renderer");
 
     // Store the legend in memory
