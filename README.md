@@ -1,7 +1,7 @@
 
 # Archive Heatmap
 The goal of this project is to rewrite and consolidate the existing codebases for creating heatmaps of the Sentinel-1 data archive into an interactive heatmap. This heatmap currently has the ability to select date ranges, product types, and platform.
-<img width="5120" height="2712" alt="cumulative" src="https://github.com/user-attachments/assets/9a783818-c554-4497-b28d-d382a29e1c1d" />
+
 
 
 ## Architecture Diagram
