@@ -32,7 +32,7 @@ The goal of this project is to rewrite and consolidate the existing codebases fo
 
 
 ## Attribution
-World Continent data comes from hub.arcgis.com/datasets/esri::world-continents/explore
+World Continent data comes from hub.arcgis.com/datasets/esri::world-continents/explore  
 Sentinel-1 Data is provided by the Alaska Satellite Facility
 
 ## Contributers
