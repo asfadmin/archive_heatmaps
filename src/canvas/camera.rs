@@ -1,8 +1,10 @@
-use cgmath::{Point3, Vector2, Vector3};
+use cgmath::{EuclideanSpace, InnerSpace, Point3, Vector2, Vector3};
 use wgpu::util::DeviceExt;
 
 use super::input::InputState;
 use super::render_context::RenderContext;
+
+const PI: f64 = 3.1415;
 
 pub enum CameraEvent {
     Resize(u32, u32),
@@ -34,7 +36,6 @@ impl CameraContext {
             aspect: f64::from(config.width) / f64::from(config.height),
             width: f64::from(config.width),
             height: f64::from(config.height),
-            position: (0.0, 0.0).into(),
             zoom: 1.0,
         };
 
@@ -104,8 +105,6 @@ impl CameraContext {
         &self,
         mut coordinate: cgmath::Vector2<f64>,
     ) -> cgmath::Vector2<f64> {
-        coordinate.x *= -1.0;
-
         // convert to world scale
         coordinate / self.camera.zoom
     }
@@ -125,48 +124,27 @@ impl CameraContext {
 
             // Zooms the camera in and out, ensures the camera stays within the bounds of the heatmap
             CameraEvent::Zoom(mut zoom, mut pos) => {
-                self.camera.zoom += zoom;
-                self.camera.zoom = self.camera.zoom.clamp(0.1, 5.0);
+                self.camera.zoom -= zoom;
+                self.camera.zoom = self.camera.zoom.clamp(0.05, 10.0);
+                let vec = self.camera.eye.to_vec();
+
+                self.camera.eye = Point3::from_vec(vec.normalize() * self.camera.zoom * 5.0);
             }
 
             // Moves the camera around, ensures the camera stays within bounds of the heatmap
-            CameraEvent::Translate(mut pos) => {
-                let camera_upper_bounds: cgmath::Vector2<f64> = self.camera.position
-                    + pos
-                    + cgmath::Vector2::<f64>::new(
-                        self.camera.width / self.camera.zoom,
-                        -self.camera.height / self.camera.zoom,
-                    );
-
-                let camera_lower_bounds: cgmath::Vector2<f64> = self.camera.position + pos;
-
-                if camera_upper_bounds.x > 180.0 {
-                    pos.x = 0.0;
-                    self.camera.position.x = 180.0 - self.camera.width / self.camera.zoom;
-                }
-
-                if camera_upper_bounds.y < -90.0 {
-                    pos.y = 0.0;
-                    self.camera.position.y = -90.0 + self.camera.height / self.camera.zoom;
-                }
-
-                if camera_lower_bounds.y > 80.0 {
-                    pos.y = 0.0;
-                    self.camera.position.y = 80.0;
-                }
-
-                if camera_lower_bounds.x < -180.0 {
-                    pos.x = 0.0;
-                    self.camera.position.x = -180.0;
-                }
-
-                self.camera.position += pos;
+            CameraEvent::Translate(diff) => {
+                let radius = self.camera.eye.to_vec().magnitude();
+                let mut theta = self.camera.eye.z.atan2(self.camera.eye.x);
+                let mut phi = (self.camera.eye.y / radius).acos();
+                theta += (diff.x / self.camera.width) * 2.0 * PI;
+                phi += (diff.y / self.camera.height) * PI;
+                self.camera.eye.x = radius * phi.sin() * theta.cos();
+                self.camera.eye.y = radius * phi.cos();
+                self.camera.eye.z = radius * phi.sin() * theta.sin();
             }
 
             // Displays the entire heatmap, used to calculate max weight and export to png
             CameraEvent::EntireView => {
-                self.camera.position = Vector2::new(-180.0, 90.0);
-
                 self.camera.zoom = 1.0;
 
                 self.update_camera(&CameraEvent::Resize(1800, 900));
@@ -199,15 +177,13 @@ pub struct Camera {
     pub width: f64,
     pub height: f64,
     pub zoom: f64,
-    pub position: cgmath::Vector2<f64>,
 }
 
 impl Camera {
     // This is the cool matrix math that makes this whole thing actually work!
     pub fn build_view_projection_matrix(&self) -> cgmath::Matrix4<f64> {
-        let pos = self.eye - Vector3::new(0.0, 0.0, 5.0 * self.zoom);
-        let mut target = self.eye;
-        target.z = 0.0;
+        let pos = self.eye;
+        let target = self.target;
 
         let view = cgmath::Matrix4::look_at_rh(pos, target, self.up);
 

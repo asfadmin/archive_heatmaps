@@ -27,17 +27,24 @@ const PHI: f32 = 1.61803398875;
 // 12 Vertices of a regular icosahedron
 // Ensure your Vertex struct has #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub const ICOSAHEDRON_VERTICES: [[f32; 3]; 12] = [
-    [-1.0,  PHI,  0.0], [ 1.0,  PHI,  0.0], [-1.0, -PHI,  0.0], [ 1.0, -PHI,  0.0],
-    [ 0.0, -1.0,  PHI], [ 0.0,  1.0,  PHI], [ 0.0, -1.0, -PHI], [ 0.0,  1.0, -PHI],
-    [ PHI,  0.0, -1.0], [ PHI,  0.0,  1.0], [-PHI,  0.0, -1.0], [-PHI,  0.0,  1.0],
+    [-1.0, PHI, 0.0],
+    [1.0, PHI, 0.0],
+    [-1.0, -PHI, 0.0],
+    [1.0, -PHI, 0.0],
+    [0.0, -1.0, PHI],
+    [0.0, 1.0, PHI],
+    [0.0, -1.0, -PHI],
+    [0.0, 1.0, -PHI],
+    [PHI, 0.0, -1.0],
+    [PHI, 0.0, 1.0],
+    [-PHI, 0.0, -1.0],
+    [-PHI, 0.0, 1.0],
 ];
 
 // 20 Triangular faces (counter-clockwise winding order)
 pub const ICOSAHEDRON_INDICES: [u16; 60] = [
-    0, 11, 5,   0, 5, 1,    0, 1, 7,    0, 7, 10,   0, 10, 11,
-    1, 5, 9,    5, 11, 4,   11, 10, 2,  10, 7, 6,   7, 1, 8,
-    3, 9, 4,    3, 4, 2,    3, 2, 6,    3, 6, 8,    3, 8, 9,
-    4, 9, 5,    2, 4, 11,   6, 2, 10,   8, 6, 7,    9, 8, 1
+    0, 11, 5, 0, 5, 1, 0, 1, 7, 0, 7, 10, 0, 10, 11, 1, 5, 9, 5, 11, 4, 11, 10, 2, 10, 7, 6, 7, 1,
+    8, 3, 9, 4, 3, 4, 2, 3, 2, 6, 3, 6, 8, 3, 8, 9, 4, 9, 5, 2, 4, 11, 6, 2, 10, 8, 6, 7, 9, 8, 1,
 ];
 
 // All the things needed to bind a buffer to a render pass
@@ -112,16 +119,14 @@ impl Geometry {
         buffer_data: &[BufferStorage],
         outline_data: &[BufferStorage],
     ) -> Self {
-
         let lod_layers = gen_lod_layers(render_context, buffer_data, "Heatmap");
 
         let outline_layers = gen_lod_layers(render_context, outline_data, "Outline");
 
-
-        let icosahedron_vertex_slice: Vec<Vertex> = ICOSAHEDRON_VERTICES.iter().map(|x| {
-            let slice = [x[0], x[1], x[2]+1.0];
-            Vertex {position: slice}
-        }).collect();
+        let icosahedron_vertex_slice: Vec<Vertex> = ICOSAHEDRON_VERTICES
+            .iter()
+            .map(|x| Vertex { position: *x })
+            .collect();
 
         // Rectangle that is used in the colormap and max_weight render passes
         let icosahedron_vertex_buffer =
@@ -148,7 +153,7 @@ impl Geometry {
             lod_layers,
             outline_layers,
             geometry_layer: BufferLayer {
-                vertex_buffer:icosahedron_vertex_buffer,
+                vertex_buffer: icosahedron_vertex_buffer,
                 index_buffer: icosahedron_index_buffer,
                 num_indices: icosahedron_num_indices,
             },
