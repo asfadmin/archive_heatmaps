@@ -537,7 +537,7 @@ impl State<'_> {
                     .set_vertex_buffer(0, geometry.geometry_layer.vertex_buffer.slice(..));
                 sphere_render_pass.set_index_buffer(
                     geometry.geometry_layer.index_buffer.slice(..),
-                    wgpu::IndexFormat::Uint16,
+                    wgpu::IndexFormat::Uint32,
                 );
                 sphere_render_pass.draw_indexed(0..geometry.geometry_layer.num_indices, 0, 0..1);
             }

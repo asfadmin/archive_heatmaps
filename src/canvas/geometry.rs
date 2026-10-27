@@ -1,3 +1,4 @@
+use hexasphere::shapes::IcoSphere;
 use wgpu::util::DeviceExt;
 
 use super::render_context::RenderContext;
@@ -114,10 +115,6 @@ impl Geometry {
         }
     }
 
-    pub fn subdivide_icosphere() -> Vec<[f32; 3]> {
-        ICOSAHEDRON_VERTICES.iter().map(|x| *x).collect()
-    }
-
     pub fn generate_spherical_buffers(
         render_context: &RenderContext,
         buffer_data: &[BufferStorage],
@@ -127,14 +124,14 @@ impl Geometry {
 
         let outline_layers = gen_lod_layers(render_context, outline_data, "Outline");
 
-        let icosahedron_vertex_slice: Vec<IcoVertex> = ICOSAHEDRON_VERTICES
-            .iter()
-            .enumerate()
-            .map(|(i, x)| IcoVertex {
-                position: *x,
+        let icosphere = IcoSphere::new(10, |_| ());
+        let vertices: Vec<IcoVertex> = icosphere.raw_points().into_iter().enumerate().map(|(i, x)| {
+            IcoVertex {
+                position: [x.x, x.y, x.z],
                 color: [(i % 2) as f32, (i % 3) as f32, (i % 4) as f32],
-            })
-            .collect();
+            }
+        }).collect();
+        let indices = icosphere.get_all_indices();
 
         // Rectangle that is used in the colormap and max_weight render passes
         let icosahedron_vertex_buffer =
@@ -142,7 +139,7 @@ impl Geometry {
                 .device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: Some("Icosahedron Vertex Buffer"),
-                    contents: bytemuck::cast_slice(&icosahedron_vertex_slice),
+                    contents: bytemuck::cast_slice(&vertices),
                     usage: wgpu::BufferUsages::VERTEX,
                 });
 
@@ -151,11 +148,11 @@ impl Geometry {
                 .device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: Some("Icosahedron Index Buffer"),
-                    contents: bytemuck::cast_slice(&ICOSAHEDRON_INDICES),
+                    contents: bytemuck::cast_slice(&indices),
                     usage: wgpu::BufferUsages::INDEX,
                 });
 
-        let icosahedron_num_indices = ICOSAHEDRON_INDICES.len() as u32;
+        let icosahedron_num_indices = indices.len() as u32;
 
         Self {
             lod_layers,
