@@ -300,7 +300,8 @@ pub fn generate_icosohedron_pipeline(
     device: &wgpu::Device,
     bind_group_layout: &wgpu::BindGroupLayout,
 ) -> wgpu::RenderPipeline {
-    let icosohedron_shader = device.create_shader_module(wgpu::include_wgsl!("shaders/icosohedron.wgsl"));
+    let icosohedron_shader =
+        device.create_shader_module(wgpu::include_wgsl!("shaders/icosohedron.wgsl"));
 
     let icosohedron_render_pipeline_layout =
         device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -331,8 +332,8 @@ pub fn generate_icosohedron_pipeline(
         primitive: wgpu::PrimitiveState {
             topology: wgpu::PrimitiveTopology::TriangleList,
             strip_index_format: None,
-            front_face: wgpu::FrontFace::Cw,
-            cull_mode: None,
+            front_face: wgpu::FrontFace::Ccw,
+            cull_mode: Some(wgpu::Face::Back),
             polygon_mode: wgpu::PolygonMode::Fill,
             unclipped_depth: false,
             conservative: false,
