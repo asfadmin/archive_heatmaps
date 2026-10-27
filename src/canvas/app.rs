@@ -107,7 +107,7 @@ impl ApplicationHandler<UserMessage<'static>> for App<'_> {
                     .as_mut()
                     .expect("Failed to get render context in Incoming Data event");
 
-                self.state.geometry = Some(Geometry::generate_buffers(
+                self.state.geometry = Some(Geometry::generate_spherical_buffers(
                     render_context,
                     &data,
                     &outline_data,

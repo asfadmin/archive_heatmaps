@@ -21,6 +21,25 @@ const RECTANGLE_VERTICES: &[Vertex] = &[
 
 const RECTANGLE_INDICES: &[u16] = &[0, 2, 3, 0, 2, 1];
 
+// The Golden Ratio
+const PHI: f32 = 1.61803398875;
+
+// 12 Vertices of a regular icosahedron
+// Ensure your Vertex struct has #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub const ICOSAHEDRON_VERTICES: [[f32; 3]; 12] = [
+    [-1.0,  PHI,  0.0], [ 1.0,  PHI,  0.0], [-1.0, -PHI,  0.0], [ 1.0, -PHI,  0.0],
+    [ 0.0, -1.0,  PHI], [ 0.0,  1.0,  PHI], [ 0.0, -1.0, -PHI], [ 0.0,  1.0, -PHI],
+    [ PHI,  0.0, -1.0], [ PHI,  0.0,  1.0], [-PHI,  0.0, -1.0], [-PHI,  0.0,  1.0],
+];
+
+// 20 Triangular faces (counter-clockwise winding order)
+pub const ICOSAHEDRON_INDICES: [u16; 60] = [
+    0, 11, 5,   0, 5, 1,    0, 1, 7,    0, 7, 10,   0, 10, 11,
+    1, 5, 9,    5, 11, 4,   11, 10, 2,  10, 7, 6,   7, 1, 8,
+    3, 9, 4,    3, 4, 2,    3, 2, 6,    3, 6, 8,    3, 8, 9,
+    4, 9, 5,    2, 4, 11,   6, 2, 10,   8, 6, 7,    9, 8, 1
+];
+
 // All the things needed to bind a buffer to a render pass
 pub struct BufferContext {
     pub buffer: wgpu::Buffer,
@@ -38,12 +57,12 @@ pub struct BufferLayer {
 // All the geometry that is used in the blend render pass to create a colormap texture
 pub struct Geometry {
     pub lod_layers: Vec<BufferLayer>,
-    pub rectangle_layer: BufferLayer,
     pub outline_layers: Vec<BufferLayer>,
+    pub geometry_layer: BufferLayer,
 }
 
 impl Geometry {
-    pub fn generate_buffers(
+    pub fn generate_cartesian_buffers(
         render_context: &RenderContext,
         buffer_data: &[BufferStorage],
         outline_data: &[BufferStorage],
@@ -80,10 +99,58 @@ impl Geometry {
         Self {
             lod_layers,
             outline_layers,
-            rectangle_layer: BufferLayer {
+            geometry_layer: BufferLayer {
                 vertex_buffer: rectangle_vertex_buffer,
                 index_buffer: rectangle_index_buffer,
                 num_indices: rectangle_num_indices,
+            },
+        }
+    }
+
+    pub fn generate_spherical_buffers(
+        render_context: &RenderContext,
+        buffer_data: &[BufferStorage],
+        outline_data: &[BufferStorage],
+    ) -> Self {
+
+        let lod_layers = gen_lod_layers(render_context, buffer_data, "Heatmap");
+
+        let outline_layers = gen_lod_layers(render_context, outline_data, "Outline");
+
+
+        let icosahedron_vertex_slice: Vec<Vertex> = ICOSAHEDRON_VERTICES.iter().map(|x| {
+            let slice = [x[0], x[1], x[2]+1.0];
+            Vertex {position: slice}
+        }).collect();
+
+        // Rectangle that is used in the colormap and max_weight render passes
+        let icosahedron_vertex_buffer =
+            render_context
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Icosahedron Vertex Buffer"),
+                    contents: bytemuck::cast_slice(&icosahedron_vertex_slice),
+                    usage: wgpu::BufferUsages::VERTEX,
+                });
+
+        let icosahedron_index_buffer =
+            render_context
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Icosahedron Index Buffer"),
+                    contents: bytemuck::cast_slice(&ICOSAHEDRON_INDICES),
+                    usage: wgpu::BufferUsages::INDEX,
+                });
+
+        let icosahedron_num_indices = ICOSAHEDRON_INDICES.len() as u32;
+
+        Self {
+            lod_layers,
+            outline_layers,
+            geometry_layer: BufferLayer {
+                vertex_buffer:icosahedron_vertex_buffer,
+                index_buffer: icosahedron_index_buffer,
+                num_indices: icosahedron_num_indices,
             },
         }
     }

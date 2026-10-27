@@ -17,6 +17,7 @@ use super::geometry::{Geometry, generate_copy_buffer};
 use super::input::InputState;
 use super::render_context::{CopyContext, MaxWeightState, RenderContext};
 use super::texture::{generate_blend_texture, generate_copy_texture, generate_export_texture};
+use crate::canvas::pipeline::generate_icosohedron_pipeline;
 use crate::canvas::png::{ExportContext, InitStage};
 use crate::types;
 
@@ -306,14 +307,14 @@ impl State<'_> {
                     &[],
                 );
                 max_weight_render_pass
-                    .set_vertex_buffer(0, geometry.rectangle_layer.vertex_buffer.slice(..));
+                    .set_vertex_buffer(0, geometry.geometry_layer.vertex_buffer.slice(..));
                 max_weight_render_pass.set_index_buffer(
-                    geometry.rectangle_layer.index_buffer.slice(..),
+                    geometry.geometry_layer.index_buffer.slice(..),
                     wgpu::IndexFormat::Uint16,
                 );
 
                 max_weight_render_pass.draw_indexed(
-                    0..geometry.rectangle_layer.num_indices,
+                    0..geometry.geometry_layer.num_indices,
                     0,
                     0..1,
                 );
@@ -383,8 +384,8 @@ impl State<'_> {
 
         // If we have computed a max weight proceed with rendering the heatmap
         else if render_context.max_weight_context.state == MaxWeightState::Completed {
-            let color_view: wgpu::TextureView;
-            let mut colormap_output: Option<wgpu::SurfaceTexture> = None;
+            let surface_view: wgpu::TextureView;
+            let mut surface_output: Option<wgpu::SurfaceTexture> = None;
             let active_colormap: &BindGroup;
             let active_colormap_render_pipeline: &wgpu::RenderPipeline;
 
@@ -392,7 +393,7 @@ impl State<'_> {
             if let Some(export) = &self.export_context
                 && export.stage == InitStage::InProgress
             {
-                color_view = render_context
+                surface_view = render_context
                     .export_texture_context
                     .texture
                     .create_view(&wgpu::TextureViewDescriptor::default());
@@ -403,8 +404,8 @@ impl State<'_> {
                 log!("Generating .png");
             } else {
                 // We will draw to the surface of the window, this is displayed in the HtmlElement
-                colormap_output = Some(render_context.surface.get_current_texture()?);
-                color_view = colormap_output
+                surface_output = Some(render_context.surface.get_current_texture()?);
+                surface_view = surface_output
                     .as_ref()
                     .expect("Failed to get colormap_output")
                     .texture
@@ -439,7 +440,7 @@ impl State<'_> {
                     colormap_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: Some("Colormap Render Pass"),
                         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                            view: &color_view,
+                            view: &surface_view,
                             resolve_target: None,
                             ops: wgpu::Operations {
                                 load: wgpu::LoadOp::Clear(wgpu::Color {
@@ -488,17 +489,59 @@ impl State<'_> {
                     &[],
                 );
                 color_render_pass
-                    .set_vertex_buffer(0, geometry.rectangle_layer.vertex_buffer.slice(..));
+                    .set_vertex_buffer(0, geometry.geometry_layer.vertex_buffer.slice(..));
                 color_render_pass.set_index_buffer(
-                    geometry.rectangle_layer.index_buffer.slice(..),
+                    geometry.geometry_layer.index_buffer.slice(..),
                     wgpu::IndexFormat::Uint16,
                 );
-                color_render_pass.draw_indexed(0..geometry.rectangle_layer.num_indices, 0, 0..1);
+                color_render_pass.draw_indexed(0..geometry.geometry_layer.num_indices, 0, 0..1);
             }
 
             render_context
                 .queue
                 .submit(std::iter::once(colormap_encoder.finish()));
+
+            let mut sphere_encoder =
+                render_context
+                    .device
+                    .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                        label: Some("Sphere Render Encoder"),
+                    });
+
+            {
+                let sphere_render_pipeline = generate_icosohedron_pipeline(&render_context.device, &render_context.camera_context.camera_bind_group_layout);
+
+                let mut sphere_render_pass = sphere_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("Sphere Render Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &surface_view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color {
+                                r: 0.1,
+                                g: 0.2,
+                                b: 0.3,
+                                a: 1.0,
+                            }),
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                    occlusion_query_set: None,
+                    timestamp_writes: None,
+                });
+
+                sphere_render_pass.set_pipeline(&sphere_render_pipeline);
+                sphere_render_pass.set_bind_group(0, &render_context.camera_context.camera_bind_group, &[]);
+                sphere_render_pass
+                    .set_vertex_buffer(0, geometry.geometry_layer.vertex_buffer.slice(..));
+                sphere_render_pass.set_index_buffer(
+                    geometry.geometry_layer.index_buffer.slice(..),
+                    wgpu::IndexFormat::Uint16,
+                );
+                sphere_render_pass.draw_indexed(0..geometry.geometry_layer.num_indices, 0, 0..1);
+
+            }
 
             ////////////////////////////
             // Export PNG Render pass //
@@ -554,14 +597,14 @@ impl State<'_> {
                         &[],
                     );
                     export_render_pass
-                        .set_vertex_buffer(0, geometry.rectangle_layer.vertex_buffer.slice(..));
+                        .set_vertex_buffer(0, geometry.geometry_layer.vertex_buffer.slice(..));
                     export_render_pass.set_index_buffer(
-                        geometry.rectangle_layer.index_buffer.slice(..),
+                        geometry.geometry_layer.index_buffer.slice(..),
                         wgpu::IndexFormat::Uint16,
                     );
 
                     export_render_pass.draw_indexed(
-                        0..geometry.rectangle_layer.num_indices,
+                        0..geometry.geometry_layer.num_indices,
                         0,
                         0..1,
                     );
@@ -651,7 +694,7 @@ impl State<'_> {
             }
 
             // If we rendered onto the winit surface display the render
-            if let Some(output) = colormap_output {
+            if let Some(output) = surface_output {
                 output.present();
             }
         }

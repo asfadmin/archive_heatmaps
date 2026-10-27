@@ -293,3 +293,55 @@ pub fn generate_export_pipeline(
         multiview: None,
     })
 }
+
+/// Generates a render pipeline that is used to get data from the GPU onto the CPU
+pub fn generate_icosohedron_pipeline(
+    device: &wgpu::Device,
+    bind_group_layout: &wgpu::BindGroupLayout,
+) -> wgpu::RenderPipeline {
+    let icosohedron_shader = device.create_shader_module(wgpu::include_wgsl!("shaders/icosohedron.wgsl"));
+
+    let icosohedron_render_pipeline_layout =
+        device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("Icosohedron Render Pipeline Layout"),
+            bind_group_layouts: &[bind_group_layout],
+            push_constant_ranges: &[],
+        });
+
+    device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("Icosohedron Render Pipeline"),
+        layout: Some(&icosohedron_render_pipeline_layout),
+        vertex: wgpu::VertexState {
+            module: &icosohedron_shader,
+            entry_point: "vs_main",
+            buffers: &[Vertex::desc()],
+            compilation_options: PipelineCompilationOptions::default(),
+        },
+        fragment: Some(wgpu::FragmentState {
+            module: &icosohedron_shader,
+            entry_point: "fs_main",
+            compilation_options: PipelineCompilationOptions::default(),
+            targets: &[Some(wgpu::ColorTargetState {
+                format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                blend: None,
+                write_mask: wgpu::ColorWrites::ALL,
+            })],
+        }),
+        primitive: wgpu::PrimitiveState {
+            topology: wgpu::PrimitiveTopology::TriangleList,
+            strip_index_format: None,
+            front_face: wgpu::FrontFace::Cw,
+            cull_mode: None,
+            polygon_mode: wgpu::PolygonMode::Fill,
+            unclipped_depth: false,
+            conservative: false,
+        },
+        depth_stencil: None,
+        multisample: wgpu::MultisampleState {
+            count: 1,
+            mask: !0,
+            alpha_to_coverage_enabled: false,
+        },
+        multiview: None,
+    })
+}
