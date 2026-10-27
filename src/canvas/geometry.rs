@@ -130,12 +130,9 @@ impl Geometry {
         let icosahedron_vertex_slice: Vec<IcoVertex> = ICOSAHEDRON_VERTICES
             .iter()
             .enumerate()
-            .map(|(i, x)| {
-                let slice = [x[0], x[1], x[2] + 1.0];
-                IcoVertex {
-                    position: slice,
-                    color: [(i % 2) as f32, (i % 3) as f32, (i % 4) as f32],
-                }
+            .map(|(i, x)| IcoVertex {
+                position: *x,
+                color: [(i % 2) as f32, (i % 3) as f32, (i % 4) as f32],
             })
             .collect();
 

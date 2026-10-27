@@ -1,10 +1,10 @@
+use std::f64::consts::PI;
+
 use cgmath::{EuclideanSpace, InnerSpace, Point3, Vector2, Vector3};
 use wgpu::util::DeviceExt;
 
 use super::input::InputState;
 use super::render_context::RenderContext;
-
-const PI: f64 = 3.1415;
 
 pub enum CameraEvent {
     Resize(u32, u32),
@@ -93,9 +93,7 @@ impl CameraContext {
         ));
         // Updates the position of the camera
         let drag_delta = input_state.consume_drag_delta();
-        self.update_camera(&CameraEvent::Translate(
-            self.mouse_coordinate_convert((drag_delta.x, drag_delta.y).into()),
-        ));
+        self.update_camera(&CameraEvent::Translate((drag_delta.x, drag_delta.y).into()));
 
         // Have to recalculate the view projection matrix for these changes to take effect
         self.rebuild_view_matrix();
@@ -125,10 +123,11 @@ impl CameraContext {
             // Zooms the camera in and out, ensures the camera stays within the bounds of the heatmap
             CameraEvent::Zoom(mut zoom, mut pos) => {
                 self.camera.zoom -= zoom;
-                self.camera.zoom = self.camera.zoom.clamp(0.05, 10.0);
+                self.camera.zoom = self.camera.zoom.clamp(0.8, 10.0);
                 let vec = self.camera.eye.to_vec();
 
-                self.camera.eye = Point3::from_vec(vec.normalize() * self.camera.zoom * 5.0);
+                self.camera.eye =
+                    Point3::from_vec(vec.normalize() * (self.camera.zoom * 5.0).log2());
             }
 
             // Moves the camera around, ensures the camera stays within bounds of the heatmap
@@ -136,8 +135,10 @@ impl CameraContext {
                 let radius = self.camera.eye.to_vec().magnitude();
                 let mut theta = self.camera.eye.z.atan2(self.camera.eye.x);
                 let mut phi = (self.camera.eye.y / radius).acos();
-                theta += (diff.x / self.camera.width) * 2.0 * PI;
-                phi += (diff.y / self.camera.height) * PI;
+                theta += (diff.x / self.camera.width) * PI;
+                phi -= (diff.y / self.camera.height) * PI * 0.5;
+                let epsilon = 0.05;
+                let phi = phi.clamp(epsilon, PI - epsilon);
                 self.camera.eye.x = radius * phi.sin() * theta.cos();
                 self.camera.eye.y = radius * phi.cos();
                 self.camera.eye.z = radius * phi.sin() * theta.sin();
