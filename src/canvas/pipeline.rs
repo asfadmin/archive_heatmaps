@@ -298,7 +298,7 @@ pub fn generate_export_pipeline(
 /// Generates a render pipeline that is used to get data from the GPU onto the CPU
 pub fn generate_icosohedron_pipeline(
     device: &wgpu::Device,
-    bind_group_layout: &wgpu::BindGroupLayout,
+    bind_group_layout: &[&wgpu::BindGroupLayout],
 ) -> wgpu::RenderPipeline {
     let icosohedron_shader =
         device.create_shader_module(wgpu::include_wgsl!("shaders/icosohedron.wgsl"));
@@ -306,7 +306,7 @@ pub fn generate_icosohedron_pipeline(
     let icosohedron_render_pipeline_layout =
         device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Icosohedron Render Pipeline Layout"),
-            bind_group_layouts: &[bind_group_layout],
+            bind_group_layouts: bind_group_layout,
             push_constant_ranges: &[],
         });
 

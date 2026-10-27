@@ -509,7 +509,12 @@ impl State<'_> {
                     });
 
             {
-                let sphere_render_pipeline = generate_icosohedron_pipeline(&render_context.device, &render_context.camera_context.camera_bind_group_layout);
+                let sphere_render_pipeline = generate_icosohedron_pipeline(&render_context.device, &[
+                    &render_context.camera_context.camera_bind_group_layout,
+                    &render_context.colormap_texture_context.bind_group_layout,
+                    &render_context.blend_texture_context.bind_group_layout,
+                    &render_context.max_weight_context.uniform_buffer.bind_group_layout,
+                ]);
 
                 let mut sphere_render_pass = sphere_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: Some("Sphere Render Pass"),
@@ -533,6 +538,9 @@ impl State<'_> {
 
                 sphere_render_pass.set_pipeline(&sphere_render_pipeline);
                 sphere_render_pass.set_bind_group(0, &render_context.camera_context.camera_bind_group, &[]);
+                sphere_render_pass.set_bind_group(1, &render_context.colormap_texture_context.bind_group, &[]);
+                sphere_render_pass.set_bind_group(2, &render_context.blend_texture_context.bind_group, &[]);
+                sphere_render_pass.set_bind_group(3, &render_context.max_weight_context.uniform_buffer.bind_group, &[]);
                 sphere_render_pass
                     .set_vertex_buffer(0, geometry.geometry_layer.vertex_buffer.slice(..));
                 sphere_render_pass.set_index_buffer(
