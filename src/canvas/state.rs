@@ -540,8 +540,11 @@ impl State<'_> {
                     wgpu::IndexFormat::Uint16,
                 );
                 sphere_render_pass.draw_indexed(0..geometry.geometry_layer.num_indices, 0, 0..1);
-
             }
+
+            render_context
+                .queue
+                .submit(std::iter::once(sphere_encoder.finish()));
 
             ////////////////////////////
             // Export PNG Render pass //
