@@ -1,4 +1,4 @@
-use cgmath::Vector2;
+use cgmath::{Point3, Vector2, Vector3};
 use wgpu::util::DeviceExt;
 
 use super::input::InputState;
@@ -28,6 +28,9 @@ impl CameraContext {
     ) -> Self {
         // Create a default camera
         let camera = Camera {
+            eye: Point3::new(0.0, 0.0, 50.0),
+            target: Point3::new(0.0, 0.0, 0.0),
+            up: Vector3::new(0.0, 1.0, 0.0),
             aspect: f64::from(config.width) / f64::from(config.height),
             width: f64::from(config.width),
             height: f64::from(config.height),
@@ -122,27 +125,8 @@ impl CameraContext {
 
             // Zooms the camera in and out, ensures the camera stays within the bounds of the heatmap
             CameraEvent::Zoom(mut zoom, mut pos) => {
-                let camera_size =
-                    cgmath::Vector2::<f64>::new(self.camera.width, self.camera.height)
-                        / (self.camera.zoom + zoom);
-
-                if camera_size.x > 360.0 {
-                    zoom = self.camera.width / 360.0 - self.camera.zoom;
-                }
-
-                if camera_size.y > 170.0 {
-                    zoom = zoom.max(self.camera.height / 170.0 - self.camera.zoom);
-                }
-
-                if self.camera.zoom + zoom < 0.0 {
-                    zoom = -self.camera.zoom + 0.001;
-                }
-
-                let scale_factor = (self.camera.zoom + zoom) / self.camera.zoom;
-
                 self.camera.zoom += zoom;
-                pos = self.mouse_coordinate_convert(pos);
-                self.update_camera(&CameraEvent::Translate(pos - pos * scale_factor));
+                self.camera.zoom = self.camera.zoom.clamp(0.1, 5.0);
             }
 
             // Moves the camera around, ensures the camera stays within bounds of the heatmap
@@ -183,7 +167,7 @@ impl CameraContext {
             CameraEvent::EntireView => {
                 self.camera.position = Vector2::new(-180.0, 90.0);
 
-                self.camera.zoom = 5.0;
+                self.camera.zoom = 1.0;
 
                 self.update_camera(&CameraEvent::Resize(1800, 900));
 
@@ -208,6 +192,9 @@ impl CameraContext {
 
 #[derive(Clone)]
 pub struct Camera {
+    pub eye: Point3<f64>,
+    pub target: Point3<f64>,
+    pub up: Vector3<f64>,
     pub aspect: f64,
     pub width: f64,
     pub height: f64,
@@ -218,10 +205,13 @@ pub struct Camera {
 impl Camera {
     // This is the cool matrix math that makes this whole thing actually work!
     pub fn build_view_projection_matrix(&self) -> cgmath::Matrix4<f64> {
-        let view = cgmath::Matrix4::from_scale(self.zoom)
-            * cgmath::Matrix4::from_translation(-self.position.extend(0.0));
+        let pos = self.eye - Vector3::new(0.0, 0.0, 5.0 * self.zoom);
+        let mut target = self.eye;
+        target.z = 0.0;
 
-        let proj = cgmath::ortho(0.0, self.width, -self.height, 0.0, -1.0, 1.0);
+        let view = cgmath::Matrix4::look_at_rh(pos, target, self.up);
+
+        let proj = cgmath::perspective(cgmath::Deg(90.0), self.aspect, 0.1, 5000.0);
 
         proj * view
     }
