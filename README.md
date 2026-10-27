@@ -1,8 +1,14 @@
+
 # Archive Heatmap
 The goal of this project is to rewrite and consolidate the existing codebases for creating heatmaps of the Sentinel-1 data archive into an interactive heatmap. This heatmap currently has the ability to select date ranges, product types, and platform.
 
+
+
+## Architecture Diagram
+<img width="8709" height="5347" alt="Interactive-Heatmap-Architecture-Diagram" src="https://github.com/user-attachments/assets/fce662c7-6f12-4c30-ae51-9985e305f796" />
+
 ## Using the Client
-1. A release build of the client is available [here](https://asfadmin.github.io/archive_heatmaps/)
+1. A release build of the client is available at https://heatmaps-live.sp.asf.alaska.edu/
 2. Once you are on the page select the date range, product type, and platform you would like to generate a heatmap for and press submit!
 
 ## Directory Contents
@@ -26,7 +32,7 @@ The goal of this project is to rewrite and consolidate the existing codebases fo
 
 
 ## Attribution
-World Continent data comes from hub.arcgis.com/datasets/esri::world-continents/explore
+World Continent data comes from hub.arcgis.com/datasets/esri::world-continents/explore  
 Sentinel-1 Data is provided by the Alaska Satellite Facility
 
 ## Contributers

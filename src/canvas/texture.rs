@@ -90,7 +90,7 @@ pub fn generate_blend_texture(
 
 /// Generates 2 1D texture with the colormaps the heatmap will use
 pub fn generate_colormaps(device: &wgpu::Device, queue: &wgpu::Queue) -> TextureContext {
-    let display_colormap_bytes: &[u8; _] = include_bytes!("../../assets/plasma.png");
+    let display_colormap_bytes: &[u8; _] = include_bytes!("../../assets/viridis.png");
 
     generate_colormap_texture(device, queue, display_colormap_bytes)
 }
