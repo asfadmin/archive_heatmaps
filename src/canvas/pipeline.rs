@@ -2,6 +2,7 @@ use wgpu::PipelineCompilationOptions;
 
 use super::camera::CameraContext;
 use crate::canvas::geometry::BlendVertex;
+use crate::canvas::geometry::IcoVertex;
 use crate::canvas::geometry::Vertex;
 
 pub fn generate_blend_pipeline(
@@ -314,7 +315,7 @@ pub fn generate_icosohedron_pipeline(
         vertex: wgpu::VertexState {
             module: &icosohedron_shader,
             entry_point: "vs_main",
-            buffers: &[Vertex::desc()],
+            buffers: &[IcoVertex::desc()],
             compilation_options: PipelineCompilationOptions::default(),
         },
         fragment: Some(wgpu::FragmentState {
