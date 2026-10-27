@@ -107,6 +107,12 @@ impl Geometry {
         }
     }
 
+    pub fn subdivide_icosphere() -> Vec<[f32; 3]> {
+        
+
+        ICOSAHEDRON_VERTICES.iter().map(|x| *x).collect()
+    }
+
     pub fn generate_spherical_buffers(
         render_context: &RenderContext,
         buffer_data: &[BufferStorage],
@@ -118,9 +124,12 @@ impl Geometry {
         let outline_layers = gen_lod_layers(render_context, outline_data, "Outline");
 
 
-        let icosahedron_vertex_slice: Vec<Vertex> = ICOSAHEDRON_VERTICES.iter().map(|x| {
+        let icosahedron_vertex_slice: Vec<IcoVertex> = ICOSAHEDRON_VERTICES.iter().enumerate().map(|(i, x)| {
             let slice = [x[0], x[1], x[2]+1.0];
-            Vertex {position: slice}
+            IcoVertex {
+                position: slice,
+                color: [(i % 2) as f32, (i % 3) as f32, (i % 4) as f32],
+            }
         }).collect();
 
         // Rectangle that is used in the colormap and max_weight render passes
@@ -296,6 +305,34 @@ impl Vertex {
                 shader_location: 0,
                 format: wgpu::VertexFormat::Float32x3,
             }],
+        }
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct IcoVertex {
+    pub position: [f32; 3],
+    pub color: [f32; 3],
+}
+
+impl IcoVertex {
+    pub const fn desc() -> wgpu::VertexBufferLayout<'static> {
+        wgpu::VertexBufferLayout{
+            array_stride: std::mem::size_of::<Self>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &[
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    shader_location: 0,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+                wgpu::VertexAttribute {
+                    offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
+                    shader_location: 1,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+            ]
         }
     }
 }
